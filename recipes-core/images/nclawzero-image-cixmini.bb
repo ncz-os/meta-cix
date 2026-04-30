@@ -24,7 +24,6 @@ IMAGE_FEATURES += " \
     ssh-server-openssh \
     package-management \
     tools-debug \
-    tools-profile \
 "
 
 # Comprehensive runtime — admin, dev, networking, hardware-diag.
@@ -60,6 +59,7 @@ IMAGE_INSTALL = " \
     \
     chrony \
     bash-completion \
+    perf sysstat strace ltrace gdb \
     file tree which \
     tar gzip xz bzip2 unzip \
     \
