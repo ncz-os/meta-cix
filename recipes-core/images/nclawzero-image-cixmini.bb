@@ -70,3 +70,13 @@ IMAGE_LINGUAS = ""
 SYSTEMD_DEFAULT_TARGET ?= "multi-user.target"
 # More room for runtime opkg installs, logs, agent data
 IMAGE_ROOTFS_EXTRA_SPACE = "2097152"
+
+# Idempotent user provisioning — fixed-salt SHA-512 crypt hash means
+# every build produces the same /etc/shadow content. Re-running bitbake
+# does not regenerate or rotate credentials.
+inherit extrausers
+EXTRA_USERS_PARAMS = "\
+    usermod -p '\$6\$cixmini2026\$Ek3ZY9PbE9CUI2hDX7DI6U5fk3JEfzGCzjbbgPaaX.nUZ70Gz6mufxWYeataJsXY22OAwppjCz6OTOxkS9CtW.' root; \
+    useradd -m -s /bin/bash -G sudo,disk,plugdev,dialout ncz; \
+    usermod -p '\$6\$cixmini2026\$Ek3ZY9PbE9CUI2hDX7DI6U5fk3JEfzGCzjbbgPaaX.nUZ70Gz6mufxWYeataJsXY22OAwppjCz6OTOxkS9CtW.' ncz; \
+"
