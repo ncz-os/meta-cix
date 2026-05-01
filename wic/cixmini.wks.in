@@ -1,0 +1,27 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 Jason Perlow
+# SPDX-License-Identifier: Apache-2.0
+#
+# wic image layout for nclawzero cixmini (Cix Sky1 / CP8180 — Minisforum MS-R1).
+#
+# GPT partitioning, two partitions:
+#   1. /boot ESP (FAT, 512 MiB) — UEFI loader + kernel + initrd. Cix's
+#      shipping firmware boots via UEFI from this ESP, looking for the
+#      EFI_PROVIDER's image (systemd-boot or grub-efi per machine.conf).
+#   2. /     rootfs (ext4)     — extra-space sized so first-boot growpart
+#      / systemd-resize machinery can fill the destination disk on a wic.gz
+#      flashed to a larger NVMe / USB.
+#
+# No swap partition by design: cixmini is a fleet edge device (64 GB RAM,
+# 28 W TDP) with workloads that should not page. Swap can be added at
+# runtime via /var/swapfile if a specific use case requires it; baking a
+# swap partition into the wic forces every operator to inherit it.
+#
+# Kernel command-line additions are in conf/machine/cixmini.conf APPEND
+# (console=tty0 console=ttyAMA0,115200 earlycon clk_ignore_unused) — wic
+# only sets the rootfs hint here.
+
+part /boot --source bootimg-efi --sourceparams="loader=${EFI_PROVIDER},initrd=${INITRAMFS_IMAGE}-${MACHINE}.${INITRAMFS_FSTYPES}" --label boot --active --align 1024 --use-uuid --fixed-size 512
+
+part / --source rootfs --fstype=ext4 --label root --align 1024 --use-uuid --extra-space 1024
+
+bootloader --ptable gpt --timeout=3 --append="rootwait rootfstype=ext4"
