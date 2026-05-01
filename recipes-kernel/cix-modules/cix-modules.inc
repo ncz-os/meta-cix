@@ -43,8 +43,16 @@ do_install() {
         KSRC=${STAGING_KERNEL_DIR} \
         INSTALL_MOD_PATH=${D}
 
-    install -d ${D}${nonarch_base_libdir}/modules/${KERNEL_VERSION}/extra/cix
-    find ${B} -name "*.ko" -exec install -m 0644 {} ${D}${nonarch_base_libdir}/modules/${KERNEL_VERSION}/extra/cix/ \;
+    modules=$(find "${B}" -name "*.ko" -print)
+    if [ -z "$modules" ]; then
+        bbfatal "${PN}: no .ko produced under ${B} after make -f ${CIX_DRIVER_MAKEFILE}"
+    fi
+
+    install_dir="${D}${nonarch_base_libdir}/modules/${KERNEL_VERSION}/extra/cix"
+    install -d "$install_dir"
+    printf '%s\n' "$modules" | while IFS= read -r ko; do
+        install -m 0644 "$ko" "$install_dir/"
+    done
 }
 
 S = "${WORKDIR}/git"
