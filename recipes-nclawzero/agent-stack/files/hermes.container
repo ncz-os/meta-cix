@@ -9,14 +9,17 @@ Wants=network-online.target nclawzero-load-agent-images.service
 After=network-online.target nclawzero-load-agent-images.service
 
 [Container]
-Image=docker.io/nousresearch/hermes-agent:latest
-# TODO(supply-chain): pin to immutable digest sha256:... once a signed
-# release-tag promotion path exists. AutoUpdate=registry intentionally
-# OMITTED to prevent unreviewed container code from running with API
-# keys; operators trigger updates via `podman pull` plus
-# `systemctl restart hermes` on a maintenance window.
+Image=docker.io/nousresearch/hermes-agent@sha256:aa60e7483a6fad26eee233d2498d4f2b4223bf9d8990e3b07017f19b6ba7b6fe
+# Image pinned to immutable digest. To roll forward, resolve a newer
+# sha256 via `crane digest docker.io/nousresearch/hermes-agent:latest`
+# and update here. AutoUpdate=registry intentionally OMITTED.
 ContainerName=hermes
-Exec=dashboard --host 127.0.0.1 --port 8642 --no-open
+# Bind dashboard to 0.0.0.0 INSIDE the container (the container's own
+# loopback differs from the host's). Host-side exposure is restricted
+# by PublishPort=127.0.0.1:8642:8642 — only accessible from the host's
+# loopback interface. SSH tunnel or reverse proxy with TLS+auth is
+# required for LAN access.
+Exec=dashboard --host 0.0.0.0 --port 8642 --no-open
 EnvironmentFile=/etc/nclawzero/agent-env
 Volume=hermes-data:/opt/data:Z
 PublishPort=127.0.0.1:8642:8642

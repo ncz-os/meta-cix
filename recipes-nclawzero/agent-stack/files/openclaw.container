@@ -5,12 +5,11 @@ Wants=network-online.target nclawzero-load-agent-images.service
 After=network-online.target nclawzero-load-agent-images.service
 
 [Container]
-Image=ghcr.io/openclaw/openclaw:main
-# TODO(supply-chain): pin to immutable digest sha256:... once a signed
-# release-tag promotion path exists. AutoUpdate=registry intentionally
-# OMITTED to prevent unreviewed container code from running with API
-# keys; operators trigger updates via `podman pull` plus
-# `systemctl restart openclaw` on a maintenance window.
+Image=ghcr.io/openclaw/openclaw@sha256:06b4f3dfa3c88d49c92e99d635dc62053d4afd045d6220e811dff6190040f3de
+# Image pinned to immutable digest. To roll forward, resolve a newer
+# sha256 via `crane digest ghcr.io/openclaw/openclaw:main` and update
+# here. AutoUpdate=registry intentionally OMITTED to prevent unreviewed
+# upstream changes from running with API keys.
 ContainerName=openclaw
 EnvironmentFile=/etc/nclawzero/agent-env
 Volume=openclaw-data:/openclaw-data:Z
