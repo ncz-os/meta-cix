@@ -19,4 +19,6 @@ SRC_URI = " \
 "
 SRCREV_FORMAT = "npukmd"
 
-MAKE_TARGETS = "-f npu.mk"
+LIC_FILES_CHKSUM = "file://driver/LICENSE.TXT;md5=ea9445d9cc03d508cf6bb769d15a54ef"
+
+CIX_DRIVER_MAKEFILE = "npu.mk"

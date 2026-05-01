@@ -19,13 +19,12 @@ SRC_URI = " \
 "
 SRCREV_FORMAT = "gpukmd"
 
+LIC_FILES_CHKSUM = "file://license.txt;md5=13e14ae1bd7ad5bff731bba4a31bb510"
+
 # The Cix gpu_kernel tree uses gpu.mk (driven by Minisforum's
-# build-scripts/build-gpu-driver.sh in their downstream pipeline). For Yocto
-# we invoke the make target directly. The module class's do_compile passes
-# the standard out-of-tree-module variables (KERNEL_SRC, KBUILD_EXTRA_SYMBOLS,
-# CC, etc); the gpu.mk needs to honor them.
-MAKE_TARGETS = "-f gpu.mk"
+# build-scripts/build-gpu-driver.sh in their downstream pipeline). The shared
+# cix-modules.inc do_compile / do_install invokes this makefile.
+CIX_DRIVER_MAKEFILE = "gpu.mk"
 
 # Mali kbase produces a single mali_kbase.ko (matches Sky1-Linux/cix-gpu-kmd
-# DKMS packaging). License file is at license.txt in the source tree; the
-# parent .inc references it via LIC_FILES_CHKSUM.
+# DKMS packaging).

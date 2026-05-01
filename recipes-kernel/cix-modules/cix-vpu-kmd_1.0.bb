@@ -19,7 +19,15 @@ SRC_URI = " \
 "
 SRCREV_FORMAT = "vpukmd"
 
-MAKE_TARGETS = "-f vpu.mk"
+# vpu_driver has no standalone LICENSE/COPYING file. Source headers carry
+# the GNU GPL v2 boilerplate plus an SPDX-License-Identifier: GPL-2.0-only
+# tag (overriding legacy Arm "confidential and proprietary" comment text
+# from the pre-GPL upstream history). LIC_FILES_CHKSUM points at the
+# header section of one representative .c file. If a future Cix release
+# adds a top-level LICENSE/COPYING file, switch the path here.
+LIC_FILES_CHKSUM = "file://driver/mvx_pm_runtime.c;beginline=1;endline=30;md5=0ce8466561de54500d9758d6ad225176"
+
+CIX_DRIVER_MAKEFILE = "vpu.mk"
 
 # vpu_driver also ships an SCons-based build (sconstruct + site_scons/) but
 # the .mk path is what Minisforum's build-scripts/build-vpu_driver.sh uses
