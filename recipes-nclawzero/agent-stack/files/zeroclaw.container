@@ -6,16 +6,20 @@ After=network-online.target nclawzero-load-agent-images.service
 
 [Container]
 Image=ghcr.io/perlowja/nclawzero-demo:latest
+# TODO(supply-chain): pin to immutable digest sha256:... once a signed
+# release-tag promotion path exists. AutoUpdate=registry intentionally
+# OMITTED to prevent unreviewed container code from running with API
+# keys; operators trigger updates via `podman pull` plus
+# `systemctl restart zeroclaw` on a maintenance window.
 ContainerName=zeroclaw
 Entrypoint=/usr/local/bin/zeroclaw
 Exec=daemon --host 0.0.0.0 --port 42617
 EnvironmentFile=/etc/nclawzero/agent-env
 Volume=zeroclaw-data:/zeroclaw-data:Z
 PublishPort=42617:42617
-AutoUpdate=registry
-TimeoutStartSec=900
 
 [Service]
+TimeoutStartSec=900
 Restart=always
 RestartSec=15
 

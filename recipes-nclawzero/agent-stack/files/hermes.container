@@ -1,3 +1,7 @@
+# NOTE: Hermes dashboard is intentionally bound to host loopback. Operators
+# wanting LAN access must add an SSH tunnel or reverse proxy with TLS+auth,
+# not bind the dashboard to all interfaces.
+
 [Unit]
 Description=hermes agent (NousResearch Hermes Agent OSS)
 Documentation=https://github.com/NousResearch/hermes-agent
@@ -6,15 +10,19 @@ After=network-online.target nclawzero-load-agent-images.service
 
 [Container]
 Image=docker.io/nousresearch/hermes-agent:latest
+# TODO(supply-chain): pin to immutable digest sha256:... once a signed
+# release-tag promotion path exists. AutoUpdate=registry intentionally
+# OMITTED to prevent unreviewed container code from running with API
+# keys; operators trigger updates via `podman pull` plus
+# `systemctl restart hermes` on a maintenance window.
 ContainerName=hermes
-Exec=dashboard --host 0.0.0.0 --port 8642 --no-open --insecure
+Exec=dashboard --host 127.0.0.1 --port 8642 --no-open
 EnvironmentFile=/etc/nclawzero/agent-env
 Volume=hermes-data:/opt/data:Z
-PublishPort=8642:8642
-AutoUpdate=registry
-TimeoutStartSec=600
+PublishPort=127.0.0.1:8642:8642
 
 [Service]
+TimeoutStartSec=600
 Restart=always
 RestartSec=15
 

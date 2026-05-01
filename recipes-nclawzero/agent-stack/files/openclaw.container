@@ -6,15 +6,19 @@ After=network-online.target nclawzero-load-agent-images.service
 
 [Container]
 Image=ghcr.io/openclaw/openclaw:main
+# TODO(supply-chain): pin to immutable digest sha256:... once a signed
+# release-tag promotion path exists. AutoUpdate=registry intentionally
+# OMITTED to prevent unreviewed container code from running with API
+# keys; operators trigger updates via `podman pull` plus
+# `systemctl restart openclaw` on a maintenance window.
 ContainerName=openclaw
 EnvironmentFile=/etc/nclawzero/agent-env
 Volume=openclaw-data:/openclaw-data:Z
 Volume=/var/lib/nclawzero/openclaw-home:/home/node/.openclaw:Z
 PublishPort=18789:18789
-AutoUpdate=registry
-TimeoutStartSec=600
 
 [Service]
+TimeoutStartSec=600
 Restart=always
 RestartSec=15
 
