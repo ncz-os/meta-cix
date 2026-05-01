@@ -1,0 +1,22 @@
+[Unit]
+Description=hermes agent (NousResearch Hermes Agent OSS)
+Documentation=https://github.com/NousResearch/hermes-agent
+Wants=network-online.target nclawzero-load-agent-images.service
+After=network-online.target nclawzero-load-agent-images.service
+
+[Container]
+Image=docker.io/nousresearch/hermes-agent:latest
+ContainerName=hermes
+Exec=dashboard --host 0.0.0.0 --port 8642 --no-open --insecure
+EnvironmentFile=/etc/nclawzero/agent-env
+Volume=hermes-data:/opt/data:Z
+PublishPort=8642:8642
+AutoUpdate=registry
+TimeoutStartSec=600
+
+[Service]
+Restart=always
+RestartSec=15
+
+[Install]
+WantedBy=multi-user.target default.target

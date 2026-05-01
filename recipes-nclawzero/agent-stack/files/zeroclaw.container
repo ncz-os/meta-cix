@@ -1,0 +1,23 @@
+[Unit]
+Description=zeroclaw agent gateway (nclawzero stack)
+Documentation=https://gitlab.com/nclawzero/zeroclaw
+Wants=network-online.target nclawzero-load-agent-images.service
+After=network-online.target nclawzero-load-agent-images.service
+
+[Container]
+Image=ghcr.io/perlowja/nclawzero-demo:latest
+ContainerName=zeroclaw
+Entrypoint=/usr/local/bin/zeroclaw
+Exec=daemon --host 0.0.0.0 --port 42617
+EnvironmentFile=/etc/nclawzero/agent-env
+Volume=zeroclaw-data:/zeroclaw-data:Z
+PublishPort=42617:42617
+AutoUpdate=registry
+TimeoutStartSec=900
+
+[Service]
+Restart=always
+RestartSec=15
+
+[Install]
+WantedBy=multi-user.target default.target

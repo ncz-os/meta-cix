@@ -1,0 +1,22 @@
+[Unit]
+Description=openclaw agent (upstream NemoClaw OSS)
+Documentation=https://github.com/openclaw/openclaw
+Wants=network-online.target nclawzero-load-agent-images.service
+After=network-online.target nclawzero-load-agent-images.service
+
+[Container]
+Image=ghcr.io/openclaw/openclaw:main
+ContainerName=openclaw
+EnvironmentFile=/etc/nclawzero/agent-env
+Volume=openclaw-data:/openclaw-data:Z
+Volume=/var/lib/nclawzero/openclaw-home:/home/node/.openclaw:Z
+PublishPort=18789:18789
+AutoUpdate=registry
+TimeoutStartSec=600
+
+[Service]
+Restart=always
+RestartSec=15
+
+[Install]
+WantedBy=multi-user.target default.target
