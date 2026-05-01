@@ -37,7 +37,7 @@ FILES:${PN} += " \
     ${sysconfdir}/ld.so.conf.d/* \
 "
 
-RDEPENDS:${PN} += "ldconfig"
+RDEPENDS:${PN} += "ldconfig cix-libdrm cix-libglvnd"
 
 pkg_postinst:${PN}() {
     # Same fail-loud-on-missing-ldconfig pattern as cix-gpu-umd

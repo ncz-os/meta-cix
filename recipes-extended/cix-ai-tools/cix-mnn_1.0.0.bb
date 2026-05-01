@@ -37,6 +37,9 @@ FILES:${PN} += " \
 # falls back to CPU.
 RDEPENDS:${PN} += "cix-gpu-umd"
 RDEPENDS:${PN} += "cix-mesa"
+# cix-libdrm carries the /usr/share/cix/lib ld.so.conf.d drop-in that
+# our libMNN*.so files depend on for runtime resolution.
+RDEPENDS:${PN} += "cix-libdrm"
 
 # Demos under bin/mnn/ are operator-side example apps; not auto-run
 # at boot. Mark as RRECOMMENDS for the framework so an image author
