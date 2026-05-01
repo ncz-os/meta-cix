@@ -22,7 +22,7 @@
 # clk_ignore_unused is REQUIRED on Sky1 until upstream clock handling is
 # complete; without it the kernel may panic during clk subsystem init.
 
-part /boot --source bootimg-efi --sourceparams="loader=${EFI_PROVIDER},initrd=${INITRAMFS_IMAGE}-${MACHINE}.${INITRAMFS_FSTYPES}" --label boot --active --align 1024 --use-uuid --fixed-size 512
+part /boot --source bootimg-efi --sourceparams="loader=${EFI_PROVIDER}" --label boot --active --align 1024 --use-uuid --fixed-size 512
 
 part / --source rootfs --fstype=ext4 --label root --align 1024 --use-uuid --extra-space 1024
 
