@@ -44,6 +44,7 @@ SRCREV = "cc636a675f7926846f04d31524c17b591955acca"
 
 SRC_URI = " \
     git://github.com/minisforum-cix-p1-repo/cix_opensource__linux.git;protocol=https;branch=${KBRANCH};name=kernel \
+    file://usb-rootfs.cfg \
 "
 
 # We deliberately do NOT carry SRC_URI patches that diverge from Minisforum's
@@ -75,6 +76,10 @@ do_configure:prepend() {
     cd ${S}
     oe_runmake ARCH=arm64 O=${B} defconfig
     cat ${S}/arch/arm64/configs/cix.config >> ${B}/.config
+    # Local override fragment: forces USB host + storage + UAS into the
+    # kernel image so a USB-attached rootfs boots without initramfs
+    # modules. See files/usb-rootfs.cfg for the full rationale.
+    cat ${WORKDIR}/usb-rootfs.cfg >> ${B}/.config
     oe_runmake ARCH=arm64 O=${B} olddefconfig
 }
 
