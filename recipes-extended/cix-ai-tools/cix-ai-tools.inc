@@ -11,7 +11,9 @@
 #
 # Operators must opt into the per-recipe LICENSE_FLAGS via local.conf:
 #
-#     LICENSE_FLAGS_ACCEPTED += "commercial_cix-llama-cpp commercial_cix-mnn"
+#     LICENSE_FLAGS_ACCEPTED += "commercial_cix-llama-cpp \
+#                                commercial_cix-mnn \
+#                                commercial_cix-mesa"
 #
 # Mirrors the S4 cix-userspace.inc opt-in pattern.
 #
