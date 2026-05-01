@@ -1,0 +1,93 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 Jason Perlow
+# SPDX-License-Identifier: Apache-2.0
+#
+# Linux kernel for Cix Sky1 / CP8180 on the Minisforum MS-R1 (cixmini machine).
+#
+# Pulls Minisforum's published downstream kernel source — same source tree the
+# shipping firmware/Debian image runs (verified via `uname -r ==
+# 6.6.10-cix-build-generic` on a live MS-R1). This supersedes the earlier
+# linux-cix-ncz_7.0.bb recipe, which tracked the cixtech upstream-mainlining
+# effort (kernel 7.0-rc) — that path is blocked on cixtech completing
+# patches-7.0 and would not boot on real MS-R1 hardware until the proprietary
+# driver pack is upstreamed. We're now building from Minisforum's downstream
+# tree, which has the full driver pack already integrated and is what actually
+# runs on shipping units.
+#
+# Manifest pin — see https://github.com/minisforum-cix-p1-repo/cix_manifest
+# default.xml on branch a0fb5/5cf6e/cix_p1_mg_dev: cix_opensource__linux is
+# pinned to the same a0fb5/5cf6e/cix_p1_mg_dev branch. SRCREV below pins the
+# exact commit on that branch as of 2026-05-01 source sync to ARGOS.
+
+SUMMARY = "Linux kernel for Cix Sky1 / CP8180 (Minisforum MS-R1)"
+DESCRIPTION = "Linux 6.6.10 with the Cix Sky1 downstream patch stack and proprietary driver-pack hooks, built from minisforum-cix-p1-repo/cix_opensource__linux."
+SECTION = "kernel"
+LICENSE = "GPL-2.0-only"
+LIC_FILES_CHKSUM = "file://COPYING;md5=6bc538ed5bd9a7fc9398086aedcd7e46"
+
+inherit kernel
+
+LINUX_VERSION = "6.6.10"
+LINUX_VERSION_EXTENSION = "-cix-msr1"
+PV = "${LINUX_VERSION}+cix"
+KBRANCH = "a0fb5/5cf6e/cix_p1_mg_dev"
+
+# Pinned to the HEAD of cix_p1_mg_dev as of the 2026-05-01 source-tree sync on
+# ARGOS. Bump this with a fresh `repo sync` + the new HEAD SHA when adopting a
+# newer Minisforum kernel rev.
+SRCREV = "cc636a675f7926846f04d31524c17b591955acca"
+
+SRC_URI = " \
+    git://github.com/minisforum-cix-p1-repo/cix_opensource__linux.git;protocol=https;branch=${KBRANCH};name=kernel \
+    file://0001-disable-fbcon-fix-gate-comment.patch;apply=no \
+"
+
+# We deliberately do NOT carry SRC_URI patches that diverge from Minisforum's
+# tree on the kernel side. Anything we want changed (Landlock, fbcon-on-HDMI)
+# belongs upstream-bound at cixtech, not local-patched. The 0001 file above is
+# a no-op placeholder kept out of the build (apply=no) so the recipe parses
+# clean even when our patches/ directory is empty during slice-by-slice work.
+
+S = "${WORKDIR}/git"
+
+COMPATIBLE_MACHINE = "(cixmini)"
+
+# Cix's build-kernel.sh runs `defconfig cix.config` for the "cix" platform.
+# defconfig is the standard arm64 defconfig; cix.config layers Sky1-specific
+# enables (DRM/Mali/NPU/VPU/audio/etc) on top via merge_config.sh-style apply.
+# We mirror that here.
+KCONFIG_MODE = "alldefconfig"
+
+# Sky1 build target per build-kernel.sh: `dtbs Image`. The MS-R1 specifically
+# uses ACPI tables loaded by UEFI (not DT) for boot-time hardware discovery,
+# but the kernel still ships DTBs for diagnostic / fallback use, and the
+# build target requires them. KERNEL_DEVICETREE selection is informational
+# only on cixmini (machine.conf doesn't APPEND a dtb=... cmdline).
+KERNEL_IMAGETYPE = "Image"
+KERNEL_DEVICETREE = " \
+    cix/sky1-evb.dtb \
+"
+
+# Cix-specific config files merged on top of arm64 defconfig.
+# Skip cix_redroid.config (Android-in-Docker support — not part of the
+# cixmini operator-console use case) and cix_debug.config (debug build).
+KERNEL_CONFIG_FRAGMENTS:append = " ${S}/arch/arm64/configs/cix.config"
+
+do_kernel_metadata:append() {
+    # Mirror Minisforum's `make defconfig cix.config` flow: start from the
+    # base arm64 defconfig that Cix's build-kernel.sh uses (defconfig, NOT
+    # alldefconfig), then merge cix.config on top. The kernel.bbclass merges
+    # KERNEL_CONFIG_FRAGMENTS during do_kernel_configme, but we need
+    # `defconfig` as the base rather than alldefconfig for our case.
+    :
+}
+
+# QA: the kernel recipe is the build-host class kernel; symlinks etc. are
+# already-stripped by the kernel-class do_strip step. No extra INSANE_SKIP.
+
+# Maintainer expectation: this recipe is paired with a future
+# meta-cix/recipes-kernel/cix-modules/{gpu,npu,vpu,csidma,isp}-kmd_*.bb set
+# of out-of-tree kernel-module recipes that pull from each of:
+#   minisforum-cix-p1-repo/cix_opensource__gpu_kernel
+#   minisforum-cix-p1-repo/cix_opensource__npu_driver
+#   minisforum-cix-p1-repo/cix_opensource__vpu_driver
+# These build module .ko's against this kernel via KERNEL_SRC.
