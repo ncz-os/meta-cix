@@ -41,15 +41,24 @@ RDEPENDS:${PN} += "ldconfig"
 
 pkg_postinst:${PN}() {
     # When $D is set we are running at rootfs-construction time; ldconfig -r
-    # rebuilds the TARGET rootfs's ld.so.cache. Do NOT fall back to bare
-    # ldconfig on failure — that would mutate the BUILD HOST's cache or
-    # mask a target-rootfs failure. Fail loud on rootfs-time errors.
-    # When $D is empty we run on first boot against the live target.
+    # rebuilds the TARGET rootfs's ld.so.cache. ldconfig is mandatory in this
+    # branch — RDEPENDS lists it, image construction must include it. If
+    # missing, fail loud rather than silently succeed and ship an image
+    # whose linker can't find /opt/cixgpu-* libraries.
+    # No host-fallback (would mutate build-host state).
+    # When $D is empty we run on first boot against the live target;
+    # ldconfig should always be present at runtime since RDEPENDS pulled it.
     if [ -n "$D" ]; then
-        if command -v ldconfig >/dev/null 2>&1; then
-            ldconfig -r "$D"
+        if ! command -v ldconfig >/dev/null 2>&1; then
+            echo "${PN}: ldconfig missing from rootfs at \$D=$D — image will not resolve /opt/cixgpu-* libs" >&2
+            exit 1
         fi
+        ldconfig -r "$D"
     else
-        command -v ldconfig >/dev/null 2>&1 && ldconfig
+        if ! command -v ldconfig >/dev/null 2>&1; then
+            echo "${PN}: ldconfig missing on target — first-boot linker cache rebuild skipped" >&2
+            exit 1
+        fi
+        ldconfig
     fi
 }
