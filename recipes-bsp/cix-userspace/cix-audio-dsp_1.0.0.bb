@@ -8,11 +8,10 @@
 # Cix GStreamer plugins (cix-gstreamer / libgstcixdspif).
 #
 # Note: meta-cix's existing cix-sky1-firmware_2025.4.bb recipe also
-# ships dsp_fw.bin (downloaded as a single file in that recipe). Keep
-# both recipes coexisting for now: cix-sky1-firmware is the "minimum
-# viable" headless scaffold from the pre-rebake era, cix-audio-dsp is
-# the full Cix-Debian-equivalent package. Deduplicate in a follow-up
-# slice once the image recipe stabilizes around one of them.
+# ships dsp_fw.bin (downloaded as a single file in that recipe). This
+# recipe is now the canonical source for DSP firmware plus audio codec
+# libs; cix-sky1-firmware_2025.4.bb is legacy and should be removed in
+# a follow-up cleanup slice once images stabilize around cix-audio-dsp.
 
 require cix-userspace.inc
 
@@ -28,3 +27,7 @@ FILES:${PN} += " \
     ${nonarch_base_libdir}/firmware \
     ${datadir}/cix \
 "
+
+RPROVIDES:${PN} += "cix-sky1-firmware"
+RREPLACES:${PN} += "cix-sky1-firmware"
+RCONFLICTS:${PN} += "cix-sky1-firmware"

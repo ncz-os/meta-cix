@@ -23,11 +23,24 @@ CIX_USERSPACE_COMPONENT = "cix-gpu-umd"
 # than the standard /usr/lib/aarch64-linux-gnu/ layout, matching the
 # Cix Debian image's ld.so.conf.d/00-cixgpu-pro.conf + 01-cixgpu-compat.conf
 # search paths. Operators picking up Mali-accelerated apps need those
-# ld.so config drop-ins (shipped via cix-env, see meta-cix's image recipe).
+# ld.so config drop-ins, so ship them here with the binaries.
+do_install:append() {
+    install -d ${D}${sysconfdir}/ld.so.conf.d
+    echo "/opt/cixgpu-pro/lib/aarch64-linux-gnu" > ${D}${sysconfdir}/ld.so.conf.d/00-cixgpu-pro.conf
+    echo "/opt/cixgpu-compat/lib/aarch64-linux-gnu" > ${D}${sysconfdir}/ld.so.conf.d/01-cixgpu-compat.conf
+}
+
 FILES:${PN} += " \
     /opt/cixgpu-pro \
     /opt/cixgpu-compat \
     /lib/udev/rules.d \
+    ${sysconfdir}/ld.so.conf.d/* \
 "
 
-RDEPENDS:${PN} = ""
+RDEPENDS:${PN} += "ldconfig"
+
+pkg_postinst:${PN}() {
+    if [ -z "$D" ] && command -v ldconfig >/dev/null 2>&1; then
+        ldconfig
+    fi
+}

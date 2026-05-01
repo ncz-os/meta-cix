@@ -11,6 +11,7 @@
 # AI-acceleration stack on cixmini.
 
 require cix-userspace.inc
+inherit python3-dir
 
 SUMMARY = "Cix Sky1 NPU NoE user-mode driver"
 DESCRIPTION = "Closed-source NPU User-Mode Driver for the Cix Sky1 NoE (Neural Optimization Engine) — 45 TOPS NPU acceleration. Source from minisforum-cix-p1-repo/cix_proprietary__cix_proprietary cix_proprietary-debs/cix-noe-umd subtree."
@@ -23,14 +24,33 @@ LIC_FILES_CHKSUM = "file://../copyright/cix-gpu-umd/copyright;md5=401bdaa6e0af0a
 
 CIX_USERSPACE_COMPONENT = "cix-noe-umd"
 
-# Python bindings ship under /usr/lib/python3/dist-packages/. Yocto's
-# python3 packaging convention places these under PN-python3 or via the
-# python3-* split; we keep them in ${PN} since they're tightly coupled
-# to libnoe.so and not separately consumable.
+do_install:append() {
+    install -d ${D}${PYTHON_SITEPACKAGES_DIR}
+    for binding in ${D}${libdir}/python3/dist-packages/libnoe.cpython-3*-aarch64-linux-gnu.so; do
+        [ -e "$binding" ] || continue
+        mv "$binding" ${D}${PYTHON_SITEPACKAGES_DIR}/
+    done
+    rmdir ${D}${libdir}/python3/dist-packages 2>/dev/null || true
+    rmdir ${D}${libdir}/python3 2>/dev/null || true
+
+    install -d ${D}${libdir}/pkgconfig
+    if [ -f ${D}${libdir}/aarch64-linux-gnu/pkgconfig/cix-noe-umd.pc ]; then
+        mv ${D}${libdir}/aarch64-linux-gnu/pkgconfig/cix-noe-umd.pc ${D}${libdir}/pkgconfig/
+    fi
+    rmdir ${D}${libdir}/aarch64-linux-gnu/pkgconfig 2>/dev/null || true
+    rmdir ${D}${libdir}/aarch64-linux-gnu 2>/dev/null || true
+}
+
+# Python bindings are relocated from Debian's /usr/lib/python3/dist-packages/
+# into Yocto's Python site-packages path. Both 3.11 and 3.12 upstream bindings
+# are preserved; only the matching CPython ABI will load. Keep them in ${PN}
+# since they're tightly coupled to libnoe.so; split ${PN}-python in a later
+# packaging cleanup if image composition needs it.
 FILES:${PN} += " \
-    ${libdir}/python3/dist-packages \
-    ${libdir}/aarch64-linux-gnu/pkgconfig \
+    ${PYTHON_SITEPACKAGES_DIR} \
+    ${libdir}/pkgconfig \
 "
+FILES:${PN}-dev:remove = "${libdir}/pkgconfig ${libdir}/pkgconfig/*"
 
 # libnoe.so consumers will need python3 at runtime if they import the
 # Python bindings. Hard RDEPENDS would force python3 into all images
