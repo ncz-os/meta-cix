@@ -27,7 +27,13 @@ LIC_FILES_CHKSUM = "file://COPYING;md5=6bc538ed5bd9a7fc9398086aedcd7e46"
 inherit kernel
 
 LINUX_VERSION = "6.6.10"
-LINUX_VERSION_EXTENSION = "-cix-msr1"
+# Match the shipping kernel uname -r suffix so /lib/modules/${KERNEL_VERSION}
+# aligns with Minisforum's module ABI and our paired out-of-tree module
+# recipes (cix-gpu-kmd / cix-npu-kmd / cix-vpu-kmd) install to the same
+# kernel-version path the device's running kernel expects. KERNEL_LOCALVERSION
+# is the plain-kernel.bbclass-supported variable on Scarthgap; the older
+# LINUX_VERSION_EXTENSION belongs to kernel-yocto.bbclass.
+KERNEL_LOCALVERSION = "-cix-build-generic"
 PV = "${LINUX_VERSION}+cix"
 KBRANCH = "a0fb5/5cf6e/cix_p1_mg_dev"
 
@@ -38,24 +44,15 @@ SRCREV = "cc636a675f7926846f04d31524c17b591955acca"
 
 SRC_URI = " \
     git://github.com/minisforum-cix-p1-repo/cix_opensource__linux.git;protocol=https;branch=${KBRANCH};name=kernel \
-    file://0001-disable-fbcon-fix-gate-comment.patch;apply=no \
 "
 
 # We deliberately do NOT carry SRC_URI patches that diverge from Minisforum's
 # tree on the kernel side. Anything we want changed (Landlock, fbcon-on-HDMI)
-# belongs upstream-bound at cixtech, not local-patched. The 0001 file above is
-# a no-op placeholder kept out of the build (apply=no) so the recipe parses
-# clean even when our patches/ directory is empty during slice-by-slice work.
+# belongs upstream-bound at cixtech, not local-patched.
 
 S = "${WORKDIR}/git"
 
 COMPATIBLE_MACHINE = "(cixmini)"
-
-# Cix's build-kernel.sh runs `defconfig cix.config` for the "cix" platform.
-# defconfig is the standard arm64 defconfig; cix.config layers Sky1-specific
-# enables (DRM/Mali/NPU/VPU/audio/etc) on top via merge_config.sh-style apply.
-# We mirror that here.
-KCONFIG_MODE = "alldefconfig"
 
 # Sky1 build target per build-kernel.sh: `dtbs Image`. The MS-R1 specifically
 # uses ACPI tables loaded by UEFI (not DT) for boot-time hardware discovery,
@@ -67,18 +64,18 @@ KERNEL_DEVICETREE = " \
     cix/sky1-evb.dtb \
 "
 
-# Cix-specific config files merged on top of arm64 defconfig.
-# Skip cix_redroid.config (Android-in-Docker support — not part of the
-# cixmini operator-console use case) and cix_debug.config (debug build).
-KERNEL_CONFIG_FRAGMENTS:append = " ${S}/arch/arm64/configs/cix.config"
-
-do_kernel_metadata:append() {
-    # Mirror Minisforum's `make defconfig cix.config` flow: start from the
-    # base arm64 defconfig that Cix's build-kernel.sh uses (defconfig, NOT
-    # alldefconfig), then merge cix.config on top. The kernel.bbclass merges
-    # KERNEL_CONFIG_FRAGMENTS during do_kernel_configme, but we need
-    # `defconfig` as the base rather than alldefconfig for our case.
-    :
+# Cix's build-kernel.sh runs `make defconfig cix.config` for the "cix" platform.
+# defconfig is the standard arm64 defconfig; cix.config layers Sky1-specific
+# enables (DRM/Mali/NPU/VPU/audio/etc) on top.
+# We mirror that here under plain kernel.bbclass — kernel-yocto's
+# KERNEL_CONFIG_FRAGMENTS / do_kernel_metadata flow is not available with
+# plain `inherit kernel`, so we explicitly run the three make commands in
+# do_configure:prepend before kernel.bbclass's olddefconfig step.
+do_configure:prepend() {
+    cd ${S}
+    oe_runmake ARCH=arm64 O=${B} defconfig
+    cat ${S}/arch/arm64/configs/cix.config >> ${B}/.config
+    oe_runmake ARCH=arm64 O=${B} olddefconfig
 }
 
 # QA: the kernel recipe is the build-host class kernel; symlinks etc. are
