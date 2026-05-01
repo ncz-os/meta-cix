@@ -35,7 +35,9 @@ FILES:${PN} += " \
 # llama-server uses the Cix NoE runtime via dlopen at runtime (not
 # linked at build time per readelf inspection on the synced binary).
 # RDEPENDS on cix-noe-umd ensures /usr/share/cix/lib/libnoe.so is
-# present when llama-server starts. Without it, llama-server falls
-# back to CPU-only mode (loses the NPU acceleration that's the
-# whole point of using cix-llama-cpp instead of upstream llama.cpp).
+# present when llama-server starts. cix-libdrm owns the
+# /etc/ld.so.conf.d/04-cix-shared.conf drop-in for /usr/share/cix/lib
+# — without it the dynamic linker can't find libnoe.so even though
+# the file is in the rootfs.
 RDEPENDS:${PN} += "cix-noe-umd"
+RDEPENDS:${PN} += "cix-libdrm"

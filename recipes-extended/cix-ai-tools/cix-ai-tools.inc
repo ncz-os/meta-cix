@@ -13,7 +13,9 @@
 #
 #     LICENSE_FLAGS_ACCEPTED += "commercial_cix-llama-cpp \
 #                                commercial_cix-mnn \
-#                                commercial_cix-mesa"
+#                                commercial_cix-mesa \
+#                                commercial_cix-libdrm \
+#                                commercial_cix-libglvnd"
 #
 # Mirrors the S4 cix-userspace.inc opt-in pattern.
 #
