@@ -30,11 +30,13 @@ FILES:${PN} += " \
     ${datadir}/cix \
 "
 
-# MNN with the Vulkan and OpenCL backends needs the cix-mesa
-# OpenGL/Vulkan runtime + cix-gpu-umd userspace driver to talk to
-# the Mali GPU. Without those, libMNN_CL.so and libMNN_Vulkan.so
-# load but their backends fail at init and MNN falls back to CPU.
+# MNN with the Vulkan and OpenCL backends needs cix-mesa's
+# OpenGL/Vulkan runtime plus cix-gpu-umd's userspace driver to
+# talk to the Mali GPU. Without those, libMNN_CL.so and
+# libMNN_Vulkan.so load but their backends fail at init and MNN
+# falls back to CPU.
 RDEPENDS:${PN} += "cix-gpu-umd"
+RDEPENDS:${PN} += "cix-mesa"
 
 # Demos under bin/mnn/ are operator-side example apps; not auto-run
 # at boot. Mark as RRECOMMENDS for the framework so an image author
