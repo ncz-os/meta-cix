@@ -32,6 +32,7 @@ SRC_URI = " \
     file://zeroclaw.container \
     file://openclaw.container \
     file://hermes.container \
+    file://hermes-isolated.network \
     file://agent-env.sample \
 "
 
@@ -41,9 +42,10 @@ S = "${WORKDIR}"
 # /etc/nclawzero/agent-env.sample (operators copy and populate).
 do_install() {
     install -d ${D}${sysconfdir}/containers/systemd
-    install -m 0644 ${WORKDIR}/zeroclaw.container ${D}${sysconfdir}/containers/systemd/zeroclaw.container
-    install -m 0644 ${WORKDIR}/openclaw.container ${D}${sysconfdir}/containers/systemd/openclaw.container
-    install -m 0644 ${WORKDIR}/hermes.container   ${D}${sysconfdir}/containers/systemd/hermes.container
+    install -m 0644 ${WORKDIR}/zeroclaw.container        ${D}${sysconfdir}/containers/systemd/zeroclaw.container
+    install -m 0644 ${WORKDIR}/openclaw.container        ${D}${sysconfdir}/containers/systemd/openclaw.container
+    install -m 0644 ${WORKDIR}/hermes.container          ${D}${sysconfdir}/containers/systemd/hermes.container
+    install -m 0644 ${WORKDIR}/hermes-isolated.network   ${D}${sysconfdir}/containers/systemd/hermes-isolated.network
 
     install -d ${D}${sysconfdir}/nclawzero
     install -m 0640 ${WORKDIR}/agent-env.sample ${D}${sysconfdir}/nclawzero/agent-env.sample

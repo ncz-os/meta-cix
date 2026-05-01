@@ -1,18 +1,17 @@
-# NOTE: Hermes dashboard is locked down via two layers:
-#   1. Network=host so the container shares the host's network namespace —
-#      the 127.0.0.1 bind below refers to host loopback, not container loopback.
-#   2. The dashboard process binds to 127.0.0.1 only (not 0.0.0.0), so even
-#      under host networking it's only reachable from on-box.
-# Sibling containers (zeroclaw, openclaw) on the default Podman bridge cannot
-# reach Hermes via container IP since Hermes is not on that bridge.
-#
-# Operators wanting LAN access must add an SSH tunnel or reverse proxy with
-# TLS+auth from a separate process — never bind hermes to 0.0.0.0 here.
+# NOTE: Hermes dashboard runs on a DEDICATED Podman network
+# (hermes-isolated.network) — NOT the default bridge that zeroclaw and
+# openclaw use. This gives clean trust-boundary isolation:
+#   - Host loopback (127.0.0.1) → hermes dashboard:     reachable
+#   - Host non-loopback / LAN   → hermes dashboard:    blocked by PublishPort
+#   - Default-bridge containers → hermes:              blocked (different network)
+#   - Hermes container          → host-loopback svcs:  blocked (own namespace,
+#                                                       not Network=host)
+# Operators wanting LAN access add an SSH tunnel or reverse proxy with
+# TLS+auth on top — never bind hermes Exec to 0.0.0.0 with broad PublishPort.
 #
 # Posture note: bigpi reference deployment runs hermes on the default bridge
 # with PublishPort 8642:8642 (LAN-accessible without TLS). cixmini-on-Yocto
-# is more conservative; LAN access requires an explicit user-mode reverse-
-# proxy slice, not a quadlet default.
+# is more conservative; LAN access requires an explicit reverse-proxy slice.
 
 [Unit]
 Description=hermes agent (NousResearch Hermes Agent OSS)
@@ -26,14 +25,17 @@ Image=docker.io/nousresearch/hermes-agent@sha256:aa60e7483a6fad26eee233d2498d4f2
 # sha256 via `crane digest docker.io/nousresearch/hermes-agent:latest`
 # and update here. AutoUpdate=registry intentionally OMITTED.
 ContainerName=hermes
-# Network=host: container shares host's network namespace. 127.0.0.1
-# below is the host's loopback. PublishPort is NOT used under host
-# networking (would be a no-op + warning).
-Network=host
-# Bind dashboard to host loopback only.
-Exec=dashboard --host 127.0.0.1 --port 8642 --no-open
+# Dedicated isolated Podman network (see hermes-isolated.network).
+Network=hermes-isolated.network
+# Bind dashboard to 0.0.0.0 inside the container — fine because the
+# isolated network is not joined by sibling agent containers, and host-
+# side exposure is restricted by PublishPort below.
+Exec=dashboard --host 0.0.0.0 --port 8642 --no-open
 EnvironmentFile=/etc/nclawzero/agent-env
 Volume=hermes-data:/opt/data:Z
+# Host-side restricted to loopback — only on-box clients (e.g. SSH-
+# tunneled operator session) can reach the dashboard.
+PublishPort=127.0.0.1:8642:8642
 
 [Service]
 TimeoutStartSec=600
