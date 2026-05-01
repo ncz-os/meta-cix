@@ -13,4 +13,13 @@
 NetworkName=hermes-isolated
 Driver=bridge
 DisableDNS=false
+# Internal=false so hermes can reach LLM providers outbound; we don't
+# want full network isolation, only cross-bridge isolation from the
+# default Podman bridge that zeroclaw/openclaw use.
 Internal=false
+# Options=isolate=true tells netavark (Podman 4+ default backend) to
+# install nftables rules that block cross-bridge traffic. Sibling
+# containers on the default bridge cannot route to this bridge's IP
+# space — closes the cross-bridge bypass that PublishPort=127.0.0.1
+# alone doesn't catch.
+Options=isolate=true
