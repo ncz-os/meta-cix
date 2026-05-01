@@ -59,7 +59,10 @@ LIC_FILES_CHKSUM = "file://${WORKDIR}/cixprop/cix_proprietary-debs/copyright/cix
 
 # Pre-built proprietary aarch64 binaries — same QA-skip posture as
 # the S4 cix-userspace.inc.
-INSANE_SKIP:${PN} += "already-stripped ldflags rpaths file-rdeps dev-so"
+# `libdir` skip: cix-* AI tooling ships into /usr/share/cix/lib (Cix's
+# chosen library layout, not Yocto's /usr/lib). Without skipping, every
+# recipe in this set fails do_package_qa with "library in wrong location".
+INSANE_SKIP:${PN} += "already-stripped ldflags rpaths file-rdeps dev-so libdir"
 
 # Disable do_package's split-debug + strip steps. Pre-built closed-
 # source .so files can't be processed by aarch64-nclawzero-linux-

@@ -47,7 +47,10 @@ S = "${WORKDIR}/git/cix_proprietary-debs/${CIX_USERSPACE_COMPONENT}"
 # pre-stripped, may have rpaths from upstream Cix's build, may link
 # against libraries Yocto can't track. INSANE_SKIP these for the
 # proprietary set — same posture meta-arm-bsp uses for libmali.
-INSANE_SKIP:${PN} += "already-stripped ldflags rpaths file-rdeps dev-so"
+# `libdir` skip: cix-* userspace ships into /usr/share/cix/lib (Cix's
+# chosen library layout, not Yocto's /usr/lib). Without skipping, every
+# recipe in this set fails do_package_qa with "library in wrong location".
+INSANE_SKIP:${PN} += "already-stripped ldflags rpaths file-rdeps dev-so libdir"
 
 # Disable do_package's split-debug step. Pre-built proprietary .so
 # files (especially DSP-arm-compiled ones like libcix_dsp_*) and

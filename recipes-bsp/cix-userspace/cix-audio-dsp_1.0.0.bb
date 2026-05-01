@@ -23,6 +23,14 @@ LIC_FILES_CHKSUM = "file://../copyright/cix-gpu-umd/copyright;md5=401bdaa6e0af0a
 
 CIX_USERSPACE_COMPONENT = "cix-audio-dsp"
 
+# DSP firmware (dsp_fw.bin) and codec libs (libcix_dsp_*.so) are Xtensa-
+# compiled — they run on the audio DSP coprocessor, not on the ARM cores.
+# Yocto's `arch` QA check sees them as "Unknown (94)" instead of AArch64
+# and fails do_package_qa. Skip the arch check just for this recipe;
+# the parent cix-userspace.inc handles `libdir` for everything in
+# /usr/share/cix/lib.
+INSANE_SKIP:${PN} += "arch"
+
 FILES:${PN} += " \
     ${nonarch_base_libdir}/firmware \
     ${datadir}/cix \
