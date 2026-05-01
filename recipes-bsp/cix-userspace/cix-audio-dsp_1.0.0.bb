@@ -31,3 +31,26 @@ FILES:${PN} += " \
 RPROVIDES:${PN} += "cix-sky1-firmware"
 RREPLACES:${PN} += "cix-sky1-firmware"
 RCONFLICTS:${PN} += "cix-sky1-firmware"
+
+# Audio codec libs (libdsp_wrap.so, libcix_dsp_*_dec/enc.so) install
+# under /usr/share/cix/lib — the linker-path drop-in for that
+# location lives in cix-libdrm (S5). cix-audio-dsp's own postinst
+# rebuilds the linker cache after its codec libs are in place,
+# without depending on cix-libdrm's postinst running last.
+RDEPENDS:${PN} += "ldconfig"
+
+pkg_postinst:${PN}() {
+    if [ -n "$D" ]; then
+        if ! command -v ldconfig >/dev/null 2>&1; then
+            echo "${PN}: ldconfig missing from rootfs at \$D=$D — audio codec libs under /usr/share/cix/lib will not resolve" >&2
+            exit 1
+        fi
+        ldconfig -r "$D"
+    else
+        if ! command -v ldconfig >/dev/null 2>&1; then
+            echo "${PN}: ldconfig missing on target — first-boot linker cache rebuild skipped" >&2
+            exit 1
+        fi
+        ldconfig
+    fi
+}

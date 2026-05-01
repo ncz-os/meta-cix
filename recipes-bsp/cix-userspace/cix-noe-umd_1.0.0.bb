@@ -52,6 +52,28 @@ FILES:${PN} += " \
 "
 FILES:${PN}-dev:remove = "${libdir}/pkgconfig ${libdir}/pkgconfig/*"
 
+# libnoe.so ships under /usr/share/cix/lib — the linker-path drop-in
+# for that location lives in cix-libdrm (S5). cix-noe-umd's own
+# postinst rebuilds the linker cache after libnoe is in place,
+# without depending on cix-libdrm's postinst running last.
+RDEPENDS:${PN} += "ldconfig"
+
+pkg_postinst:${PN}() {
+    if [ -n "$D" ]; then
+        if ! command -v ldconfig >/dev/null 2>&1; then
+            echo "${PN}: ldconfig missing from rootfs at \$D=$D — libnoe.so under /usr/share/cix/lib will not resolve" >&2
+            exit 1
+        fi
+        ldconfig -r "$D"
+    else
+        if ! command -v ldconfig >/dev/null 2>&1; then
+            echo "${PN}: ldconfig missing on target — first-boot linker cache rebuild skipped" >&2
+            exit 1
+        fi
+        ldconfig
+    fi
+}
+
 # libnoe.so consumers will need python3 at runtime if they import the
 # Python bindings. Hard RDEPENDS would force python3 into all images
 # that include the C library; instead, RRECOMMENDS it so an image-author

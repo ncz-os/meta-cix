@@ -40,6 +40,26 @@ RDEPENDS:${PN} += "cix-mesa"
 # cix-libdrm carries the /usr/share/cix/lib ld.so.conf.d drop-in that
 # our libMNN*.so files depend on for runtime resolution.
 RDEPENDS:${PN} += "cix-libdrm"
+RDEPENDS:${PN} += "ldconfig"
+
+# libMNN*.so install under /usr/share/cix/lib. Run ldconfig in postinst
+# after our libs are in place so the linker cache is current —
+# don't rely on cix-libdrm's postinst running last.
+pkg_postinst:${PN}() {
+    if [ -n "$D" ]; then
+        if ! command -v ldconfig >/dev/null 2>&1; then
+            echo "${PN}: ldconfig missing from rootfs at \$D=$D — libMNN*.so under /usr/share/cix/lib will not resolve" >&2
+            exit 1
+        fi
+        ldconfig -r "$D"
+    else
+        if ! command -v ldconfig >/dev/null 2>&1; then
+            echo "${PN}: ldconfig missing on target — first-boot linker cache rebuild skipped" >&2
+            exit 1
+        fi
+        ldconfig
+    fi
+}
 
 # Demos under bin/mnn/ are operator-side example apps; not auto-run
 # at boot. Mark as RRECOMMENDS for the framework so an image author
