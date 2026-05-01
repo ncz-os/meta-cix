@@ -40,7 +40,11 @@ FILES:${PN} += " \
 RDEPENDS:${PN} += "ldconfig"
 
 pkg_postinst:${PN}() {
-    if [ -z "$D" ] && command -v ldconfig >/dev/null 2>&1; then
-        ldconfig
+    if [ -n "$D" ]; then
+        if command -v ldconfig >/dev/null 2>&1; then
+            ldconfig -r "$D" 2>/dev/null || ldconfig
+        fi
+    else
+        command -v ldconfig >/dev/null 2>&1 && ldconfig
     fi
 }

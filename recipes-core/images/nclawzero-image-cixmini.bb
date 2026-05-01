@@ -33,7 +33,7 @@ IMAGE_INSTALL = " \
     packagegroup-core-boot \
     packagegroup-core-full-cmdline \
     packagegroup-core-buildessential \
-    cix-sky1-firmware \
+    cix-audio-dsp \
     linux-firmware \
     kernel-modules \
     \
