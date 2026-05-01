@@ -10,7 +10,12 @@
 # add an SSH tunnel or reverse proxy with TLS+auth on top.
 
 [Network]
-NetworkName=hermes-isolated
+# Note: NetworkName intentionally bumped to *-v2 from the never-shipped
+# hermes-isolated to make this layer's first deploy a clean create
+# (avoiding the Podman in-place-update gap where Options changes don't
+# update an existing network — see review-mon70cqn-cxaisv). Future
+# Options changes likewise rotate the suffix.
+NetworkName=hermes-isolated-v2
 Driver=bridge
 DisableDNS=false
 # Internal=false so hermes can reach LLM providers outbound; we don't

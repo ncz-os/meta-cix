@@ -27,6 +27,8 @@ Image=docker.io/nousresearch/hermes-agent@sha256:aa60e7483a6fad26eee233d2498d4f2
 ContainerName=hermes
 # Dedicated isolated Podman network (see hermes-isolated.network).
 Network=hermes-isolated.network
+# (resolves to NetworkName=hermes-isolated-v2 — see the .network file
+# for the version-bump rationale)
 # Bind dashboard to 0.0.0.0 inside the container — fine because the
 # isolated network is not joined by sibling agent containers, and host-
 # side exposure is restricted by PublishPort below.
