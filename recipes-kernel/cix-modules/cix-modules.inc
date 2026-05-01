@@ -13,7 +13,7 @@
 
 LICENSE = "GPL-2.0-only"
 
-inherit module-base
+inherit module
 
 CIX_DRIVER_MAKEFILE ?= ""
 
