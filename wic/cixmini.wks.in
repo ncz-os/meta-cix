@@ -16,12 +16,14 @@
 # runtime via /var/swapfile if a specific use case requires it; baking a
 # swap partition into the wic forces every operator to inherit it.
 #
-# Kernel command-line additions are in conf/machine/cixmini.conf APPEND
-# (console=tty0 console=ttyAMA0,115200 earlycon clk_ignore_unused) — wic
-# only sets the rootfs hint here.
+# Kernel command-line: the bootloader --append BELOW includes ${APPEND}
+# from conf/machine/cixmini.conf, plus the rootfs hints. machine.conf
+# APPEND is "console=tty0 console=ttyAMA0,115200 earlycon clk_ignore_unused".
+# clk_ignore_unused is REQUIRED on Sky1 until upstream clock handling is
+# complete; without it the kernel may panic during clk subsystem init.
 
 part /boot --source bootimg-efi --sourceparams="loader=${EFI_PROVIDER},initrd=${INITRAMFS_IMAGE}-${MACHINE}.${INITRAMFS_FSTYPES}" --label boot --active --align 1024 --use-uuid --fixed-size 512
 
 part / --source rootfs --fstype=ext4 --label root --align 1024 --use-uuid --extra-space 1024
 
-bootloader --ptable gpt --timeout=3 --append="rootwait rootfstype=ext4"
+bootloader --ptable gpt --timeout=3 --append="${APPEND} rootwait rootfstype=ext4"
