@@ -17,9 +17,12 @@ DisableDNS=false
 # want full network isolation, only cross-bridge isolation from the
 # default Podman bridge that zeroclaw/openclaw use.
 Internal=false
-# Options=isolate=true tells netavark (Podman 4+ default backend) to
-# install nftables rules that block cross-bridge traffic. Sibling
-# containers on the default bridge cannot route to this bridge's IP
-# space — closes the cross-bridge bypass that PublishPort=127.0.0.1
-# alone doesn't catch.
-Options=isolate=true
+# Options=isolate=strict tells netavark (Podman 4+ default backend) to
+# unilaterally block cross-bridge traffic. Critical: isolate=true
+# only blocks pairs of isolated networks (both sides need the flag);
+# isolate=strict blocks regardless of other-side configuration. The
+# default Podman bridge that zeroclaw + openclaw share does NOT have
+# isolate set, so we MUST use strict to enforce hermes isolation
+# unilaterally. netavark installs the nftables rules that close the
+# cross-bridge bypass PublishPort=127.0.0.1 alone doesn't catch.
+Options=isolate=strict
