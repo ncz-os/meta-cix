@@ -49,6 +49,14 @@ S = "${WORKDIR}/git/cix_proprietary-debs/${CIX_USERSPACE_COMPONENT}"
 # proprietary set — same posture meta-arm-bsp uses for libmali.
 INSANE_SKIP:${PN} += "already-stripped ldflags rpaths file-rdeps dev-so"
 
+# Disable do_package's split-debug step. Pre-built proprietary .so
+# files (especially DSP-arm-compiled ones like libcix_dsp_*) and
+# firmware blobs (dsp_fw.bin) can't be processed by aarch64-nclawzero-
+# linux-objcopy --only-keep-debug — fails the package step. We don't
+# need debug symbols extracted for closed-source binaries anyway.
+INHIBIT_PACKAGE_DEBUG_SPLIT = "1"
+INHIBIT_PACKAGE_STRIP = "1"
+
 # Proprietary blobs are aarch64-only and built specifically for the
 # Cix Sky1 / CP8180 SoC. Restrict to the cixmini machine.
 COMPATIBLE_MACHINE = "(cixmini)"

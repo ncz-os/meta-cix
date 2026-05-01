@@ -61,6 +61,13 @@ LIC_FILES_CHKSUM = "file://${WORKDIR}/cixprop/cix_proprietary-debs/copyright/cix
 # the S4 cix-userspace.inc.
 INSANE_SKIP:${PN} += "already-stripped ldflags rpaths file-rdeps dev-so"
 
+# Disable do_package's split-debug + strip steps. Pre-built closed-
+# source .so files can't be processed by aarch64-nclawzero-linux-
+# objcopy / strip — fails the package step. Same fix as
+# cix-userspace.inc S4.
+INHIBIT_PACKAGE_DEBUG_SPLIT = "1"
+INHIBIT_PACKAGE_STRIP = "1"
+
 COMPATIBLE_MACHINE = "(cixmini)"
 
 # Don't ship the DEBIAN/ control metadata (Debian-pkg internal) or
