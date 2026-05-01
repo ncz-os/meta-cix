@@ -53,10 +53,11 @@ FILES:${PN} += " \
 FILES:${PN}-dev:remove = "${libdir}/pkgconfig ${libdir}/pkgconfig/*"
 
 # libnoe.so ships under /usr/share/cix/lib — the linker-path drop-in
-# for that location lives in cix-libdrm (S5). cix-noe-umd's own
-# postinst rebuilds the linker cache after libnoe is in place,
-# without depending on cix-libdrm's postinst running last.
-RDEPENDS:${PN} += "ldconfig"
+# for that location lives in cix-libdrm (S5). RDEPENDS on cix-libdrm
+# guarantees the drop-in is present in the rootfs before our postinst
+# runs ldconfig (otherwise the cache rebuild scans without seeing
+# /usr/share/cix/lib at all).
+RDEPENDS:${PN} += "ldconfig cix-libdrm"
 
 pkg_postinst:${PN}() {
     if [ -n "$D" ]; then
