@@ -40,9 +40,14 @@ FILES:${PN} += " \
 RDEPENDS:${PN} += "ldconfig"
 
 pkg_postinst:${PN}() {
+    # When $D is set we are running at rootfs-construction time; ldconfig -r
+    # rebuilds the TARGET rootfs's ld.so.cache. Do NOT fall back to bare
+    # ldconfig on failure — that would mutate the BUILD HOST's cache or
+    # mask a target-rootfs failure. Fail loud on rootfs-time errors.
+    # When $D is empty we run on first boot against the live target.
     if [ -n "$D" ]; then
         if command -v ldconfig >/dev/null 2>&1; then
-            ldconfig -r "$D" 2>/dev/null || ldconfig
+            ldconfig -r "$D"
         fi
     else
         command -v ldconfig >/dev/null 2>&1 && ldconfig
