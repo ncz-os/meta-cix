@@ -45,6 +45,7 @@ SRCREV = "cc636a675f7926846f04d31524c17b591955acca"
 SRC_URI = " \
     git://github.com/minisforum-cix-p1-repo/cix_opensource__linux.git;protocol=https;branch=${KBRANCH};name=kernel \
     file://usb-rootfs.cfg \
+    file://console-fb.cfg \
 "
 
 # We deliberately do NOT carry SRC_URI patches that diverge from Minisforum's
@@ -80,6 +81,7 @@ do_configure:prepend() {
     # kernel image so a USB-attached rootfs boots without initramfs
     # modules. See files/usb-rootfs.cfg for the full rationale.
     cat ${WORKDIR}/usb-rootfs.cfg >> ${B}/.config
+    cat ${WORKDIR}/console-fb.cfg >> ${B}/.config
     oe_runmake ARCH=arm64 O=${B} olddefconfig
 }
 
