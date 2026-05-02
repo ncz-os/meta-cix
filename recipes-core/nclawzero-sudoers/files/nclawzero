@@ -1,0 +1,7 @@
+# /etc/sudoers.d/nclawzero -- ncz user gets passwordless sudo on cixmini.
+#
+# Yocto's stock /etc/sudoers doesn't grant the `sudo` group sudo rights, so
+# the useradd -G sudo in the image recipe doesn't actually do anything.
+# This drop-in is the missing piece. NOPASSWD because cixmini is a fleet
+# edge device and operators expect headless sudo via SSH.
+ncz ALL=(ALL) NOPASSWD: ALL

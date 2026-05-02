@@ -40,6 +40,7 @@ IMAGE_INSTALL = " \
     python3 python3-pip python3-modules \
     git \
     sudo \
+    nclawzero-sudoers \
     nano \
     htop \
     tmux \
