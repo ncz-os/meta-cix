@@ -103,6 +103,7 @@ SRC_URI = " \
     file://next-patches/2002-drm-linlon-dp-remove-existing-drivers-that-may-own-t.patch \
     file://next-patches/2004-acpi-sta-quirk-for-7.0.9.patch \
     file://next-patches/2005-armchina-npu-fix-pm-runtime-put-void-7.0.9.patch \
+    file://next-patches/2006-armchina-npu-sky1-null-pd-core-guard.patch \
 "
 
 S = "${WORKDIR}/git"
