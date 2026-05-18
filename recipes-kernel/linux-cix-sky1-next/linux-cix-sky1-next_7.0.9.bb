@@ -68,6 +68,7 @@ SRC_URI = " \
     file://next-patches/0006-firmware-arm_scmi-Add-ACPI-boot-support-for-CIX-Sky1.patch \
     file://next-patches/0007-pinctrl-cix-Update-Sky1-pin-controller.patch \
     file://next-patches/0008-PCI-cadence-sky1-Add-ACPI-support-and-fixes.patch \
+    file://next-patches/0009-fix-pcie-cadence-missing-enum-for-7.0.9.patch \
     file://next-patches/0009-phy-cix-Add-Sky1-USB-and-PCIe-PHY-drivers.patch \
     file://next-patches/0010-usb-Add-CIX-Sky1-USB-support.patch \
     file://next-patches/0011-drm-panthor-Add-Sky1-GPU-support-and-ACPI.patch \
@@ -100,6 +101,7 @@ SRC_URI = " \
     file://next-patches/0140-arm64-cix-fix-kconfig-deps-and-reachability.patch \
     file://next-patches/2001-gpio-gpio-cadence-fix-crashing-pcie-on-cix-p1-acpi-s.patch \
     file://next-patches/2002-drm-linlon-dp-remove-existing-drivers-that-may-own-t.patch \
+    file://next-patches/2004-acpi-sta-quirk-for-7.0.9.patch \
 "
 
 S = "${WORKDIR}/git"
