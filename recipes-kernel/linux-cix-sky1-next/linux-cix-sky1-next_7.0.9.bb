@@ -46,6 +46,7 @@ inherit kernel
 
 LINUX_VERSION = "7.0.9"
 KERNEL_LOCALVERSION = "-cix-sky1-next"
+PATCHTOOL = "git"
 PV = "${LINUX_VERSION}+sky1-next"
 KBRANCH = "linux-7.0.y"
 
@@ -99,8 +100,6 @@ SRC_URI = " \
     file://next-patches/0140-arm64-cix-fix-kconfig-deps-and-reachability.patch \
     file://next-patches/2001-gpio-gpio-cadence-fix-crashing-pcie-on-cix-p1-acpi-s.patch \
     file://next-patches/2002-drm-linlon-dp-remove-existing-drivers-that-may-own-t.patch \
-    file://next-patches/2003-firmware-arm_scmi-add-backward-complibility-to-old-f.patch \
-    file://next-patches/2004-acpi-add-backward-complibility-to-old-firmware-with-.patch \
 "
 
 S = "${WORKDIR}/git"
