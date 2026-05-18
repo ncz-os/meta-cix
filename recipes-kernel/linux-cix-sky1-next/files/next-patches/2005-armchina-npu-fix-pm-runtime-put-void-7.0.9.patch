@@ -1,0 +1,48 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jason Perlow <jperlow@gmail.com>
+Date: Mon, 18 May 2026 04:00:00 +0000
+Subject: [PATCH] misc: armchina-npu: fix pm_runtime_put void return for 7.0.9
+
+pm_runtime_put() changed from returning int to void in kernel 7.0.x.
+sky1.c assigns its return value in two places, causing:
+  error: void value not ignored as it ought to be
+
+Fix: call pm_runtime_put() without capturing return value. The function
+queues an idle check asynchronously; errors surface via the PM core.
+
+Fixes: patch 0016 (armchina-npu) compilation on 7.0.9
+---
+ drivers/misc/armchina-npu/sky1/sky1.c | 14 ++++-------
+ 1 file changed, 4 insertions(+), 10 deletions(-)
+
+diff --git a/drivers/misc/armchina-npu/sky1/sky1.c b/drivers/misc/armchina-npu/sky1/sky1.c
+--- a/drivers/misc/armchina-npu/sky1/sky1.c
++++ b/drivers/misc/armchina-npu/sky1/sky1.c
+@@ -280,13 +280,9 @@ int sky1_npu_pm_runtime_get(struct device *dev)
+ int sky1_npu_pm_runtime_put(struct device *dev)
+ {
+ #ifdef CONFIG_PM
+-	int ret = 0;
+-
+-	ret = pm_runtime_put(dev);
+-	if (ret < 0)
+-		dev_err(dev, "PM runtime put failed! ret=%d", ret);
+-
+-	return ret;
++	pm_runtime_put(dev);
++	return 0;
+ #else /* !CONFIG_PM  */
+ 	return 0;
+ #endif /* CONFIG_PM */
+@@ -487,12 +483,9 @@ static int sky1_npu_runtime_suspend(struct device *dev)
+ 
+ 	if (has_acpi_companion(dev)) {
+ 		for (int i = 0; i < CIX_NPU_PD_NUM; i++) {
+-			ret = pm_runtime_put(cix_aipu_priv->pd_core[i]);
+-			if (ret < 0) {
+-				dev_err(cix_aipu_priv->pd_core[i], "NPU core PM runtime put failed! ret=%d", ret);
+-				return ret;
+-			}
++			pm_runtime_put(cix_aipu_priv->pd_core[i]);
+ 		}
+ 	}

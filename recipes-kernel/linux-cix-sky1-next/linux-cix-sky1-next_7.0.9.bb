@@ -102,6 +102,7 @@ SRC_URI = " \
     file://next-patches/2001-gpio-gpio-cadence-fix-crashing-pcie-on-cix-p1-acpi-s.patch \
     file://next-patches/2002-drm-linlon-dp-remove-existing-drivers-that-may-own-t.patch \
     file://next-patches/2004-acpi-sta-quirk-for-7.0.9.patch \
+    file://next-patches/2005-armchina-npu-fix-pm-runtime-put-void-7.0.9.patch \
 "
 
 S = "${WORKDIR}/git"
