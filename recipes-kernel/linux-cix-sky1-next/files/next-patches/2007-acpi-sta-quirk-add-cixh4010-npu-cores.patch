@@ -1,0 +1,85 @@
+From a12dc2b131f9d583137c88b7a8e30e06c88ecf37 Mon Sep 17 00:00:00 2001
+From: Jason Perlow <jperlow@gmail.com>
+Date: Mon, 18 May 2026 03:21:46 -0400
+Subject: [PATCH] acpi: sta_quirk: add CIXH4010 NPU core _STA=0 override for
+ CIX BIOS v1.0
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+CIX BIOS v1.0 leaves NPU core devices (CIXH4010, UIDs 0-2) at _STA 0
+under NPU0 (CIXH4000). The ACPI bus scan skips these children entirely,
+so bus_find_device_by_fwnode() in sky1_npu_probe() returns NULL for all
+three cores — confirmed via /sys/bus/acpi/devices/ (only CIXH4000:00
+present, no CIXH4010 entries).
+
+Extend the existing CIX firmware quirk in sta_quirk.c:
+- Add cix_npu_core_sta_ids[] table matching CIXH4010
+- Override _STA to ACPI_STA_DEFAULT for ALL UIDs (0,1,2) — unlike
+  the existing SCMI quirk which restricts to uid=0
+
+With this fix, CIXH4010:00/01/02 appear in the ACPI bus and
+bus_find_device_by_fwnode() can locate the core devices, allowing
+sky1_npu_probe() to populate pd_core[] and complete device init.
+---
+ drivers/acpi/sta_quirk.c | 28 +++++++++++++++++++++-------
+ 1 file changed, 21 insertions(+), 7 deletions(-)
+
+diff --git a/drivers/acpi/sta_quirk.c b/drivers/acpi/sta_quirk.c
+index 79774e0f731b..cd4c93ab767d 100644
+--- a/drivers/acpi/sta_quirk.c
++++ b/drivers/acpi/sta_quirk.c
+@@ -2,8 +2,13 @@
+ /*
+  * ACPI _STA overrides for firmware bugs (non-arch-specific).
+  *
+- * CIX: unhide SCMI protocol child devices (CIXHA008/CIXHA009) that old
+- * firmware leaves at _STA 0 under CIXHA006.
++ * CIX BIOS v1.0 leaves certain devices at _STA 0 so the ACPI bus scan
++ * skips them entirely.  Without these overrides:
++ *   - SCMI protocol devices (CIXHA008/CIXHA009 under CIXHA006) are invisible
++ *     to the SCMI stack (uid 0 only affected).
++ *   - NPU core devices (CIXH4010 under CIXH4000) are invisible to the
++ *     armchina_npu driver, causing bus_find_device_by_fwnode() to return
++ *     NULL for all three cores (uid 0-2).
+  */
+ 
+ #include <linux/acpi.h>
+@@ -11,20 +16,29 @@
+ 
+ #include "internal.h"
+ 
+-/*
+- * Old CIX firmware leaves DVFS/CLKS SCMI protocol devices (children of
+- * CIXHA006) at _STA 0 so Linux skips them in acpi_bus_attach() and
+- * acpi_get_next_present_subnode(). Treat them as fully present/enabled.
+- */
++/* SCMI protocol children of CIXHA006 — uid 0 only */
+ static const struct acpi_device_id cix_scmi_proto_sta_ids[] = {
+ 	{ "CIXHA008", 0 },
+ 	{ "CIXHA009", 0 },
+ 	{ }
+ };
+ 
++/* NPU core devices (CRE0/CRE1/CRE2) children of CIXH4000 — all uids */
++static const struct acpi_device_id cix_npu_core_sta_ids[] = {
++	{ "CIXH4010", 0 },
++	{ }
++};
++
+ bool acpi_sta_override_firmware_quirk(struct acpi_device *adev,
+ 				      unsigned long long *status)
+ {
++	/* NPU core devices: override _STA for all UIDs (0, 1, 2) */
++	if (!acpi_match_device_ids(adev, cix_npu_core_sta_ids)) {
++		*status = ACPI_STA_DEFAULT;
++		return true;
++	}
++
++	/* SCMI protocol devices: override _STA for uid 0 only */
+ 	if (acpi_match_device_ids(adev, cix_scmi_proto_sta_ids))
+ 		return false;
+ 
+-- 
+2.51.0
+
