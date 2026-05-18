@@ -1,0 +1,50 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: NCZ Build System <build@nclawzero.io>
+Date: Sat, 17 May 2026 00:00:00 +0000
+Subject: [PATCH] pcie-cadence: restore missing symbols dropped by git-am for 7.0.9
+
+Patch 0008 applied by git-am partially dropped pcie-cadence.h additions
+during the 7.0.3->7.0.9 context shift. Specifically missing:
+- CDNS_PCIE_IP_REG_BANK_BASE define (0x1000)
+- enum cdns_pcie_reg_bank
+- cdns_reg_bank_to_off() static inline function
+
+These are referenced by cdns_pcie_hpa_writel/readl which pci-sky1.c
+uses (line 122: cdns_pcie_hpa_readl call).
+
+---
+diff --git a/drivers/pci/controller/cadence/pcie-cadence.h b/drivers/pci/controller/cadence/pcie-cadence.h
+index 38107b5029e4..53f3f9a5b6f3 100644
+--- a/drivers/pci/controller/cadence/pcie-cadence.h
++++ b/drivers/pci/controller/cadence/pcie-cadence.h
+@@ -386,6 +386,30 @@ static inline u32 cdns_pcie_readl(struct cdns_pcie *pcie, u32 reg)
+ 	return readl(pcie->reg_base + reg);
+ }
+ 
++/* Sky1 IP register bank base — added by NCZ fixup for 7.0.9 */
++#ifndef CDNS_PCIE_IP_REG_BANK_BASE
++#define CDNS_PCIE_IP_REG_BANK_BASE		0x1000
++#endif
++
++enum cdns_pcie_reg_bank {
++	REG_BANK_LM_REG,
++	REG_BANK_IP_REG,
++	REG_BANK_AXI_SLAVE,
++};
++
++static inline u32 cdns_reg_bank_to_off(struct cdns_pcie *pcie, enum cdns_pcie_reg_bank bank)
++{
++	switch (bank) {
++	case REG_BANK_LM_REG:
++		return CDNS_PCIE_LM_BASE;
++	case REG_BANK_IP_REG:
++		return CDNS_PCIE_IP_REG_BANK_BASE;
++	case REG_BANK_AXI_SLAVE:
++		return CDNS_PCIE_AXI_SLAVE_OFFSET;
++	}
++	return 0;
++}
++
+ static inline void cdns_pcie_hpa_writel(struct cdns_pcie *pcie,
+ 					enum cdns_pcie_reg_bank bank,
+ 					u32 reg,
