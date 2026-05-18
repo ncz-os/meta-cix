@@ -1,19 +1,19 @@
-From 0e161868eae353e4bf6ce5993575444edca2831a Mon Sep 17 00:00:00 2001
+From 37bd5349da69f85e0d20d734c739a1b9d8d9e32b Mon Sep 17 00:00:00 2001
 From: Jason Perlow <jperlow@gmail.com>
-Date: Mon, 18 May 2026 03:41:02 -0400
-Subject: [PATCH] acpi: sta_quirk: add NPU core _STA override matching by
- parent CIXH4000
+Date: Mon, 18 May 2026 03:45:28 -0400
+Subject: [PATCH] acpi: sta_quirk: add NPU CRE child override via
+ acpi_dev_parent()
 
-CIX BIOS v1.0 leaves NPU cores (CRE0-2, CIXH4010) at _STA 0. These
-children are _ADR-matched so _HID is never evaluated, making child HID
-matching fail. Match by parent CIXH4000 HID instead.
-Also update header comment to document both affected device classes.
+CIX BIOS v1.0 leaves NPU cores (CRE0-2, children of CIXH4000/NPU0)
+at _STA 0. Children are _ADR-matched so _HID is never evaluated;
+acpi_match_device_ids() on the child fails. Match by parent HID via
+acpi_dev_parent() (correct API for 7.0.x, no ->parent field exists).
 ---
- drivers/acpi/sta_quirk.c | 37 +++++++++++++++++++++++++++++--------
- 1 file changed, 29 insertions(+), 8 deletions(-)
+ drivers/acpi/sta_quirk.c | 38 ++++++++++++++++++++++++++++++--------
+ 1 file changed, 30 insertions(+), 8 deletions(-)
 
 diff --git a/drivers/acpi/sta_quirk.c b/drivers/acpi/sta_quirk.c
-index 79774e0f731b..3d8984ea6134 100644
+index 79774e0f731b..47cf5a6b1efa 100644
 --- a/drivers/acpi/sta_quirk.c
 +++ b/drivers/acpi/sta_quirk.c
 @@ -1,9 +1,16 @@
@@ -28,15 +28,15 @@ index 79774e0f731b..3d8984ea6134 100644
 + * skips full enumeration.  Key quirk: children with _STA=0 are created
 + * as _ADR-matched acpi_device structs WITHOUT _HID evaluation, so
 + * acpi_match_device_ids() cannot be used on the child directly.
-+ * Match on the PARENT device HID instead.
++ * Match on the PARENT device HID via acpi_dev_parent() instead.
 + *
 + * Devices affected:
 + *   CIXHA008, CIXHA009 (SCMI protocol, children of CIXHA006, uid=0)
-+ *   CIXH4010 (NPU cores CRE0-2, children of CIXH4000/NPU0, all uids)
++ *   CRE0-2 (NPU cores, children of CIXH4000/NPU0, all uids)
   */
  
  #include <linux/acpi.h>
-@@ -11,20 +18,34 @@
+@@ -11,20 +18,35 @@
  
  #include "internal.h"
  
@@ -61,13 +61,14 @@ index 79774e0f731b..3d8984ea6134 100644
  bool acpi_sta_override_firmware_quirk(struct acpi_device *adev,
  				      unsigned long long *status)
  {
++	struct acpi_device *parent = acpi_dev_parent(adev);
++
 +	/*
 +	 * NPU core devices (CRE0/CRE1/CRE2 under CIXH4000/NPU0):
-+	 * _STA=0 prevents _HID from being evaluated, so match by
-+	 * parent HID instead of child HID.
++	 * _STA=0 prevents _HID from being evaluated on the child, so
++	 * match by parent HID via acpi_dev_parent() instead.
 +	 */
-+	if (adev->parent &&
-+	    !acpi_match_device_ids(adev->parent, cix_npu_parent_ids)) {
++	if (parent && !acpi_match_device_ids(parent, cix_npu_parent_ids)) {
 +		*status = ACPI_STA_DEFAULT;
 +		return true;
 +	}
