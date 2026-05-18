@@ -6177,34 +6177,6 @@ index 443033c607d75..5da4c36b25aa3 100644
  
  /* Register access */
  static inline void cdns_pcie_writel(struct cdns_pcie *pcie, u32 reg, u32 value)
-@@ -228,27 +386,6 @@ static inline u32 cdns_pcie_readl(struct cdns_pcie *pcie, u32 reg)
- 	return readl(pcie->reg_base + reg);
- }
- 
--static inline void cdns_pcie_hpa_writel(struct cdns_pcie *pcie,
--					enum cdns_pcie_reg_bank bank,
--					u32 reg,
--					u32 value)
--{
--	u32 offset = cdns_reg_bank_to_off(pcie, bank);
--
--	reg += offset;
--	writel(value, pcie->reg_base + reg);
--}
--
--static inline u32 cdns_pcie_hpa_readl(struct cdns_pcie *pcie,
--				      enum cdns_pcie_reg_bank bank,
--				      u32 reg)
--{
--	u32 offset = cdns_reg_bank_to_off(pcie, bank);
--
--	reg += offset;
--	return readl(pcie->reg_base + reg);
--}
--
- static inline u16 cdns_pcie_readw(struct cdns_pcie *pcie, u32 reg)
- {
- 	return readw(pcie->reg_base + reg);
 @@ -344,29 +481,6 @@ static inline u16 cdns_pcie_rp_readw(struct cdns_pcie *pcie, u32 reg)
  	return cdns_pcie_read_sz(addr, 0x2);
  }
