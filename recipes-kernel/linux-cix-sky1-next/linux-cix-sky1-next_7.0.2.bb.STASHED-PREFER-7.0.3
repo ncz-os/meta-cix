@@ -34,7 +34,7 @@
 #   sibling-installed alongside the LTS kernel for boot-menu user choice
 
 SUMMARY = "Linux kernel for Cix Sky1 / CP8180 (Sky1-Linux 7.0 next BETA)"
-DESCRIPTION = "Mainline Linux v7.0.9 + Sky1-Linux/linux-sky1 patches-next/ track \
+DESCRIPTION = "Mainline Linux v7.0.3 + Sky1-Linux/linux-sky1 patches-next/ track \
 (42 of 43 patches; audio patch omitted pending alc269 hand-merge). BETA installed \
 alongside 6.18.26 LTS for runtime A/B comparison via systemd-boot menu. Same SoC \
 target as the LTS kernel (Cix CP8180, Minisforum MS-R1)."
@@ -44,9 +44,8 @@ LIC_FILES_CHKSUM = "file://COPYING;md5=6bc538ed5bd9a7fc9398086aedcd7e46"
 
 inherit kernel
 
-LINUX_VERSION = "7.0.9"
+LINUX_VERSION = "7.0.2"
 KERNEL_LOCALVERSION = "-cix-sky1-next"
-PATCHTOOL = "git"
 PV = "${LINUX_VERSION}+sky1-next"
 KBRANCH = "linux-7.0.y"
 
@@ -55,7 +54,7 @@ KBRANCH = "linux-7.0.y"
 KERNEL_PACKAGE_NAME = "kernel-${PN}"
 
 # 7.0.3 stable tag from gregkh/linux mirror (point releases live on stable, not torvalds)
-SRCREV_kernel = "02d12836df65df4c4a2ab377332d84cc5d8c78b3"
+SRCREV_kernel = "a703eaaf8bd68c416d20f907435038f409ace6e4"
 
 SRC_URI = " \
     git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git;protocol=https;branch=${KBRANCH};name=kernel \
@@ -98,8 +97,6 @@ SRC_URI = " \
     file://next-patches/0037-drm-trilin-dptx-retry-AUX-on-cold-plug-timeout.patch \
     file://next-patches/0043-cix-remove-pre-silicon-EMU-FPGA-dead-code-from-vendo.patch \
     file://next-patches/0140-arm64-cix-fix-kconfig-deps-and-reachability.patch \
-    file://next-patches/2001-gpio-gpio-cadence-fix-crashing-pcie-on-cix-p1-acpi-s.patch \
-    file://next-patches/2002-drm-linlon-dp-remove-existing-drivers-that-may-own-t.patch \
 "
 
 S = "${WORKDIR}/git"
