@@ -106,6 +106,7 @@ SRC_URI = " \
     file://next-patches/2006-armchina-npu-sky1-null-pd-core-guard.patch \
     file://next-patches/2007-acpi-sta-quirk-add-cixh4010-npu-cores.patch \
     file://next-patches/2008-armchina-npu-force-D0-before-probe.patch \
+    file://next-patches/2009-armchina-npu-msr1-smmu-32bit-dma-constraint.patch \
 "
 
 S = "${WORKDIR}/git"
