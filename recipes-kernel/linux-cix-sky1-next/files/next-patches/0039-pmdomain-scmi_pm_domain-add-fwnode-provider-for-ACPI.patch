@@ -1,0 +1,155 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jason Perlow <jperlow@gmail.com>
+Date: Wed, 21 May 2026 03:30:00 -0400
+Subject: [PATCH] pmdomain: scmi_pm_domain: register fwnode provider under ACPI
+
+The SCMI performance domain driver registers itself as a fwnode-based
+generic PM domain provider under ACPI (commit 7b18145b683a thermal:
+cix: Add Sky1 thermal, power domain, and cpufreq support) so that
+consumers can resolve power-domains _DSD references via
+genpd_get_from_fwnode_provider().
+
+The SCMI power domain driver was modified by the same commit but the
+fwnode-provider registration path was not added; the probe handler
+registers an OF provider when dev->of_node is present and exits
+otherwise, leaving ACPI consumers unable to attach. The cited
+comment ("Under ACPI, domains are still globally registered by
+pm_genpd_init() and consumers attach by name") is incorrect: ACPI
+attach via genpd_dev_pm_attach_by_name() requires a fwnode provider.
+
+On CIX Sky1 / CP8180 platforms (Minisforum MS-R1), the armchina_npu
+driver consumes a power-domain reference at CIXH4000 via _DSD.
+Without an SCMI-POWER fwnode provider, the consumer cannot attach,
+NPU silicon is never powered, and probe fails with -EINVAL after
+register reads return hw_version=5 (unpowered).
+
+Mirror the scmi_perf_domain.c approach: locate the protocol-specific
+ACPI child fwnode by matching on the reg property against
+sdev->protocol_id, then call genpd_add_fwnode_provider_onecell().
+
+This completes the SCMI POWER side of the fwnode-genpd-for-ACPI
+infrastructure originally introduced by Entrpi in commit 7b18145b683a,
+which covered the SCMI PERF side. Upstream stewardship for the CIX
+Sky1 platform sits with Entrpi as the Sky1-Linux maintainer; this
+patch is offered as a follow-up against that base.
+
+Tested on Minisforum MS-R1 Cix Sky1 with 7.0.9-cix-sky1-next: armchina
+CIXH4000:00 attaches to the SCMI power domain, /dev/aipu is created,
+and armchina_npu reaches AIPU detected: zhouyi-v3.
+
+Fixes: 7b18145b683a ("thermal: cix: Add Sky1 thermal, power domain, and cpufreq support")
+Cc: Entrpi <entrpi@proton.me>
+Cc: Sudeep Holla <sudeep.holla@arm.com>
+Cc: Ulf Hansson <ulf.hansson@linaro.org>
+Cc: linux-pm@vger.kernel.org
+Signed-off-by: Jason Perlow <jperlow@gmail.com>
+---
+diff --git a/drivers/pmdomain/arm/scmi_pm_domain.c b/drivers/pmdomain/arm/scmi_pm_domain.c
+index 0e16898abb5e..d724b091af07 100644
+--- a/drivers/pmdomain/arm/scmi_pm_domain.c
++++ b/drivers/pmdomain/arm/scmi_pm_domain.c
+@@ -5,11 +5,14 @@
+  * Copyright (C) 2018-2021 ARM Ltd.
+  */
+ 
++#include <linux/acpi.h>
+ #include <linux/err.h>
+ #include <linux/io.h>
+ #include <linux/module.h>
+ #include <linux/pm_domain.h>
++#include <linux/property.h>
+ #include <linux/scmi_protocol.h>
++#include <linux/slab.h>
+ 
+ static const struct scmi_power_proto_ops *power_ops;
+ 
+@@ -65,6 +68,50 @@ static int scmi_pd_power_off(struct generic_pm_domain *domain)
+ 	return scmi_pd_power(domain, SCMI_POWER_STATE_GENERIC_OFF);
+ }
+ 
++/*
++ * Under ACPI, locate the protocol-specific child of the SCMI parent
++ * fwnode (e.g. \\_SB_.SCMI.POWR with reg = SCMI_PROTOCOL_POWER).
++ * Mirrors scmi_perf_find_proto_fwnode() in scmi_perf_domain.c.
++ * The matching child may have _STA=0 (namespace-only stub) so we
++ * use acpi_dev_for_each_child() rather than fwnode_for_each_child.
++ */
++struct scmi_pm_proto_fwnode_match {
++	u32 protocol_id;
++	struct fwnode_handle *result;
++};
++
++static int scmi_pm_match_proto_reg(struct acpi_device *adev, void *data)
++{
++	struct scmi_pm_proto_fwnode_match *match = data;
++	u32 reg;
++
++	if (fwnode_property_read_u32(acpi_fwnode_handle(adev), "reg", &reg) == 0 &&
++	    reg == match->protocol_id) {
++		match->result = acpi_fwnode_handle(adev);
++		return 1;
++	}
++	return 0;
++}
++
++static struct fwnode_handle *scmi_pm_find_proto_fwnode(struct scmi_device *sdev)
++{
++	struct acpi_device *parent_adev;
++	struct scmi_pm_proto_fwnode_match match = {
++		.protocol_id = sdev->protocol_id,
++		.result = NULL,
++	};
++
++	if (sdev->dev.of_node)
++		return NULL;
++
++	parent_adev = to_acpi_device_node(dev_fwnode(&sdev->dev));
++	if (!parent_adev)
++		return NULL;
++
++	acpi_dev_for_each_child(parent_adev, scmi_pm_match_proto_reg, &match);
++	return match.result;
++}
++
+ static int scmi_pm_domain_probe(struct scmi_device *sdev)
+ {
+ 	int num_domains, i, ret;
+@@ -142,6 +189,19 @@ static int scmi_pm_domain_probe(struct scmi_device *sdev)
+ 		ret = of_genpd_add_provider_onecell(np, scmi_pd_data);
+ 		if (ret)
+ 			goto err_rm_genpds;
++	} else {
++		/*
++		 * Under ACPI, register a fwnode-based provider so consumers
++		 * (e.g. CIX armchina_npu CIXH4000) can resolve power-domains
++		 * _DSD references via genpd_get_from_fwnode_provider().
++		 */
++		struct fwnode_handle *proto_fw = scmi_pm_find_proto_fwnode(sdev);
++		if (proto_fw) {
++			ret = genpd_add_fwnode_provider_onecell(proto_fw,
++								scmi_pd_data);
++			if (ret)
++				goto err_rm_genpds;
++		}
+ 	}
+ 
+ 	dev_set_drvdata(dev, scmi_pd_data);
+@@ -165,10 +225,17 @@ static void scmi_pm_domain_remove(struct scmi_device *sdev)
+ 	struct device *dev = &sdev->dev;
+ 	struct device_node *np = dev->of_node;
+ 
+-	if (np)
++	if (np) {
+ 		of_genpd_del_provider(np);
++	} else {
++		struct fwnode_handle *proto_fw = scmi_pm_find_proto_fwnode(sdev);
++		if (proto_fw)
++			genpd_del_fwnode_provider(proto_fw);
++	}
+ 
+ 	scmi_pd_data = dev_get_drvdata(dev);
++	if (!scmi_pd_data)
++		return;
+ 	for (i = 0; i < scmi_pd_data->num_domains; i++) {
+ 		if (!scmi_pd_data->domains[i])
+ 			continue;
