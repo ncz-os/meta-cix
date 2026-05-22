@@ -107,6 +107,10 @@ SRC_URI = " \
     file://next-patches/2007-acpi-sta-quirk-add-cixh4010-npu-cores.patch \
     file://next-patches/2008-armchina-npu-force-D0-before-probe.patch \
     file://next-patches/2009-armchina-npu-msr1-smmu-32bit-dma-constraint.patch \
+    file://next-patches/0038-pmdomain-add-fwnode-based-genpd-provider-for-ACPI-po.patch \
+    file://next-patches/0039-pmdomain-scmi_pm_domain-add-fwnode-provider-for-ACPI.patch \
+    file://next-patches/2003-firmware-arm_scmi-add-backward-complibility-to-old-f.patch \
+    file://next-patches/2010-acpi-add-backward-complibility-to-old-firmware-with-.patch \
 "
 
 S = "${WORKDIR}/git"
@@ -116,7 +120,7 @@ COMPATIBLE_MACHINE = "(cixmini)"
 # This recipe does NOT provide virtual/kernel — that role belongs to
 # linux-cix-sky1 (LTS, 6.18.26). This is the BETA sibling, installed
 # alongside via explicit-build.
-PROVIDES = "${PN}"
+PROVIDES += "${PN} virtual/kernel"
 
 do_configure:prepend() {
     cd ${S}
