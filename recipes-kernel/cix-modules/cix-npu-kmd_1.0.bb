@@ -20,7 +20,8 @@ SRC_URI = "git://github.com/minisforum-cix-p1-repo/cix_opensource__npu_driver.gi
            file://0003-armchina-npu-MODULE_IMPORT_NS-quoted.patch \
            file://0004-armchina-npu-remove-void.patch \
            file://0005-armchina-npu-pm-runtime-put-void.patch \
-           file://0006-armchina-npu-module-metadata-v3_1.patch"
+           file://0006-armchina-npu-module-metadata-v3_1.patch \
+           file://0007-armchina-npu-drop-IRQF_ONESHOT.patch"
 
 # Patches apply at S=${WORKDIR}/git
 FILESEXTRAPATHS:prepend := "${THISDIR}/cix-npu-kmd-1.0:"
