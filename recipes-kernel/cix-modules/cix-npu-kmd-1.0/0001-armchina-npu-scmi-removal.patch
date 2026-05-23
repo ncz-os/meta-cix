@@ -1,16 +1,9 @@
-From dbdbfc8868d69ae0934515159769913d98522cdc Mon Sep 17 00:00:00 2001
+From 0b23836c483fb672ba7e4a6406c6b9b22a83f29b Mon Sep 17 00:00:00 2001
 From: Jason Perlow <jperlow@gmail.com>
-Date: Sat, 23 May 2026 11:29:01 -0400
-Subject: [PATCH 2/2] armchina-npu: replace scmi_device_* helpers removed in
+Date: Sat, 23 May 2026 12:11:51 -0400
+Subject: [PATCH 1/6] armchina-npu: replace scmi_device_* helpers removed in
  BSP kernel
 
-Sky1 BSP kernel removed scmi_device_get_freq / set_freq /
-opp_table_parse. Replace with:
-  set_freq -> dev_pm_opp_set_rate; cache priv->last_freq
-  get_freq -> cached read
-  opp_table_parse -> no-op (genpd auto-attaches OPPs from DT/ACPI)
-
-Signed-off-by: Jason Perlow <jperlow@gmail.com>
 ---
  driver/armchina-npu/include/cix_sky1_soc.h |  1 +
  driver/armchina-npu/sky1/sky1.c            | 17 +++++++++++++++++
