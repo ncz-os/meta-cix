@@ -35,7 +35,14 @@ COMPATIBLE_MACHINE = "(cixmini)"
 DEPENDS += "virtual/kernel"
 
 do_compile() {
-    oe_runmake -C ${STAGING_KERNEL_DIR} M=${B} modules
+    unset CFLAGS CPPFLAGS CXXFLAGS LDFLAGS
+    oe_runmake -C ${STAGING_KERNEL_DIR} M=${B} \
+        CC="${KERNEL_CC}" LD="${KERNEL_LD}" AR="${KERNEL_AR}" \
+        KERNEL_PATH=${STAGING_KERNEL_DIR} \
+        KERNEL_VERSION=${KERNEL_VERSION} \
+        O=${STAGING_KERNEL_BUILDDIR} \
+        KBUILD_EXTMOD=${B} \
+        modules
 }
 
 do_install() {
