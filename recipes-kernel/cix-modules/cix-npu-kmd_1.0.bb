@@ -48,7 +48,7 @@ do_compile() {
         COMPASS_DRV_BTENVAR_KMD_VERSION=5.11.0 \
         BUILD_AIPU_VERSION_KMD=BUILD_ZHOUYI_V3 \
         BUILD_TARGET_PLATFORM_KMD=BUILD_PLATFORM_SKY1 \
-        BUILD_NPU_DEVFREQ=y \
+        BUILD_NPU_DEVFREQ=n \
         KCFLAGS="-Wno-error=missing-prototypes -Wno-error" \
         modules
 }
