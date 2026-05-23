@@ -14,13 +14,24 @@ inherit module
 
 PV = "1.0+cix-r57"
 SRCREV = "608f8178858ef7749364f1a7ad4872e04615ceea"
-SRC_URI = "git://github.com/minisforum-cix-p1-repo/cix_opensource__npu_driver.git;protocol=https;branch=a0fb5/5cf6e/cix_p1_mg_dev;name=npukmd"
+SRC_URI = "git://github.com/minisforum-cix-p1-repo/cix_opensource__npu_driver.git;protocol=https;branch=a0fb5/5cf6e/cix_p1_mg_dev;name=npukmd \
+           file://0001-armchina-npu-7.0.9-noprof-compat.patch \
+           file://0002-armchina-npu-scmi-removal.patch"
+
+# Patches apply at S=${WORKDIR}/git
+FILESEXTRAPATHS:prepend := "${THISDIR}/cix-npu-kmd-1.0:"
 
 S = "${WORKDIR}/git"
 B = "${S}/driver"
 COMPATIBLE_MACHINE = "(cixmini)"
 
 DEPENDS += "virtual/kernel"
+
+do_configure() {
+    # Fresh git checkout each bake — skip module.bbclass default
+    # make-clean against host kernel that doesn't exist in container.
+    :
+}
 
 do_compile() {
     unset CFLAGS CPPFLAGS CXXFLAGS LDFLAGS
@@ -34,6 +45,7 @@ do_compile() {
         BUILD_AIPU_VERSION_KMD=BUILD_ZHOUYI_V3 \
         BUILD_TARGET_PLATFORM_KMD=BUILD_PLATFORM_SKY1 \
         BUILD_NPU_DEVFREQ=y \
+        KCFLAGS="-include ${B}/armchina-npu/include/noprof_compat.h" \
         modules
 }
 
