@@ -42,7 +42,7 @@ do_compile() {
         KERNEL_VERSION=${KERNEL_VERSION} \
         O=${STAGING_KERNEL_BUILDDIR} \
         KBUILD_EXTMOD=${B} \
-        modules
+        V=1 modules
 }
 
 do_install() {
