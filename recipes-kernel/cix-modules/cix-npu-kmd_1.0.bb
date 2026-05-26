@@ -41,7 +41,7 @@ do_configure() {
 
 do_compile() {
     unset CFLAGS CPPFLAGS CXXFLAGS LDFLAGS
-    oe_runmake -C ${STAGING_KERNEL_DIR} M=${B} \
+    oe_runmake KERNELRELEASE="${KERNEL_VERSION}-cix-sky1-next" -C ${STAGING_KERNEL_DIR} M=${B} \
         CC="${KERNEL_CC}" LD="${KERNEL_LD}" AR="${KERNEL_AR}" \
         KERNEL_PATH=${STAGING_KERNEL_DIR} \
         KERNEL_VERSION=${KERNEL_VERSION} \
@@ -50,7 +50,7 @@ do_compile() {
         COMPASS_DRV_BTENVAR_KMD_VERSION=5.11.0 \
         BUILD_AIPU_VERSION_KMD=BUILD_ZHOUYI_V3 \
         BUILD_TARGET_PLATFORM_KMD=BUILD_PLATFORM_SKY1 \
-        BUILD_NPU_DEVFREQ=n \
+        BUILD_NPU_DEVFREQ=y \
         KCFLAGS="-Wno-error=missing-prototypes -Wno-error" \
         modules
 }
