@@ -18,6 +18,7 @@ SRCREV_cixmain = "0aebbccfd5694e7f0ba6aaae8be7e74b86bc3fa6"
 SRCREV_FORMAT = "kernel_cixmain"
 
 SRC_URI = " \
+    file://gpu-opp-nonfatal.patch \
     git://github.com/torvalds/linux.git;protocol=https;branch=master;name=kernel;destsuffix=git \
     git://github.com/cixtech/cix-linux-main.git;protocol=https;branch=main;name=cixmain;destsuffix=cix-linux-main \
 "

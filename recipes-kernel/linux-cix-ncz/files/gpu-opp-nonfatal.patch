@@ -1,0 +1,18 @@
+--- a/drivers/gpu/drm/panthor/panthor_devfreq.c
++++ b/drivers/gpu/drm/panthor/panthor_devfreq.c
+@@ -147,10 +147,9 @@
+ 
+ 	ret = devm_pm_opp_set_regulators(dev, reg_names);
+ 	if (ret) {
+-		if (ret != -EPROBE_DEFER)
+-			DRM_DEV_ERROR(dev, "Couldn't set OPP regulators
+");
+-
+-		return ret;
++		dev_warn(dev, "OPP unavailable (%d), continuing without DVFS
+", ret);
++		ptdev->devfreq = NULL;
++		return 0;
+ 	}
+ 
+ 	ret = devm_pm_opp_of_add_table(dev);
