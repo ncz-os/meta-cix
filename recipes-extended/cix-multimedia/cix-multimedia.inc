@@ -52,6 +52,12 @@ INSANE_SKIP:${PN} += "already-stripped ldflags rpaths file-rdeps dev-so libdir"
 INHIBIT_PACKAGE_DEBUG_SPLIT = "1"
 INHIBIT_PACKAGE_STRIP = "1"
 
+# These vendor packages install private plugin/shared-library trees under
+# /usr/share/cix/lib.  Do not register them as global shlib providers; packages
+# such as cix-nnstreamer intentionally ship multiple plugins with the same
+# private SONAME.
+EXCLUDE_FROM_SHLIBS = "1"
+
 COMPATIBLE_MACHINE = "(cixmini)"
 
 FILES:${PN} += " \
