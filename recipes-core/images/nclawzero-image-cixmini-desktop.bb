@@ -106,6 +106,7 @@ IMAGE_INSTALL:append = " \
 #       commercial_cix-mesa \\
 #       commercial_cix-llama-cpp \\
 #       commercial_cix-mnn \\
+#       commercial_cix-mm \\
 #   "
 # ------------------------------------------------------------------------
 IMAGE_INSTALL:append = " \
@@ -116,6 +117,20 @@ IMAGE_INSTALL:append = " \
     cix-mesa \
     cix-llama-cpp \
     cix-mnn \
+    cix-libva2 \
+    cix-libva-drm2 \
+    cix-libva-glx2 \
+    cix-libva-wayland2 \
+    cix-libva-x11-2 \
+    cix-vaapi \
+    cix-libavutil57 \
+    cix-libavcodec59 \
+    cix-libavformat59 \
+    cix-ffmpeg \
+    cix-gstreamer \
+    cix-nnstreamer \
+    cix-libcme \
+    cix-vpu-test \
 "
 
 # ------------------------------------------------------------------------
