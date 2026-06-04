@@ -31,9 +31,8 @@ LIC_FILES_CHKSUM = "file://${WORKDIR}/cix-mm/releasenotes.md;md5=22ae15d73c88f10
 
 S = "${WORKDIR}/${PN}-root"
 
-do_unpack[depends] += "dpkg-native:do_populate_sysroot"
-
-do_unpack:append() {
+do_extract_cix_mm_deb[depends] += "dpkg-native:do_populate_sysroot"
+do_extract_cix_mm_deb() {
     rm -rf ${S}
     install -d ${S}
 
@@ -44,6 +43,7 @@ do_unpack:append() {
 
     ${STAGING_BINDIR_NATIVE}/dpkg-deb -x "$deb" ${S}
 }
+addtask extract_cix_mm_deb after do_unpack before do_patch
 
 # Pre-built proprietary aarch64 binaries may be stripped, may carry Debian
 # rpaths/file dependencies, and may install into vendor layouts.  Keep the same
