@@ -177,4 +177,5 @@ IMAGE_INSTALL:append = " \
     \
     python3-numpy \
     python3-requests \
+    cix-accelerator-tests \
 "
