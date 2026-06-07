@@ -10,6 +10,7 @@ SRC_URI = " \
     file://cix-gpu-vulkan-mlp-test.sh \
     file://cix-vpu-h264-inference-test.sh \
     file://cix-npu-vgg-inference-test.sh \
+    file://cix-npu-sustained-benchmark.sh \
     file://cix-run-accelerator-tests.sh \
 "
 
@@ -22,11 +23,13 @@ do_install() {
     install -m 0755 ${WORKDIR}/cix-gpu-vulkan-mlp-test.sh ${D}${libexecdir}/cix-accelerator-tests/
     install -m 0755 ${WORKDIR}/cix-vpu-h264-inference-test.sh ${D}${libexecdir}/cix-accelerator-tests/
     install -m 0755 ${WORKDIR}/cix-npu-vgg-inference-test.sh ${D}${libexecdir}/cix-accelerator-tests/
+    install -m 0755 ${WORKDIR}/cix-npu-sustained-benchmark.sh ${D}${libexecdir}/cix-accelerator-tests/
     install -m 0755 ${WORKDIR}/cix-run-accelerator-tests.sh ${D}${libexecdir}/cix-accelerator-tests/
 
     install -d ${D}${bindir}
     ln -sf ${libexecdir}/cix-accelerator-tests/cix-gpu-vulkan-mlp-test.sh ${D}${bindir}/cix-gpu-vulkan-mlp-test
     ln -sf ${libexecdir}/cix-accelerator-tests/cix-vpu-h264-inference-test.sh ${D}${bindir}/cix-vpu-h264-inference-test
     ln -sf ${libexecdir}/cix-accelerator-tests/cix-npu-vgg-inference-test.sh ${D}${bindir}/cix-npu-vgg-inference-test
+    ln -sf ${libexecdir}/cix-accelerator-tests/cix-npu-sustained-benchmark.sh ${D}${bindir}/cix-npu-sustained-benchmark
     ln -sf ${libexecdir}/cix-accelerator-tests/cix-run-accelerator-tests.sh ${D}${bindir}/cix-run-accelerator-tests
 }
