@@ -19,8 +19,8 @@
 # - 7.0 is the long-term direction; SCMI/BIOS will land eventually
 #
 # Differences from 6.18.26 LTS:
-# - patches-next/ track (43 mainline-targeted patches)
-# - SRCREV = v7.0.3 stable tag (gregkh/linux mirror, bumped from 7.0.1 — 46 generic security/stability commits, 0 Sky1 touches)
+# - patches-next/ track plus validated cixmini 7.0.11 fixes
+# - SRCREV = v7.0.11 stable tag (gregkh/linux mirror), plus validated MS-R1 fixes for SCMI/GPU/VPU/NPU/display
 # - Patch 0014-sound-Add-CIX-Sky1-audio-drivers.patch is OMITTED for now —
 #   needs alc269.c hand-merge for 7.0 base. Audio non-functional in BETA.
 # - PR #18 0140-arm64-cix-fix-kconfig-deps applies cleanly here too
@@ -34,8 +34,8 @@
 #   sibling-installed alongside the LTS kernel for boot-menu user choice
 
 SUMMARY = "Linux kernel for Cix Sky1 / CP8180 (Sky1-Linux 7.0 next BETA)"
-DESCRIPTION = "Mainline Linux v7.0.9 + Sky1-Linux/linux-sky1 patches-next/ track \
-(42 of 43 patches; audio patch omitted pending alc269 hand-merge). BETA installed \
+DESCRIPTION = "Mainline Linux v7.0.11 + Sky1-Linux/linux-sky1 patches-next/ track \
+(base next patch track plus validated cixmini 7.0.11 fixes; audio patch omitted pending alc269 hand-merge). BETA installed \
 alongside 6.18.26 LTS for runtime A/B comparison via systemd-boot menu. Same SoC \
 target as the LTS kernel (Cix CP8180, Minisforum MS-R1)."
 SECTION = "kernel"
@@ -44,7 +44,7 @@ LIC_FILES_CHKSUM = "file://COPYING;md5=6bc538ed5bd9a7fc9398086aedcd7e46"
 
 inherit kernel
 
-LINUX_VERSION = "7.0.9"
+LINUX_VERSION = "7.0.11"
 KERNEL_LOCALVERSION = "-cix-sky1-next"
 PATCHTOOL = "git"
 PV = "${LINUX_VERSION}+sky1-next"
@@ -54,8 +54,8 @@ KBRANCH = "linux-7.0.y"
 # dir prevents do_patch collision (Codex HIGH finding 2026-05-03).
 KERNEL_PACKAGE_NAME = "kernel-${PN}"
 
-# 7.0.3 stable tag from gregkh/linux mirror (point releases live on stable, not torvalds)
-SRCREV_kernel = "02d12836df65df4c4a2ab377332d84cc5d8c78b3"
+# 7.0.11 stable tag from gregkh/linux mirror (point releases live on stable, not torvalds)
+SRCREV_kernel = "bb532bfaf7919c7c98caab81864e9ce2646e11e3"
 
 SRC_URI = " \
     git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git;protocol=https;branch=${KBRANCH};name=kernel \
@@ -67,7 +67,6 @@ SRC_URI = " \
     file://next-patches/0005-mailbox-cix-Add-ACPI-support-and-channel-lookup.patch \
     file://next-patches/0006-firmware-arm_scmi-Add-ACPI-boot-support-for-CIX-Sky1.patch \
     file://next-patches/0007-pinctrl-cix-Update-Sky1-pin-controller.patch \
-    file://next-patches/0008-PCI-cadence-sky1-Add-ACPI-support-and-fixes.patch \
     file://next-patches/0009-fix-pcie-cadence-missing-enum-for-7.0.9.patch \
     file://next-patches/0009-phy-cix-Add-Sky1-USB-and-PCIe-PHY-drivers.patch \
     file://next-patches/0010-usb-Add-CIX-Sky1-USB-support.patch \
@@ -97,7 +96,6 @@ SRC_URI = " \
     file://next-patches/0035-pwm-sky1-fix-NULL-dereference-in-suspend.patch \
     file://next-patches/0036-fix-allmodconfig-build-warnings-across-CIX-drivers.patch \
     file://next-patches/0037-drm-trilin-dptx-retry-AUX-on-cold-plug-timeout.patch \
-    file://next-patches/0043-cix-remove-pre-silicon-EMU-FPGA-dead-code-from-vendo.patch \
     file://next-patches/0140-arm64-cix-fix-kconfig-deps-and-reachability.patch \
     file://next-patches/2001-gpio-gpio-cadence-fix-crashing-pcie-on-cix-p1-acpi-s.patch \
     file://next-patches/2002-drm-linlon-dp-remove-existing-drivers-that-may-own-t.patch \
@@ -108,6 +106,9 @@ SRC_URI = " \
     file://next-patches/2008-armchina-npu-force-D0-before-probe.patch \
     file://next-patches/2009-armchina-npu-msr1-smmu-32bit-dma-constraint.patch \
     file://next-patches/0039-pmdomain-scmi_pm_domain-add-fwnode-provider-for-ACPI.patch \
+    file://next-patches/2011-fix-acpi-force-enable-hidden-Sky1-SCMI-NPU-child-dev.patch \
+    file://next-patches/2012-fix-panthor-gate-Sky1-gpu_core-clock-fallback.patch \
+    file://next-patches/2013-fix-display-harden-Sky1-DPTX-audio-and-fbdev-restore.patch \
 "
 
 S = "${WORKDIR}/git"
@@ -117,7 +118,7 @@ COMPATIBLE_MACHINE = "(cixmini)"
 # This recipe does NOT provide virtual/kernel — that role belongs to
 # linux-cix-sky1 (LTS, 6.18.26). This is the BETA sibling, installed
 # alongside via explicit-build.
-PROVIDES += "${PN} virtual/kernel"
+PROVIDES = "${PN}"
 
 do_configure:prepend() {
     cd ${S}
