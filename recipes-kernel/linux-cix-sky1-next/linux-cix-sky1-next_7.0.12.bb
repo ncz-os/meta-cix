@@ -19,8 +19,8 @@
 # - 7.0 is the long-term direction; SCMI/BIOS will land eventually
 #
 # Differences from 6.18.26 LTS:
-# - patches-next/ track plus validated cixmini 7.0.11 fixes
-# - SRCREV = v7.0.11 stable tag (gregkh/linux mirror), plus validated MS-R1 fixes for SCMI/GPU/VPU/NPU/display
+# - patches-next/ track plus validated cixmini 7.0.12 fixes
+# - SRCREV = v7.0.12 stable tag (gregkh/linux mirror), plus validated MS-R1 fixes for SCMI/GPU/VPU/NPU/display
 # - Patch 0014-sound-Add-CIX-Sky1-audio-drivers.patch is OMITTED for now —
 #   needs alc269.c hand-merge for 7.0 base. Audio non-functional in BETA.
 # - PR #18 0140-arm64-cix-fix-kconfig-deps applies cleanly here too
@@ -34,8 +34,8 @@
 #   sibling-installed alongside the LTS kernel for boot-menu user choice
 
 SUMMARY = "Linux kernel for Cix Sky1 / CP8180 (Sky1-Linux 7.0 next BETA)"
-DESCRIPTION = "Mainline Linux v7.0.11 + Sky1-Linux/linux-sky1 patches-next/ track \
-(base next patch track plus validated cixmini 7.0.11 fixes; audio patch omitted pending alc269 hand-merge). BETA installed \
+DESCRIPTION = "Mainline Linux v7.0.12 + Sky1-Linux/linux-sky1 patches-next/ track \
+(base next patch track plus validated cixmini 7.0.12 fixes; audio patch omitted pending alc269 hand-merge). BETA installed \
 alongside 6.18.26 LTS for runtime A/B comparison via systemd-boot menu. Same SoC \
 target as the LTS kernel (Cix CP8180, Minisforum MS-R1)."
 SECTION = "kernel"
@@ -44,7 +44,7 @@ LIC_FILES_CHKSUM = "file://COPYING;md5=6bc538ed5bd9a7fc9398086aedcd7e46"
 
 inherit kernel
 
-LINUX_VERSION = "7.0.11"
+LINUX_VERSION = "7.0.12"
 KERNEL_LOCALVERSION = "-cix-sky1-next"
 PATCHTOOL = "git"
 PV = "${LINUX_VERSION}+sky1-next"
@@ -54,8 +54,8 @@ KBRANCH = "linux-7.0.y"
 # dir prevents do_patch collision (Codex HIGH finding 2026-05-03).
 KERNEL_PACKAGE_NAME = "kernel-${PN}"
 
-# 7.0.11 stable tag from gregkh/linux mirror (point releases live on stable, not torvalds)
-SRCREV_kernel = "bb532bfaf7919c7c98caab81864e9ce2646e11e3"
+# 7.0.12 stable tag from gregkh/linux mirror (point releases live on stable, not torvalds)
+SRCREV_kernel = "f53879e2e1e2fa053040e734c1ef8f386109a61b"
 
 SRC_URI = " \
     git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git;protocol=https;branch=${KBRANCH};name=kernel \
