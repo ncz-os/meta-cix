@@ -1,0 +1,244 @@
+From c393bfc8037be93df77e860402825ac20316e988 Mon Sep 17 00:00:00 2001
+From: Jason Perlow <jasonperlow@users.noreply.github.com>
+Date: Wed, 17 Jun 2026 15:27:48 -0400
+Subject: [PATCH 2015/2016] ALSA: hda: cix-ipbloq: Add ACPI binding, DMA range
+ map and reserved memory
+
+The MS-R1 boots via ACPI, so the DT-only cix-ipbloq HDA controller never
+bound. Add an acpi_device_id match for CIXH6020, and under ACPI configure
+the CPU->bus DMA translation (0x90000000 -> 0x0) via dev->dma_range_map
+plus the firmware-reserved coherent window parsed from the CIXA1019 RSVL
+table. On the ACPI path the HDAC core addr_offset is set to 0 to avoid
+double-translating addresses that are already bus-relative.
+
+dma_declare_coherent_memory is already exported and memremap already
+falls back WC->WB via the Sky1 misc-drivers patch (kernel/dma/coherent.c).
+---
+ sound/hda/controllers/cix-ipbloq.c | 170 ++++++++++++++++++++++++++++-
+ 1 file changed, 164 insertions(+), 6 deletions(-)
+
+diff --git a/sound/hda/controllers/cix-ipbloq.c b/sound/hda/controllers/cix-ipbloq.c
+index c1084a915c13..1e3d740e16f1 100644
+--- a/sound/hda/controllers/cix-ipbloq.c
++++ b/sound/hda/controllers/cix-ipbloq.c
+@@ -1,7 +1,10 @@
+ // SPDX-License-Identifier: GPL-2.0
+ // Copyright 2025 Cix Technology Group Co., Ltd.
+ 
++#include <linux/acpi.h>
+ #include <linux/clk.h>
++#include <linux/dma-direct.h>
++#include <linux/dma-map-ops.h>
+ #include <linux/interrupt.h>
+ #include <linux/io.h>
+ #include <linux/kernel.h>
+@@ -22,6 +25,19 @@
+ 
+ #define CIX_IPBLOQ_SKY1_ADDR_HOST_TO_HDAC_OFFSET	(-0x90000000ULL)
+ 
++/*
++ * CIX Sky1 HDA DMA address translation.
++ * The HDA controller sits behind the audio subsystem bus which has a
++ * fixed offset: CPU phys 0x90000000 maps to DMA addr 0x0 on the controller.
++ * Under DT this is handled via dma-ranges on the hda_bus simple-bus node
++ * (and the HDAC core addr_offset above). Under ACPI there is no dma-ranges,
++ * so we configure the offset explicitly via dma_range_map and declare the
++ * firmware-reserved coherent memory window (RSVL) ourselves.
++ */
++#define CIX_HDA_DMA_CPU_START	0x90000000ULL
++#define CIX_HDA_DMA_DEV_START	0x0ULL
++#define CIX_HDA_DMA_SIZE	0x80000000ULL
++
+ struct cix_ipbloq_hda {
+ 	struct azx chip;
+ 	struct device *dev;
+@@ -218,7 +234,18 @@ static int cix_ipbloq_hda_create(struct cix_ipbloq_hda *hda,
+ 
+ 	chip->bus.core.aligned_mmio = 1;
+ 	chip->bus.core.dma_stop_delay = 100;
+-	chip->bus.core.addr_offset = (dma_addr_t)CIX_IPBLOQ_SKY1_ADDR_HOST_TO_HDAC_OFFSET;
++	/*
++	 * Under DT the HDAC core applies this fixed offset to translate CPU
++	 * addresses to the controller's bus addresses. Under ACPI the
++	 * translation is instead handled by dev->dma_range_map plus the
++	 * firmware-reserved coherent window declared in probe(), which already
++	 * return bus addresses, so no extra HDAC offset must be applied.
++	 */
++	if (has_acpi_companion(hda->dev))
++		chip->bus.core.addr_offset = 0;
++	else
++		chip->bus.core.addr_offset =
++			(dma_addr_t)CIX_IPBLOQ_SKY1_ADDR_HOST_TO_HDAC_OFFSET;
+ 
+ 	chip->bus.jackpoll_in_suspend = 1;
+ 
+@@ -231,6 +258,95 @@ static int cix_ipbloq_hda_create(struct cix_ipbloq_hda *hda,
+ 	return 0;
+ }
+ 
++/*
++ * Parse the RSVL table from the CIX audio subsystem resource device
++ * (CIXA1019) to find reserved DMA memory for the HDA controller.
++ * The RSVL table format is:
++ *   Package { Package { base_addr, size, flags_str, consumer_ref }, ... }
++ */
++#ifdef CONFIG_ACPI
++static int cix_ipbloq_hda_setup_acpi_rsvmem(struct device *dev)
++{
++	struct acpi_device *rest_adev;
++	struct acpi_buffer output = {ACPI_ALLOCATE_BUFFER, NULL};
++	union acpi_object *out_obj, *entry, *el;
++	acpi_status status;
++	phys_addr_t base;
++	resource_size_t size;
++	dma_addr_t bus_addr;
++	int i, ret = -ENODEV;
++
++	/* Find the audio subsystem resource device CIXA1019 */
++	rest_adev = acpi_dev_get_first_match_dev("CIXA1019", NULL, -1);
++	if (!rest_adev)
++		return -ENODEV;
++
++	status = acpi_evaluate_object_typed(
++		acpi_device_handle(rest_adev), "RSVL", NULL, &output,
++		ACPI_TYPE_PACKAGE);
++	acpi_dev_put(rest_adev);
++	if (ACPI_FAILURE(status))
++		return -ENODEV;
++
++	out_obj = output.pointer;
++
++	for (i = 0; i < out_obj->package.count; i++) {
++		struct acpi_device *consumer;
++
++		entry = &out_obj->package.elements[i];
++		if (entry->type != ACPI_TYPE_PACKAGE || entry->package.count < 4)
++			continue;
++
++		/* Element 3 is the consumer device reference */
++		el = &entry->package.elements[3];
++		if (el->type != ACPI_TYPE_LOCAL_REFERENCE)
++			continue;
++
++		consumer = acpi_fetch_acpi_dev(el->reference.handle);
++		if (!consumer || consumer != ACPI_COMPANION(dev))
++			continue;
++
++		/* Found our entry — extract base and size */
++		el = &entry->package.elements[0];
++		if (el->type != ACPI_TYPE_INTEGER)
++			break;
++		base = el->integer.value;
++
++		el = &entry->package.elements[1];
++		if (el->type != ACPI_TYPE_INTEGER)
++			break;
++		size = el->integer.value;
++
++		/* Translate CPU physical to bus address */
++		if (base < CIX_HDA_DMA_CPU_START ||
++		    base + size > CIX_HDA_DMA_CPU_START + CIX_HDA_DMA_SIZE) {
++			dev_warn(dev, "RSVL: region 0x%llx+0x%llx outside DMA window\n",
++				 (u64)base, (u64)size);
++			break;
++		}
++		bus_addr = base - CIX_HDA_DMA_CPU_START + CIX_HDA_DMA_DEV_START;
++
++		ret = dma_declare_coherent_memory(dev, base, bus_addr, size);
++		if (ret) {
++			dev_warn(dev, "RSVL: failed to declare coherent mem: %d\n", ret);
++			break;
++		}
++		dev_info(dev, "RSVL: reserved %lluMB DMA at 0x%llx (bus 0x%llx)\n",
++			 (u64)size >> 20, (u64)base, (u64)bus_addr);
++		ret = 0;
++		break;
++	}
++
++	kfree(output.pointer);
++	return ret;
++}
++#else
++static inline int cix_ipbloq_hda_setup_acpi_rsvmem(struct device *dev)
++{
++	return -ENODEV;
++}
++#endif
++
+ static int cix_ipbloq_hda_probe(struct platform_device *pdev)
+ {
+ 	const unsigned int driver_flags = AZX_DCAPS_PM_RUNTIME;
+@@ -257,11 +373,44 @@ static int cix_ipbloq_hda_probe(struct platform_device *pdev)
+ 
+ 	dma_set_mask_and_coherent(hda->dev, DMA_BIT_MASK(32));
+ 
+-	err = of_reserved_mem_device_init(hda->dev);
+-	if (err < 0 && err != -ENODEV) {
+-		dev_err(hda->dev,
+-			"failed to init reserved mem for DMA, err = %d\n", err);
+-		return err;
++	/*
++	 * Under ACPI there is no dma-ranges, so configure the CPU-to-bus DMA
++	 * address translation for the HDA controller explicitly.
++	 */
++	if (has_acpi_companion(hda->dev) && !hda->dev->dma_range_map) {
++		struct bus_dma_region *map;
++
++		/*
++		 * Use kcalloc, not devm_kcalloc: the driver core frees
++		 * dma_range_map with plain kfree() in device_unbind_cleanup(),
++		 * so this must be a standalone allocation.
++		 */
++		map = kcalloc(2, sizeof(*map), GFP_KERNEL);
++		if (!map)
++			return -ENOMEM;
++		map[0].cpu_start = CIX_HDA_DMA_CPU_START;
++		map[0].dma_start = CIX_HDA_DMA_DEV_START;
++		map[0].size = CIX_HDA_DMA_SIZE;
++		/* map[1] is the zero-initialised sentinel */
++		hda->dev->dma_range_map = map;
++	}
++
++	if (hda->dev->of_node) {
++		err = of_reserved_mem_device_init(hda->dev);
++		if (err < 0 && err != -ENODEV) {
++			dev_err(hda->dev,
++				"failed to init reserved mem for DMA, err = %d\n", err);
++			return err;
++		}
++	}
++
++	if (IS_ENABLED(CONFIG_ACPI) && has_acpi_companion(hda->dev)) {
++		err = cix_ipbloq_hda_setup_acpi_rsvmem(hda->dev);
++		if (err && err != -ENODEV) {
++			dev_err(hda->dev,
++				"failed to init ACPI reserved mem for DMA, err = %d\n", err);
++			return err;
++		}
+ 	}
+ 
+ 	err = snd_card_new(hda->dev, SNDRV_DEFAULT_IDX1, SNDRV_DEFAULT_STR1,
+@@ -417,11 +566,20 @@ static const struct of_device_id cix_ipbloq_hda_match[] = {
+ };
+ MODULE_DEVICE_TABLE(of, cix_ipbloq_hda_match);
+ 
++#ifdef CONFIG_ACPI
++static const struct acpi_device_id cix_ipbloq_hda_acpi_match[] = {
++	{ "CIXH6020" },
++	{ /* sentinel */ },
++};
++MODULE_DEVICE_TABLE(acpi, cix_ipbloq_hda_acpi_match);
++#endif
++
+ static struct platform_driver cix_ipbloq_hda_driver = {
+ 	.driver = {
+ 		.name = "cix-ipbloq-hda",
+ 		.pm = pm_ptr(&cix_ipbloq_hda_pm),
+ 		.of_match_table = cix_ipbloq_hda_match,
++		.acpi_match_table = ACPI_PTR(cix_ipbloq_hda_acpi_match),
+ 	},
+ 	.probe = cix_ipbloq_hda_probe,
+ 	.remove = cix_ipbloq_hda_remove,
+-- 
+2.51.0
+

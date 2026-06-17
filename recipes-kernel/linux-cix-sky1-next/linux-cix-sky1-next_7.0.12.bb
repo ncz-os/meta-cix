@@ -21,8 +21,14 @@
 # Differences from 6.18.26 LTS:
 # - patches-next/ track plus validated cixmini 7.0.12 fixes
 # - SRCREV = v7.0.12 stable tag (gregkh/linux mirror), plus validated MS-R1 fixes for SCMI/GPU/VPU/NPU/display
-# - Patch 0014-sound-Add-CIX-Sky1-audio-drivers.patch is OMITTED for now —
-#   needs alc269.c hand-merge for 7.0 base. Audio non-functional in BETA.
+# - CIX Sky1 audio stack PORTED to the 7.0 base (patches 2014-2016):
+#   2014 adds sound/soc/cix/ (sky1-card ASoC machine CIXH6070 + Cadence I2S
+#   CIXH6011) lifted from the 6.18 LTS tree (builds unmodified on 7.0 ASoC);
+#   2015 adds the ACPI binding (CIXH6020 + dma_range_map + CIXA1019 RSVL
+#   reserved memory) to the mainline cix-ipbloq HDA controller; 2016 is the
+#   hand-merged alc269.c Phecda fixup. The kernel/dma/coherent.c bits the
+#   audio DMA needs (WC->WB memremap fallback + dma_declare_coherent_memory
+#   export) are already carried by patch 0018.
 # - PR #18 0140-arm64-cix-fix-kconfig-deps applies cleanly here too
 # - 2026-05-04 kernel triage cross-checked 3 candidate upstream backports (
 #   IRQF_NO_SUSPEND on cix-mailbox 80784b427970; PCI sky1 ECAM cleanup
@@ -35,7 +41,7 @@
 
 SUMMARY = "Linux kernel for Cix Sky1 / CP8180 (Sky1-Linux 7.0 next BETA)"
 DESCRIPTION = "Mainline Linux v7.0.12 + Sky1-Linux/linux-sky1 patches-next/ track \
-(base next patch track plus validated cixmini 7.0.12 fixes; audio patch omitted pending alc269 hand-merge). BETA installed \
+(base next patch track plus validated cixmini 7.0.12 fixes; CIX Sky1 audio stack ported via patches 2014-2016). BETA installed \
 alongside 6.18.26 LTS for runtime A/B comparison via systemd-boot menu. Same SoC \
 target as the LTS kernel (Cix CP8180, Minisforum MS-R1)."
 SECTION = "kernel"
@@ -109,6 +115,9 @@ SRC_URI = " \
     file://next-patches/2011-fix-acpi-force-enable-hidden-Sky1-SCMI-NPU-child-dev.patch \
     file://next-patches/2012-fix-panthor-gate-Sky1-gpu_core-clock-fallback.patch \
     file://next-patches/2013-fix-display-harden-Sky1-DPTX-audio-and-fbdev-restore.patch \
+    file://next-patches/2014-ASoC-cix-Add-CIX-Sky1-ASoC-machine-and-Cadence-I2S-d.patch \
+    file://next-patches/2015-ALSA-hda-cix-ipbloq-Add-ACPI-binding-DMA-range-map-a.patch \
+    file://next-patches/2016-ALSA-hda-realtek-Add-CIX-Sky1-Phecda-board-fixup.patch \
 "
 
 S = "${WORKDIR}/git"
