@@ -26,7 +26,11 @@
 #   CIXH6011) lifted from the 6.18 LTS tree (builds unmodified on 7.0 ASoC);
 #   2015 adds the ACPI binding (CIXH6020 + dma_range_map + CIXA1019 RSVL
 #   reserved memory) to the mainline cix-ipbloq HDA controller; 2016 is the
-#   hand-merged alc269.c Phecda fixup. The kernel/dma/coherent.c bits the
+#   hand-merged alc269.c Phecda fixup; 2017 fixes the cix-ipbloq ACPI
+#   reset/clock resource names (reset con_id "hda", clocks sysclk/clk48m,
+#   matching the Sky1 AUDSS reset lookup + ACPI clock infra) so the
+#   controller actually binds on MS-R1 and the ALC269VC analog card
+#   registers alongside HDMI/DP. The kernel/dma/coherent.c bits the
 #   audio DMA needs (WC->WB memremap fallback + dma_declare_coherent_memory
 #   export) are already carried by patch 0018.
 # - PR #18 0140-arm64-cix-fix-kconfig-deps applies cleanly here too
@@ -118,6 +122,7 @@ SRC_URI = " \
     file://next-patches/2014-ASoC-cix-Add-CIX-Sky1-ASoC-machine-and-Cadence-I2S-d.patch \
     file://next-patches/2015-ALSA-hda-cix-ipbloq-Add-ACPI-binding-DMA-range-map-a.patch \
     file://next-patches/2016-ALSA-hda-realtek-Add-CIX-Sky1-Phecda-board-fixup.patch \
+    file://next-patches/2017-ALSA-hda-cix-ipbloq-Fix-ACPI-reset-clock-resource-na.patch \
 "
 
 S = "${WORKDIR}/git"
