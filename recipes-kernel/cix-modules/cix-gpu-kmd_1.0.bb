@@ -15,7 +15,7 @@ PV = "1.0+cix"
 SRCREV = "a752e916d18484dd4f67bb6b351543447c978135"
 
 SRC_URI = " \
-    git://github.com/minisforum-cix-p1-repo/cix_opensource__gpu_kernel.git;protocol=https;branch=${KBRANCH};name=gpukmd \
+    git://github.com/minisforum-cix-p1-repo/cix_opensource__gpu_kernel.git;protocol=https;branch=a0fb5/5cf6e/cix_p1_mg_dev;name=gpukmd \
 "
 SRCREV_FORMAT = "gpukmd"
 
@@ -28,3 +28,23 @@ CIX_DRIVER_MAKEFILE = "gpu.mk"
 
 # Mali kbase produces a single mali_kbase.ko (matches Sky1-Linux/cix-gpu-kmd
 # DKMS packaging).
+
+# gpu.mk is an Android-product makefile: map its TARGET_* / CIX_* vars onto Yocto
+# paths, force the writable output dir, the cross prefix, and the "gpu" target.
+do_compile() {
+    oe_runmake -f gpu.mk gpu \
+        CIX_GPU_PATH=${S} \
+        CIX_KERNEL_PATH=${STAGING_KERNEL_DIR} \
+        KERNEL_OUT=${STAGING_KERNEL_DIR} \
+        TARGET_OUT_INTERMEDIATES=${B} \
+        TARGET_KERNEL_ARCH=arm64 ARCH=arm64 \
+        GPU_CROSS_COMPILE=${TARGET_PREFIX} CROSS_COMPILE=${TARGET_PREFIX} \
+        KDIR=${STAGING_KERNEL_DIR} KSRC=${STAGING_KERNEL_DIR} \
+        hide= clean_build=0
+}
+
+do_install() {
+    install_dir="${D}${nonarch_base_libdir}/modules/${KERNEL_VERSION}/extra/cix"
+    install -d "$install_dir"
+    find "${B}" -name "*.ko" -exec install -m 0644 {} "$install_dir/" \;
+}
