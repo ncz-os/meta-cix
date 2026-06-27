@@ -35,7 +35,11 @@ KERNEL_LOCALVERSION = "-ncz"
 PATCHTOOL = "git"
 PV = "${LINUX_VERSION}+ncz"
 KBRANCH = "linux-7.1.y"
-KERNEL_PACKAGE_NAME = "kernel-${PN}"
+# NCZ isolated-tree DKMS fix: keep DEFAULT package name so the kernel uses the SHARED
+# work-shared/${MACHINE}/kernel-source layout. A non-default name makes kernel.bbclass
+# (L63-71) put kernel-source in the recipe WORKDIR, which make-mod-scripts and the OOT
+# cix-*-kmd modules cannot find. build-cix-ncz71 is dedicated => no LTS collision.
+KERNEL_PACKAGE_NAME = "kernel"
 
 # v7.1.1 commit (linux-stable, branch linux-7.1.y)
 SRCREV_kernel = "c9acdc466e9aa96352f658b9276aa8a45b8e817d"
