@@ -15,7 +15,7 @@ PV = "1.0+cix"
 SRCREV = "66180b68ba259c230613bb7dd1634ce4b5ad3716"
 
 SRC_URI = " \
-    git://github.com/minisforum-cix-p1-repo/cix_opensource__vpu_driver.git;protocol=https;branch=${KBRANCH};name=vpukmd \
+    git://github.com/minisforum-cix-p1-repo/cix_opensource__vpu_driver.git;protocol=https;branch=a0fb5/5cf6e/cix_p1_mg_dev;name=vpukmd \
 "
 SRCREV_FORMAT = "vpukmd"
 
@@ -33,3 +33,22 @@ CIX_DRIVER_MAKEFILE = "vpu.mk"
 # the .mk path is what Minisforum's build-scripts/build-vpu_driver.sh uses
 # for the kernel-module half. The SCons surface is for the userspace side
 # packaged separately under cix-vpu-umd in a later slice.
+
+# vpu.mk is an Android-product makefile: map CIX_VPU_PATH/KERNEL_OUT onto Yocto
+# paths and build the "vpu" target.
+do_compile() {
+    oe_runmake -f vpu.mk vpu \
+        CIX_VPU_PATH=${S} \
+        KERNEL_OUT=${STAGING_KERNEL_DIR} \
+        TARGET_OUT_INTERMEDIATES=${B} \
+        TARGET_KERNEL_ARCH=arm64 ARCH=arm64 \
+        CROSS_COMPILE=${TARGET_PREFIX} \
+        KDIR=${STAGING_KERNEL_DIR} KSRC=${STAGING_KERNEL_DIR} \
+        hide= clean_build=0
+}
+
+do_install() {
+    install_dir="${D}${nonarch_base_libdir}/modules/${KERNEL_VERSION}/extra/cix"
+    install -d "$install_dir"
+    find "${B}" -name "*.ko" -exec install -m 0644 {} "$install_dir/" \;
+}
