@@ -1,50 +1,21 @@
 # SPDX-FileCopyrightText: Copyright (c) 2026 Jason Perlow
 # SPDX-License-Identifier: Apache-2.0
-#
-# Linux kernel for Cix Sky1 / CP8180 -- OFFICIAL CIX track (cixtech/cix-linux-main).
-#
-# Base: torvalds mainline v7.1.1 (latest 7.1 stable point release; commit lives
-#       in linux-stable branch linux-7.1.y, NOT torvalds master).
-# Patches: NCZ patches-7.1 = cixtech patches-7.0 forward-ported to v7.1.1.
-#   - 74 patches (of cixtech 76); verified PLAIN `git am` clean on pristine v7.1.1.
-#   - DROPPED cixtech 0034 (mailbox IRQF_NO_SUSPEND) -- mainlined in 7.1 (80784b427970).
-#   - DROPPED cixtech 0046 (pl011 "use cix bsp") -- 795-line v7.0 BSP fork; mainline
-#     7.1 pl011 used instead (console is PIO, no UART DMA wired, CIX boots ACPI).
-#     The Sky1 DMA350 dma-pause workaround can be re-added as a targeted patch.
-#   - Hand-merged for 7.1 churn: 0008 scmi_pm_domain (DT provider conditional on
-#     np for ACPI boot); panthor suspend/resume + pmdomain fwnode auto-rebased.
-# Config: cixtech config/config-7.0.defconfig + olddefconfig.
-# NPU/VPU: external DKMS (cix_opensource__{npu,vpu}_driver @ cix_mainline_dev) --
-#   separate recipes; NOT built in-tree here.
-# Required cmdline: clk_ignore_unused (cixtech README); UEFI O/S HW Description = ACPI.
-#
-# Built explicitly with: bitbake linux-cix-sky1-official
-# Sibling to linux-cix-sky1 (LTS 6.18) and linux-cix-sky1-next (community BETA).
-
-SUMMARY = "NCZ Linux kernel for Cix Sky1 / CP8180 (v7.1.1 stable + CIX patch set)"
-DESCRIPTION = "NCZ kernel: mainline-stable Linux v7.1.1 (linux-7.1.y) plus the CIX Sky1 patch set, forward-ported and built by NCZ. Not a CIX/vendor release. NPU/VPU via external DKMS."
+SUMMARY = "NCZ Linux kernel for Cix Sky1 / CP8180 (v7.1.2 stable + CIX patch set)"
+DESCRIPTION = "NCZ kernel: mainline-stable Linux v7.1.2 (linux-7.1.y) plus the CIX Sky1 patch set, forward-ported and built by NCZ. Not a CIX/vendor release. NPU/VPU via DKMS, mesa/libmali are userspace apt pkgs."
 SECTION = "kernel"
 LICENSE = "GPL-2.0-only"
 LIC_FILES_CHKSUM = "file://COPYING;md5=6bc538ed5bd9a7fc9398086aedcd7e46"
-
 inherit kernel
 FILESEXTRAPATHS:prepend := "${THISDIR}/linux-cix-sky1-ncz-7.1.1:"
 
-LINUX_VERSION = "7.1.1"
-KERNEL_LOCALVERSION = "-ncz"
+LINUX_VERSION = "7.1.2"
+KERNEL_LOCALVERSION = "-ncz2"
 PATCHTOOL = "git"
 PV = "${LINUX_VERSION}+ncz"
 KBRANCH = "linux-7.1.y"
-# NCZ isolated-tree DKMS fix: keep DEFAULT package name so the kernel uses the SHARED
-# work-shared/${MACHINE}/kernel-source layout. A non-default name makes kernel.bbclass
-# (L63-71) put kernel-source in the recipe WORKDIR, which make-mod-scripts and the OOT
-# cix-*-kmd modules cannot find. build-cix-ncz71 is dedicated => no LTS collision.
 KERNEL_PACKAGE_NAME = "kernel"
-
-# v7.1.1 commit (linux-stable, branch linux-7.1.y)
-SRCREV_kernel = "c9acdc466e9aa96352f658b9276aa8a45b8e817d"
-
-SRC_URI = " \
+SRCREV_kernel = "03e2778d1f11de9260543f969e9e888a1c2bf830"
+SRC_URI = "\
     git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git;protocol=https;branch=${KBRANCH};name=kernel \
     file://config-7.0.defconfig \
     file://patches-7.1/0001-mailbox-add-acpi-support-to-cix-mailbox-driver.patch \
@@ -128,8 +99,15 @@ SRC_URI = " \
     file://patches-7.1/9005-drm-linlondp-fix-srctree-src-include-path.patch \
     file://patches-7.1/9006-drm-linlondp-migrate-private-obj-init-to-create-state.patch \
     file://patches-7.1/9007-soc-cix-acpi-resource-lookup-resolve-dev_id-by-acpi.patch \
+    file://patches-7.1/9008-reset-sky1-restore-acpi-support.patch \
+    file://patches-7.1/9009-pmdomain-scmi-perf-defer-fwnode-provider.patch \
+    file://patches-7.1/9010-clk-sky1-acpi-fix-acpi-power-management.patch \
+    file://patches-7.1/9011-pm-runtime-gate-until-late-initcall.patch \
+    file://patches-7.1/9012-pm-runtime-gate-all-callbacks.patch \
+    file://patches-7.1/9013-acpi-skip-notifier-on-probe-fail.patch \
+    file://patches-7.1/9014-clk-sky1-audss-dont-defer-on-missing-parents.patch \
+    file://patches-7.1/9014b-clk-sky1-audss-dont-defer-on-missing-regmap.patch \
 "
-
 S = "${WORKDIR}/git"
 COMPATIBLE_MACHINE = "(cixmini)"
 PROVIDES = "${PN} virtual/kernel"
