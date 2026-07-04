@@ -18,6 +18,27 @@
 # Config: config-7.2.defconfig = 7.1 NCZ config + olddefconfig on v7.2-rc1
 #   + CIX 2026q2 symbols + CONFIG_BTRFS_FS=y (built-in; btrfs root without
 #   initrd module).
+# RTC (RA8900CE, ACPI HID RX008900): RESOLVED. cixtech vendor issue #39
+#   (Orange Pi 6 Plus, 2026-07-03) = mainline rtc-ds1307 supports ra8900
+#   only via i2c_device_id (no ACPI table), so ACPI-enumerated RTC never
+#   binds -> rtc-efi fallback, clock resets. Vendor fix = patch
+#   0049-add-hym8563-rx8900-rtc-driver. We carry it as patches-7.2/
+#   0040-add-hym8563-rx8900-rtc-driver: rtc-rx8900.c has acpi_match
+#   RX008900 (=y built-in, "Third Party RX8900 Driver"), rtc-hym8563.c
+#   has acpi_match HYM8563. Full ACPI chain present: i2c-cadence
+#   (CIXH200B, =y) -> RTC0 child (RX008900) -> rtc-rx8900. Battery-backed
+#   hwclock works at boot without initrd. No further action needed.
+# AUDSS clk+reset: kept as cixtech 2026q2 self-contained drivers
+#   (clk-sky1-audss.c, reset-sky1-audss.c; compat "cix,sky1-audss-reset",
+#   ACPI HID CIXH6062). The upstream "Add Cix Sky1 AUDSS clock and reset
+#   support" series (Zabel reviewing ~2026-06-30) is NOT in v7.2-rc1 and
+#   is DT-oriented; adopting an in-review series would be worse than the
+#   vendor driver, and only the vendor form carries the ACPI HID cixmini
+#   needs. The audss determine_rate migration (old hand-patch 9001) is
+#   already in the vendor clk driver, so NO divergent hand-patch is
+#   carried. RECONCILE-WHEN-LANDED: once the audss series merges in a
+#   stable release, drop these two vendor files and adopt the mainline
+#   form, forward-porting the ACPI HID if upstream stays DT-only.
 # Required cmdline: clk_ignore_unused; UEFI O/S HW Description = ACPI.
 
 SUMMARY = "NCZ Linux kernel for Cix Sky1 / CP8180 (v7.2-rc1 + CIX 2026q2 patch set)"
