@@ -60,9 +60,15 @@ PATCHTOOL = "git"
 PV = "${LINUX_VERSION}+sky1-next"
 KBRANCH = "linux-7.0.y"
 
-# Sibling-installable alongside linux-cix-sky1 LTS — distinct work-shared
-# dir prevents do_patch collision (Codex HIGH finding 2026-05-03).
-KERNEL_PACKAGE_NAME = "kernel-${PN}"
+# Package name is versioned per Debian/Ubuntu convention (linux-image-<kver>)
+# so a kernel bump produces a NEW package name instead of replacing the same
+# fixed-name apt package in place -- old and new kernels coexist on disk and
+# the bootloader falls back to the old one if the new kernel is bad. Also
+# gives the BETA sibling a unique package namespace vs the LTS kernel so the
+# two can be installed side by side without collision.
+# Dots in the version segment are replaced with dashes (dpkg package names
+# permit only [a-z0-9.+-]).
+KERNEL_PACKAGE_NAME = "linux-image-${@ (d.getVar('LINUX_VERSION') + d.getVar('KERNEL_LOCALVERSION')).replace('.', '-').lower() }"
 
 # 7.0.12 stable tag from gregkh/linux mirror (point releases live on stable, not torvalds)
 SRCREV_kernel = "f53879e2e1e2fa053040e734c1ef8f386109a61b"
