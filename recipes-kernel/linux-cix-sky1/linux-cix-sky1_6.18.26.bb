@@ -49,6 +49,14 @@ KERNEL_LOCALVERSION = "-cix-sky1-lts"
 PV = "${LINUX_VERSION}+sky1"
 KBRANCH = "linux-6.18.y"
 
+# Package name is versioned per Debian/Ubuntu convention (linux-image-<kver>)
+# so a kernel bump produces a NEW package name instead of replacing the same
+# fixed-name apt package in place -- old and new kernels coexist on disk and
+# the bootloader falls back to the old one if the new kernel is bad.
+# Dots in the version segment are replaced with dashes (dpkg package names
+# permit only [a-z0-9.+-]).
+KERNEL_PACKAGE_NAME = "linux-image-${@ (d.getVar('LINUX_VERSION') + d.getVar('KERNEL_LOCALVERSION')).replace('.', '-').lower() }"
+
 # Mainline stable kernel + 139 Sky1-Linux LTS patches + config.sky1.
 SRC_URI = " \
     git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git;protocol=https;branch=${KBRANCH};name=kernel \
