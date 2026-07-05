@@ -369,7 +369,7 @@ index 000000000000..6a5c228835dc
 +
 +	n_phandles = fwnode_count_reference_with_args(np, "regulator-coupled-with",
 +						NULL);
-+	if (IS_ERR(n_phandles))
++	if (n_phandles < 0)
 +		n_phandles = 0;
 +
 +	n_phandles = max(n_phandles, 0);
