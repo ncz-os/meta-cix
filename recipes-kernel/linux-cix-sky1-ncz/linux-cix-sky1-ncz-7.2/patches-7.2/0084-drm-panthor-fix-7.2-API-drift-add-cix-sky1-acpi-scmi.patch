@@ -887,7 +887,7 @@ index 4c5b953796e4..21d42e0e5cc1 100644
  
  #endif /* __PANTHOR_GPU_REGS_H__ */
 diff --git a/drivers/gpu/drm/panthor/panthor_hw.c b/drivers/gpu/drm/panthor/panthor_hw.c
-index 7e315708ca7c..d191db128167 100644
+index 7e315708ca7c..cb5f0f738523 100644
 --- a/drivers/gpu/drm/panthor/panthor_hw.c
 +++ b/drivers/gpu/drm/panthor/panthor_hw.c
 @@ -1,6 +1,7 @@
@@ -898,7 +898,15 @@ index 7e315708ca7c..d191db128167 100644
  #include <linux/nvmem-consumer.h>
  #include <linux/platform_device.h>
  
-@@ -233,7 +234,23 @@ static int panthor_gpu_info_init(struct panthor_device *ptdev)
+@@ -194,6 +195,7 @@ static int overload_shader_present(struct panthor_device *ptdev)
+ static int panthor_gpu_info_init(struct panthor_device *ptdev)
+ {
+ 	unsigned int i;
++	int ret;
+ 
+ 	void __iomem *gpu_iomem = ptdev->iomem + GPU_CONTROL_BASE;
+ 
+@@ -233,7 +235,23 @@ static int panthor_gpu_info_init(struct panthor_device *ptdev)
  		ptdev->gpu_info.l2_present = gpu_read64(gpu_iomem, GPU_L2_PRESENT);
  	}
  
