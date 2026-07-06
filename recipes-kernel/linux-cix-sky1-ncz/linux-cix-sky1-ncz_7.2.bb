@@ -146,6 +146,7 @@ SRC_URI = " \
     file://patches-7.2/0081-drm-cix-fix-6.6-7.2-API-drift-in-linlon-dp-dptx.patch \
     file://patches-7.2/0082-pmdomain-scmi-export-perf-est-power-power-scale-by-d.patch \
     file://patches-7.2/0083-soc-cix-acpi-reserved-memory-without-fdt_reserved_me.patch \
+    file://patches-7.2/0084-drm-panthor-fix-7.2-API-drift-add-cix-sky1-acpi-scmi.patch \
 "
 
 S = "${WORKDIR}/git"
