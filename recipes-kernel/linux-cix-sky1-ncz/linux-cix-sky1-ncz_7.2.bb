@@ -39,7 +39,12 @@
 #   carried. RECONCILE-WHEN-LANDED: once the audss series merges in a
 #   stable release, drop these two vendor files and adopt the mainline
 #   form, forward-porting the ACPI HID if upstream stays DT-only.
-# Required cmdline: clk_ignore_unused; UEFI O/S HW Description = ACPI.
+# Required cmdline: clk_ignore_unused acpi_scmi_en=off; UEFI O/S HW
+#   Description = ACPI. acpi_scmi_en=off keeps the 2026q2 deny-handler
+#   from blocking CIXHA010 so the BIOS-1.0 CLKT clkdev bridge
+#   (clk-sky1-acpi, patch 0096) can provide the 207 consumer clocks;
+#   without it every apb/pclk consumer (PCIe/USB PHYs, pwm, uart) is
+#   clockless and NVMe never appears (patches 0093-0098 chain).
 
 SUMMARY = "NCZ Linux kernel for Cix Sky1 / CP8180 (v7.2-rc1 + CIX 2026q2 patch set)"
 DESCRIPTION = "NCZ kernel: mainline Linux v7.2-rc1 plus the cixtech 2026q2 Sky1 driver set forward-ported by NCZ. Not a CIX/vendor release."
@@ -158,6 +163,9 @@ SRC_URI = " \
     file://patches-7.2/0093-firmware-arm_scmi-activate-implemented-protocols-on-acpi.patch \
     file://patches-7.2/0094-drm-panthor-sky1-acpi-defer-probe-gpu-clock-not-ready.patch \
     file://patches-7.2/0095-phy-cix-defer-probe-acpi-clkdev-clocks-not-registered.patch \
+    file://patches-7.2/0096-clk-cix-sky1-clkt-clkdev-bridge-bios10.patch \
+    file://patches-7.2/0097-soc-cix-acpi-resource-lookup-v1-bios10.patch \
+    file://patches-7.2/0098-soc-cix-v1-lookup-owns-cixa1019.patch \
 "
 
 S = "${WORKDIR}/git"
