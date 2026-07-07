@@ -1,0 +1,67 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jason Perlow <jperlow@gmail.com>
+Date: Mon, 15 Jun 2026 13:55:00 -0400
+Subject: [PATCH] mailbox: cix: restore legacy macro aliases for v7.1 rebase
+
+The v7.1 rebase leaves cix-mailbox.c with CIX_ prefixed register and
+channel definitions while downstream ACPI/startup/shutdown hunks still
+refer to older unprefixed names. Add local compatibility aliases.
+---
+diff --git a/drivers/mailbox/cix-mailbox.c b/drivers/mailbox/cix-mailbox.c
+index 26b3935fbcc9..e02b62a710e2 100644
+--- a/drivers/mailbox/cix-mailbox.c
++++ b/drivers/mailbox/cix-mailbox.c
+@@ -72,6 +72,53 @@
+ #define CIX_FIFO_N_EMPTY_INT	BIT(8)
+ #define CIX_FAST_CH_INT(IDX)	BIT((IDX)+9)
+ 
++/*
++ * The v7.1 rebase preserves upstream CIX_ prefixed register/channel
++ * definitions while downstream ACPI enablement hunks still use the older
++ * unprefixed names. Keep aliases local to this driver to avoid noisy
++ * mechanical churn and preserve the existing startup/shutdown logic.
++ */
++#define REG_MSG(n)		CIX_REG_MSG(n)
++#define REG_DB_ACK		CIX_REG_DB_ACK
++#define ERR_COMP		CIX_ERR_COMP
++#define ERR_COMP_CLR		CIX_ERR_COMP_CLR
++#define REG_F_INT(IDX)		CIX_REG_F_INT(IDX)
++#define FIFO_WR			CIX_FIFO_WR
++#define FIFO_RD			CIX_FIFO_RD
++#define FIFO_STAS		CIX_FIFO_STAS
++#define FIFO_WM			CIX_FIFO_WM
++#define INT_ENABLE		CIX_INT_ENABLE
++#define INT_ENABLE_SIDE_B	CIX_INT_ENABLE_SIDE_B
++#define INT_CLEAR		CIX_INT_CLEAR
++#define INT_STATUS		CIX_INT_STATUS
++#define FIFO_RST		CIX_FIFO_RST
++#define MBOX_FAST_IDX		CIX_MBOX_FAST_IDX
++#define MBOX_DB_IDX		CIX_MBOX_DB_IDX
++#define MBOX_FIFO_IDX		CIX_MBOX_FIFO_IDX
++#define MBOX_REG_IDX		CIX_MBOX_REG_IDX
++#define MBOX_TX			CIX_MBOX_TX
++#define MBOX_RX			CIX_MBOX_RX
++#define DB_INT_BIT		CIX_DB_INT_BIT
++#define DB_ACK_INT_BIT		CIX_DB_ACK_INT_BIT
++#define FIFO_WM_DEFAULT		CIX_FIFO_WM_DEFAULT
++#define FIFO_STAS_WMK		CIX_FIFO_STAS_WMK
++#define FIFO_STAS_FULL		CIX_FIFO_STAS_FULL
++#define FIFO_STAS_EMPTY		CIX_FIFO_STAS_EMPTY
++#define FIFO_STAS_UFLOW		CIX_FIFO_STAS_UFLOW
++#define FIFO_STAS_OFLOW		CIX_FIFO_STAS_OFLOW
++#define FIFO_RST_BIT		CIX_FIFO_RST_BIT
++#define DB_INT			CIX_DB_INT
++#define ACK_INT			CIX_ACK_INT
++#define FIFO_FULL_INT		CIX_FIFO_FULL_INT
++#define FIFO_EMPTY_INT		CIX_FIFO_EMPTY_INT
++#define FIFO_WM01_INT		CIX_FIFO_WM01_INT
++#define FIFO_WM10_INT		CIX_FIFO_WM10_INT
++#define FIFO_OFLOW_INT		CIX_FIFO_OFLOW_INT
++#define FIFO_UFLOW_INT		CIX_FIFO_UFLOW_INT
++#define FIFO_N_EMPTY_INT	CIX_FIFO_N_EMPTY_INT
++#define FAST_CH_INT(IDX)	CIX_FAST_CH_INT(IDX)
++#define MBOX_MSG_LEN_MASK	CIX_MBOX_MSG_LEN_MASK
++
+ #define CIX_SHMEM_OFFSET 0x80
+ 
+ enum cix_mbox_chan_type {

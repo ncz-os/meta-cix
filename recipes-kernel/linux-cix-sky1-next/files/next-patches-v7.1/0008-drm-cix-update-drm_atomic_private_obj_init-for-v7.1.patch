@@ -1,0 +1,94 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jason Perlow <jperlow@gmail.com>
+Date: Mon, 15 Jun 2026 15:05:00 -0400
+Subject: [PATCH] drm/cix: update drm_atomic_private_obj_init signature for v7.1
+
+Linux v7.1 dropped the initial state argument from
+drm_atomic_private_obj_init(). Update CIX private obj init calls
+accordingly.
+---
+diff --git a/drivers/gpu/drm/cix/linlon-dp/linlondp_private_obj.c b/drivers/gpu/drm/cix/linlon-dp/linlondp_private_obj.c
+index 04625f362c47..880c46337ec0 100644
+--- a/drivers/gpu/drm/cix/linlon-dp/linlondp_private_obj.c
++++ b/drivers/gpu/drm/cix/linlon-dp/linlondp_private_obj.c
+@@ -57,8 +57,7 @@ static int linlondp_layer_obj_add(struct linlondp_kms_dev *kms,
+ 		return -ENOMEM;
+ 
+ 	st->base.component = &layer->base;
+-	drm_atomic_private_obj_init(&kms->base, &layer->base.obj, &st->base.obj,
+-				    &linlondp_layer_obj_funcs);
++	drm_atomic_private_obj_init(&kms->base, &layer->base.obj, &linlondp_layer_obj_funcs);
+ 	return 0;
+ }
+ 
+@@ -99,8 +98,7 @@ static int linlondp_scaler_obj_add(struct linlondp_kms_dev *kms,
+ 		return -ENOMEM;
+ 
+ 	st->base.component = &scaler->base;
+-	drm_atomic_private_obj_init(&kms->base, &scaler->base.obj,
+-				    &st->base.obj, &linlondp_scaler_obj_funcs);
++	drm_atomic_private_obj_init(&kms->base, &scaler->base.obj, &linlondp_scaler_obj_funcs);
+ 	return 0;
+ }
+ 
+@@ -141,8 +139,7 @@ static int linlondp_compiz_obj_add(struct linlondp_kms_dev *kms,
+ 		return -ENOMEM;
+ 
+ 	st->base.component = &compiz->base;
+-	drm_atomic_private_obj_init(&kms->base, &compiz->base.obj,
+-				    &st->base.obj, &linlondp_compiz_obj_funcs);
++	drm_atomic_private_obj_init(&kms->base, &compiz->base.obj, &linlondp_compiz_obj_funcs);
+ 
+ 	return 0;
+ }
+@@ -184,9 +181,7 @@ static int linlondp_splitter_obj_add(struct linlondp_kms_dev *kms,
+ 		return -ENOMEM;
+ 
+ 	st->base.component = &splitter->base;
+-	drm_atomic_private_obj_init(&kms->base, &splitter->base.obj,
+-				    &st->base.obj,
+-				    &linlondp_splitter_obj_funcs);
++	drm_atomic_private_obj_init(&kms->base, &splitter->base.obj, &linlondp_splitter_obj_funcs);
+ 
+ 	return 0;
+ }
+@@ -228,8 +223,7 @@ static int linlondp_merger_obj_add(struct linlondp_kms_dev *kms,
+ 		return -ENOMEM;
+ 
+ 	st->base.component = &merger->base;
+-	drm_atomic_private_obj_init(&kms->base, &merger->base.obj,
+-				    &st->base.obj, &linlondp_merger_obj_funcs);
++	drm_atomic_private_obj_init(&kms->base, &merger->base.obj, &linlondp_merger_obj_funcs);
+ 
+ 	return 0;
+ }
+@@ -271,8 +265,7 @@ static int linlondp_improc_obj_add(struct linlondp_kms_dev *kms,
+ 		return -ENOMEM;
+ 
+ 	st->base.component = &improc->base;
+-	drm_atomic_private_obj_init(&kms->base, &improc->base.obj,
+-				    &st->base.obj, &linlondp_improc_obj_funcs);
++	drm_atomic_private_obj_init(&kms->base, &improc->base.obj, &linlondp_improc_obj_funcs);
+ 
+ 	return 0;
+ }
+@@ -314,8 +307,7 @@ static int linlondp_timing_ctrlr_obj_add(struct linlondp_kms_dev *kms,
+ 		return -ENOMEM;
+ 
+ 	st->base.component = &ctrlr->base;
+-	drm_atomic_private_obj_init(&kms->base, &ctrlr->base.obj, &st->base.obj,
+-				    &linlondp_timing_ctrlr_obj_funcs);
++	drm_atomic_private_obj_init(&kms->base, &ctrlr->base.obj, &linlondp_timing_ctrlr_obj_funcs);
+ 
+ 	return 0;
+ }
+@@ -358,8 +350,7 @@ static int linlondp_pipeline_obj_add(struct linlondp_kms_dev *kms,
+ 		return -ENOMEM;
+ 
+ 	st->pipe = pipe;
+-	drm_atomic_private_obj_init(&kms->base, &pipe->obj, &st->obj,
+-				    &linlondp_pipeline_obj_funcs);
++	drm_atomic_private_obj_init(&kms->base, &pipe->obj, &linlondp_pipeline_obj_funcs);
+ 
+ 	return 0;
+ }
