@@ -166,6 +166,9 @@ SRC_URI = " \
     file://patches-7.2/0096-clk-cix-sky1-clkt-clkdev-bridge-bios10.patch \
     file://patches-7.2/0097-soc-cix-acpi-resource-lookup-v1-bios10.patch \
     file://patches-7.2/0098-soc-cix-v1-lookup-owns-cixa1019.patch \
+    file://patches-7.2/0099-pci-sky1-acpi-standard-ecam-mode-knob.patch \
+    file://patches-7.2/0100-iommu-smmu-v3-sky1-pcie-bypass-ste-ats-override.patch \
+    file://patches-7.2/0101-pci-sky1-acpi-block-cixh2020-standard-mode.patch \
 "
 
 S = "${WORKDIR}/git"
