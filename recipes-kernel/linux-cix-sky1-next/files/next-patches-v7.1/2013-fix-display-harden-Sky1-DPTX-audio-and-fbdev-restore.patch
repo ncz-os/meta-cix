@@ -1,0 +1,34 @@
+From c1212b9516ac8e27ca67c93fe3a3bdc21f5820e1 Mon Sep 17 00:00:00 2001
+From: Jason Perlow <jperlow@gmail.com>
+Date: Wed, 10 Jun 2026 22:15:20 -0400
+Subject: [PATCH] fix(drm): skip fbdev restore when helper setup failed
+
+When drm_fb_helper_initial_config() fails, fb_helper->info remains NULL.
+DRM client restore on file close can later call into fbdev restore and
+NULL-deref incomplete state. Make restore a no-op for incomplete fbdev
+clients and log the skipped restore for diagnostics.
+
+---
+ drivers/gpu/drm/clients/drm_fbdev_client.c | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/drivers/gpu/drm/clients/drm_fbdev_client.c b/drivers/gpu/drm/clients/drm_fbdev_client.c
+index 91d196a39..b5241e598 100644
+--- a/drivers/gpu/drm/clients/drm_fbdev_client.c
++++ b/drivers/gpu/drm/clients/drm_fbdev_client.c
+@@ -42,6 +42,13 @@ static int drm_fbdev_client_restore(struct drm_client_dev *client, bool force)
+ {
+ 	struct drm_fb_helper *fb_helper = drm_fb_helper_from_client(client);
+ 
++	/* If initial fbdev setup failed, fb_helper->info remains NULL. */
++	if (!fb_helper || !fb_helper->info) {
++		drm_dbg_kms(client->dev,
++			    "skipping fbdev restore before fbdev setup completed\n");
++		return 0;
++	}
++
+ 	drm_fb_helper_restore_fbdev_mode_unlocked(fb_helper, force);
+ 
+ 	return 0;
+-- 
+2.51.0

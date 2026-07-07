@@ -1,0 +1,21 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jason Perlow <jperlow@gmail.com>
+Date: Mon, 15 Jun 2026 14:55:00 -0400
+Subject: [PATCH] drm/cix: linlon-dp: update color format for v7.1
+
+Linux v7.1 changed DRM_COLOR_FORMAT_* to DRM_OUTPUT_COLOR_FORMAT_*.
+Update the CIX linlondp_crtc.c reference accordingly.
+---
+diff --git a/drivers/gpu/drm/cix/linlon-dp/linlondp_crtc.c b/drivers/gpu/drm/cix/linlon-dp/linlondp_crtc.c
+index 0080c2704947..f465656285bc 100644
+--- a/drivers/gpu/drm/cix/linlon-dp/linlondp_crtc.c
++++ b/drivers/gpu/drm/cix/linlon-dp/linlondp_crtc.c
+@@ -47,7 +47,7 @@ void linlondp_crtc_get_color_config(struct drm_crtc_state *crtc_st,
+ 
+ 	/* connector doesn't config any color_format, use RGB444 as default */
+ 	if (!conn_color_formats)
+-		conn_color_formats = DRM_COLOR_FORMAT_RGB444;
++		conn_color_formats = DRM_OUTPUT_COLOR_FORMAT_RGB444;
+ 
+ 	*color_depths = GENMASK(min_bpc, 0);
+ 	*color_formats = conn_color_formats;

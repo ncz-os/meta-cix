@@ -1,0 +1,30 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jason Perlow <jperlow@gmail.com>
+Date: Mon, 15 Jun 2026 14:10:00 -0400
+Subject: [PATCH] mailbox: cix: fix v7.1 rebase message length and val_32
+
+Complete the v7.1 cix-mailbox rebase by restoring the message length
+compat define expected by the downstream interrupt paths and matching
+the startup local variable name to the applied ACPI enablement code.
+---
+diff --git a/drivers/mailbox/cix-mailbox.c b/drivers/mailbox/cix-mailbox.c
+index e02b62a710e2..2707891d6337 100644
+--- a/drivers/mailbox/cix-mailbox.c
++++ b/drivers/mailbox/cix-mailbox.c
+@@ -18,6 +18,7 @@
+  */
+ #define CIX_MBOX_MSG_WORDS	32	/* Max length = 32 words */
+ #define CIX_MBOX_MSG_LEN_MASK	0x7fL	/* Max length = 128 bytes */
++#define CIX_MBOX_MSG_LEN	CIX_MBOX_MSG_WORDS
+ 
+ /* [0~7] Fast channel
+  * [8] doorbell base channel
+@@ -435,7 +436,7 @@ static int cix_mbox_startup(struct mbox_chan *chan)
+ 	struct cix_mbox_priv *priv = to_cix_mbox_priv(chan->mbox);
+ 	struct cix_mbox_con_priv *cp = chan->con_priv;
+ 	int index = cp->index, ret;
+-	u32 val;
++	u32 val_32;
+ 
+ 	ret = request_irq(priv->irq, cix_mbox_isr, IRQF_NO_SUSPEND,
+ 			  dev_name(priv->dev), chan);

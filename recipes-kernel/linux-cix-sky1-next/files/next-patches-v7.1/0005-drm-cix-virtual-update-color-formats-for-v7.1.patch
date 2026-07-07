@@ -1,0 +1,25 @@
+From 0000000000000000000000000000000000000000 Mon Mon 15 Jun 2026 14:40:00 -0400
+From: Jason Perlow <jperlow@gmail.com>
+Date: Mon, 15 Jun 2026 14:40:00 -0400
+Subject: [PATCH] drm/cix: cix_virtual: update color formats for v7.1
+
+Linux v7.1 changed DRM_COLOR_FORMAT_* to DRM_OUTPUT_COLOR_FORMAT_*.
+Update the CIX virtual connector output_formats bitmask accordingly.
+---
+diff --git a/drivers/gpu/drm/cix/cix_virtual.c b/drivers/gpu/drm/cix/cix_virtual.c
+index c3877c4cf4f6..d021cd8fdf30 100644
+--- a/drivers/gpu/drm/cix/cix_virtual.c
++++ b/drivers/gpu/drm/cix/cix_virtual.c
+@@ -235,9 +235,9 @@ cix_virtual_bind(struct device *comp, struct device *master,
+ 	}
+ 
+ 	/*  Set supported color formats */
+-	connector->display_info.color_formats = DRM_COLOR_FORMAT_RGB444   |
+-						DRM_COLOR_FORMAT_YCBCR422 |
+-						DRM_COLOR_FORMAT_YCBCR420;
++	connector->display_info.color_formats = DRM_OUTPUT_COLOR_FORMAT_RGB444 |
++						DRM_OUTPUT_COLOR_FORMAT_YCBCR422 |
++						DRM_OUTPUT_COLOR_FORMAT_YCBCR420;
+ 
+ 	return 0;
+ }

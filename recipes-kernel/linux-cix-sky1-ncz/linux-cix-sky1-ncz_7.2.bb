@@ -155,6 +155,9 @@ SRC_URI = " \
     file://patches-7.2/0090-acpi-pm-skip-notifier-removal-in-probe-failure-cleanup.patch \
     file://patches-7.2/0091-clk-reset-sky1-audss-dont-defer-on-missing-parents-regmap.patch \
     file://patches-7.2/0092-drm-panthor-explicitly-enable-core-clock-before-hw-init.patch \
+    file://patches-7.2/0093-firmware-arm_scmi-activate-implemented-protocols-on-acpi.patch \
+    file://patches-7.2/0094-drm-panthor-sky1-acpi-defer-probe-gpu-clock-not-ready.patch \
+    file://patches-7.2/0095-phy-cix-defer-probe-acpi-clkdev-clocks-not-registered.patch \
 "
 
 S = "${WORKDIR}/git"

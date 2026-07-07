@@ -1,0 +1,38 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jason Perlow <jperlow@gmail.com>
+Date: Mon, 15 Jun 2026 13:20:00 -0400
+Subject: [PATCH] clk: cix: sky1-audss: port divider ops to v7.1
+
+Linux v7.1 uses .determine_rate and divider_determine_rate() for
+divider clock rate selection. Refresh the Sky1 AUDSS regmap divider
+wrapper accordingly.
+---
+--- a/drivers/clk/cix/clk-sky1-audss.c
++++ b/drivers/clk/cix/clk-sky1-audss.c
+@@ -303,13 +303,13 @@
+ 				   div->flags, div->width);
+ }
+ 
+-static long sky1_audss_div_round_rate(struct clk_hw *hw, unsigned long rate,
+-				      unsigned long *prate)
++static int sky1_audss_div_determine_rate(struct clk_hw *hw,
++					 struct clk_rate_request *req)
+ {
+ 	struct clk_divider *div = to_clk_divider(hw);
+ 
+-	return divider_round_rate(hw, rate, prate, div->table,
+-				  div->width, div->flags);
++	return divider_determine_rate(hw, req, div->table,
++				      div->width, div->flags);
+ }
+ 
+ static int sky1_audss_div_set_rate(struct clk_hw *hw, unsigned long rate,
+@@ -340,7 +340,7 @@
+ 
+ static const struct clk_ops sky1_audss_div_ops = {
+ 	.recalc_rate = sky1_audss_div_recalc_rate,
+-	.round_rate = sky1_audss_div_round_rate,
++	.determine_rate = sky1_audss_div_determine_rate,
+ 	.set_rate = sky1_audss_div_set_rate,
+ };
+ 

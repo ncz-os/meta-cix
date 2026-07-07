@@ -1,0 +1,96 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jason Perlow <jperlow@gmail.com>
+Date: Mon, 15 Jun 2026 14:50:00 -0400
+Subject: [PATCH] drm/cix: update remaining color formats for v7.1
+
+Linux v7.1 changed DRM_COLOR_FORMAT_* to DRM_OUTPUT_COLOR_FORMAT_*.
+Update the CIX linlon-dp and trilin_drm references accordingly.
+---
+diff --git a/drivers/gpu/drm/cix/dptx/trilin_drm.c b/drivers/gpu/drm/cix/dptx/trilin_drm.c
+index 423b3f018f9b..bf26c73b6111 100644
+--- a/drivers/gpu/drm/cix/dptx/trilin_drm.c
++++ b/drivers/gpu/drm/cix/dptx/trilin_drm.c
+@@ -744,14 +744,14 @@ static u8 trilin_dp_cal_bpp(u8 bpc, int format)
+ 	u8 bpp = bpc * 3;
+ 
+ 	switch (format) {
+-	case DRM_COLOR_FORMAT_RGB444:
+-	case DRM_COLOR_FORMAT_YCBCR444:
++	case DRM_OUTPUT_COLOR_FORMAT_RGB444:
++	case DRM_OUTPUT_COLOR_FORMAT_YCBCR444:
+ 		bpp = bpc * 3;
+ 		break;
+-	case DRM_COLOR_FORMAT_YCBCR422:
++	case DRM_OUTPUT_COLOR_FORMAT_YCBCR422:
+ 		bpp = bpc * 2;
+ 		break;
+-	case DRM_COLOR_FORMAT_YCBCR420:
++	case DRM_OUTPUT_COLOR_FORMAT_YCBCR420:
+ 		bpp = bpc * 3 / 2;
+ 		break;
+ 	default:
+@@ -861,7 +861,7 @@ static bool compute_available_clock_rate(struct trilin_dp *dp,
+ 		struct drm_connector_state *connector_state, u8 suggest_bpc,
+ 		int clock, int color_format, int *rt_bpc, int *rt_bpp)
+ {
+-	int min_bpc = (color_format == DRM_COLOR_FORMAT_RGB444) ? 6 : 8;
++	int min_bpc = (color_format == DRM_OUTPUT_COLOR_FORMAT_RGB444) ? 6 : 8;
+ 	int bpc = max(suggest_bpc, min_bpc);
+ 	int bpp;
+ 	u8 max_lanes = dp->link_config.max_lanes;
+@@ -932,13 +932,13 @@ int trilin_dp_encoder_compute_config(struct drm_encoder *encoder,
+ 	u8 max_lanes = dp->link_config.max_lanes;
+ 	int link_rate = dp->link_config.max_rate;
+ 
+-	if (!(info_formats & DRM_COLOR_FORMAT_RGB444)) {
+-		info_formats |= DRM_COLOR_FORMAT_RGB444;
++	if (!(info_formats & DRM_OUTPUT_COLOR_FORMAT_RGB444)) {
++		info_formats |= DRM_OUTPUT_COLOR_FORMAT_RGB444;
+ 		DP_WARN("info_format=%0x, force support RGB444", info->color_formats);
+ 	}
+ 
+ 	const int COMMON_COLORS_FORMATS[] = {
+-		DRM_COLOR_FORMAT_RGB444, DRM_COLOR_FORMAT_YCBCR422, DRM_COLOR_FORMAT_YCBCR420};
++		DRM_OUTPUT_COLOR_FORMAT_RGB444, DRM_OUTPUT_COLOR_FORMAT_YCBCR422, DRM_OUTPUT_COLOR_FORMAT_YCBCR420};
+ 
+ 	for (i = 0; i < ARRAY_SIZE(COMMON_COLORS_FORMATS); i++) {
+ 		color_format = COMMON_COLORS_FORMATS[i];
+@@ -947,7 +947,7 @@ int trilin_dp_encoder_compute_config(struct drm_encoder *encoder,
+ 			success = compute_available_clock_rate(dp, connector_state, suggest_bpc,
+ 				adjusted_mode->clock, color_format, &bpc, &bpp);
+ 			if (success) {
+-				if (color_format != DRM_COLOR_FORMAT_RGB444)
++				if (color_format != DRM_OUTPUT_COLOR_FORMAT_RGB444)
+ 					DP_INFO("Use YUV Format=0x%0x", color_format);
+ 				break;
+ 			}
+@@ -961,13 +961,13 @@ int trilin_dp_encoder_compute_config(struct drm_encoder *encoder,
+ 	}
+ 
+ 	switch (color_format) {
+-	case DRM_COLOR_FORMAT_YCBCR444:
++	case DRM_OUTPUT_COLOR_FORMAT_YCBCR444:
+ 		format = TRILIN_DPSUB_FORMAT_YCBCR444;
+ 		break;
+-	case DRM_COLOR_FORMAT_YCBCR422:
++	case DRM_OUTPUT_COLOR_FORMAT_YCBCR422:
+ 		format = TRILIN_DPSUB_FORMAT_YCBCR422;
+ 		break;
+-	case DRM_COLOR_FORMAT_YCBCR420:
++	case DRM_OUTPUT_COLOR_FORMAT_YCBCR420:
+ 		format = TRILIN_DPSUB_FORMAT_YCBCR420;
+ 		break;
+ 	default:
+diff --git a/drivers/gpu/drm/cix/linlon-dp/linlondp_pipeline_state.c b/drivers/gpu/drm/cix/linlon-dp/linlondp_pipeline_state.c
+index e0e3547116d6..27b463e2b1f7 100644
+--- a/drivers/gpu/drm/cix/linlon-dp/linlondp_pipeline_state.c
++++ b/drivers/gpu/drm/cix/linlon-dp/linlondp_pipeline_state.c
+@@ -853,7 +853,7 @@ static int linlondp_improc_validate(struct linlondp_improc *improc,
+ 			st->color_format = kcrtc_st->output_format;
+ 		}
+ 
+-		if ((st->color_format == DRM_COLOR_FORMAT_YCBCR420) &&
++		if ((st->color_format == DRM_OUTPUT_COLOR_FORMAT_YCBCR420) &&
+ 		    (improc->base.pipeline->pixel_per_cycle != 1)) {
+ 			drm_dbg_atomic(crtc->dev, 
+ 				"420 with non-1ppc out is not supported\n");
