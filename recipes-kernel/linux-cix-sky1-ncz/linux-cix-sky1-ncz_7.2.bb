@@ -147,6 +147,14 @@ SRC_URI = " \
     file://patches-7.2/0082-pmdomain-scmi-export-perf-est-power-power-scale-by-d.patch \
     file://patches-7.2/0083-soc-cix-acpi-reserved-memory-without-fdt_reserved_me.patch \
     file://patches-7.2/0084-drm-panthor-fix-7.2-API-drift-add-cix-sky1-acpi-scmi.patch \
+    file://patches-7.2/0085-firmware-arm_scmi-mailbox-fix-acpi-driver-data-type-confusion.patch \
+    file://patches-7.2/0086-drm-panthor-try-named-gpu_core-acpi-clock-before-bare-null-lookup.patch \
+    file://patches-7.2/0087-reset-sky1-restore-acpi-support.patch \
+    file://patches-7.2/0088-pmdomain-scmi-perf-defer-fwnode-provider.patch \
+    file://patches-7.2/0089-clk-cix-acpi-pm-runtime-acpi-power-mgmt-resume-gate.patch \
+    file://patches-7.2/0090-acpi-pm-skip-notifier-removal-in-probe-failure-cleanup.patch \
+    file://patches-7.2/0091-clk-reset-sky1-audss-dont-defer-on-missing-parents-regmap.patch \
+    file://patches-7.2/0092-drm-panthor-explicitly-enable-core-clock-before-hw-init.patch \
 "
 
 S = "${WORKDIR}/git"
