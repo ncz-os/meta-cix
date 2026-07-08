@@ -169,6 +169,11 @@ SRC_URI = " \
     file://patches-7.2/0099-pci-sky1-acpi-standard-ecam-mode-knob.patch \
     file://patches-7.2/0100-iommu-smmu-v3-sky1-pcie-bypass-ste-ats-override.patch \
     file://patches-7.2/0101-pci-sky1-acpi-block-cixh2020-standard-mode.patch \
+    file://patches-7.2/0102-phy-cix-usbdp-reset-control-get-optional.patch \
+    file://patches-7.2/0103-phy-cix-usb2-usb3-reset-control-get-optional.patch \
+    file://patches-7.2/0104-clk-sky1-audss-adopt-v8-gate-ops.patch \
+    file://patches-7.2/0105-clk-sky1-audss-drop-prepare-unmatched-put-noidle.patch \
+    file://patches-7.2/0106-iommu-smmu-v3-sky1-disable-event-queue-storm.patch \
 "
 
 S = "${WORKDIR}/git"
