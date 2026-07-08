@@ -58,7 +58,7 @@ index 335288e8b5b3..4a51afa0a101 100644
  typedef int (*pm_callback_t)(struct device *);
  
  static inline pm_callback_t get_callback_ptr(const void *start, size_t offset)
-@@ -377,6 +397,23 @@ static int __rpm_callback(int (*cb)(struct device *), struct device *dev)
+@@ -377,6 +397,25 @@ static int __rpm_callback(int (*cb)(struct device *), struct device *dev)
  	int retval = 0, idx;
  	bool use_links = dev->power.links_count > 0;
  
@@ -75,7 +75,9 @@ index 335288e8b5b3..4a51afa0a101 100644
 +	 * later when the system is ready.
 +	 */
 +	if (!cix_system_ready && cb) {
-+		spin_unlock_irq(&dev->power.lock);
++		/* lock is still held here; __rpm_callback must return with
++		 * power.lock HELD (it releases+reacquires around cb), so do
++		 * NOT unlock or the caller double-unlocks -> preempt underflow */
 +		return 0;
 +	}
 +
