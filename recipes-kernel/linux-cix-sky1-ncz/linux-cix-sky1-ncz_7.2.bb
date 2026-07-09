@@ -174,6 +174,10 @@ SRC_URI = " \
     file://patches-7.2/0104-clk-sky1-audss-adopt-v8-gate-ops.patch \
     file://patches-7.2/0105-clk-sky1-audss-drop-prepare-unmatched-put-noidle.patch \
     file://patches-7.2/0106-iommu-smmu-v3-sky1-disable-event-queue-storm.patch \
+    file://patches-7.2/0107-regulator-preserve-acpi-firmware-enabled-rails.patch \
+    file://patches-7.2/0108-iommu-smmu-v3-sky1-disable-pri-restore-evtq.patch \
+    file://patches-7.2/0109-pci-cix-force-clock-pm-off-sky1-endpoints.patch \
+    file://patches-7.2/0110-net-r8169-skip-hw-tally-rtl8127-sky1.patch \
 "
 
 S = "${WORKDIR}/git"
