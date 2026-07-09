@@ -178,6 +178,7 @@ SRC_URI = " \
     file://patches-7.2/0108-iommu-smmu-v3-sky1-disable-pri-restore-evtq.patch \
     file://patches-7.2/0109-pci-cix-force-clock-pm-off-sky1-endpoints.patch \
     file://patches-7.2/0110-net-r8169-skip-hw-tally-rtl8127-sky1.patch \
+    file://patches-7.2/0111-reset-cix-acpi-fwnode-lookup-fallback.patch \
 "
 
 S = "${WORKDIR}/git"
