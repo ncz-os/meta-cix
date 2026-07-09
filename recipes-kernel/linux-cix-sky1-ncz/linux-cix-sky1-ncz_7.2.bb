@@ -12,9 +12,8 @@
 #   Upstream v7.2-rc1 already carries: sky1-orion-o6 DTS, cix-mailbox,
 #   pci-sky1 (Cadence HPA, OF), pinctrl-sky1, reset-sky1, HDA cix-ipbloq
 #   -- those are used as-is with NCZ ACPI deltas on top.
-#   NOT ported yet: panthor ACPI support (v7.2 split panthor_regs.h;
-#   needs a fresh forward-port), vendor cdns3 core reset/u3-disable hook
-#   invocation (stage-2; glue registers hooks, core does not call them).
+#   USB host role initialization is completed by patch 0112, which connects
+#   the imported USBSSP platform driver to the v7.2 unified cdns3 role core.
 # Config: config-7.2.defconfig = 7.1 NCZ config + olddefconfig on v7.2-rc1
 #   + CIX 2026q2 symbols + CONFIG_BTRFS_FS=y (built-in; btrfs root without
 #   initrd module).
@@ -179,6 +178,7 @@ SRC_URI = " \
     file://patches-7.2/0109-pci-cix-force-clock-pm-off-sky1-endpoints.patch \
     file://patches-7.2/0110-net-r8169-skip-hw-tally-rtl8127-sky1.patch \
     file://patches-7.2/0111-reset-cix-acpi-fwnode-lookup-fallback.patch \
+    file://patches-7.2/0112-usb-cdns3-initialize-host-role-for-Sky1-USBSSP.patch \
 "
 
 S = "${WORKDIR}/git"
