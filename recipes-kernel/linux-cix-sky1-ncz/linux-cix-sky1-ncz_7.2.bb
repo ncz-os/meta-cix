@@ -179,6 +179,12 @@ SRC_URI = " \
     file://patches-7.2/0110-net-r8169-skip-hw-tally-rtl8127-sky1.patch \
     file://patches-7.2/0111-reset-cix-acpi-fwnode-lookup-fallback.patch \
     file://patches-7.2/0112-usb-cdns3-initialize-host-role-for-Sky1-USBSSP.patch \
+    file://patches-7.2/0113-usb-cdns3-restore-cdnsp-sky1-acpi-host-bringup.patch \
+    file://patches-7.2/0114-usb-cdns3-restore-full-sky1-next-USBSSP-driver-set-h.patch \
+    file://patches-7.2/0115-usb-cdns3-restore-remaining-sky1-next-cdns3-cdnsp-fi.patch \
+    file://patches-7.2/0116-usb-cdns3-restore-sky1-next-Kconfig-Makefile-USB_CDN.patch \
+    file://patches-7.2/0117-pmdomain-arm-export-CIX-SCMI-perf-helpers.patch \
+    file://patches-7.2/0118-usb-typec-restore-rts5453-Sky1-driver.patch \
 "
 
 S = "${WORKDIR}/git"
