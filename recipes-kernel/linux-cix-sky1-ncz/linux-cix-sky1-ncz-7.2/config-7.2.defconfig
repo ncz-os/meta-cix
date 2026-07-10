@@ -6711,6 +6711,13 @@ CONFIG_VIDEO_MESON_GE2D=m
 # CONFIG_VIDEO_E5010_JPEG_ENC is not set
 
 #
+# Cix media platform drivers
+#
+CONFIG_VIDEO_LINLON=m
+# CONFIG_VIDEO_LINLON_FTRACE is not set
+CONFIG_VIDEO_LINLON_PRINT_FILE=y
+
+#
 # Intel media platform drivers
 #
 
