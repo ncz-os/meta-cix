@@ -208,7 +208,7 @@ SRC_URI = " \
 # adopting a newer 6.18.y point release.
 SRCREV_kernel = "1fe06068166d4fc16722201f267b1fe19efad639"
 
-S = "${WORKDIR}/git"
+S = "${UNPACKDIR}/${BB_GIT_DEFAULT_DESTSUFFIX}"
 
 COMPATIBLE_MACHINE = "(cixmini)"
 
@@ -217,7 +217,7 @@ COMPATIBLE_MACHINE = "(cixmini)"
 # (plain kernel.bbclass; no kernel-yocto fragment flow).
 do_configure:prepend() {
     cd ${S}
-    cp ${WORKDIR}/config.sky1 ${B}/.config
+    cp ${UNPACKDIR}/config.sky1 ${B}/.config
     # CONFIG_EXTRA_FIRMWARE bakes firmware blobs into the kernel image
     # at compile time, looking at /lib/firmware/ on the build host. We
     # ship sky1-firmware as a separate runtime package via a Yocto
