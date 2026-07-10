@@ -227,6 +227,7 @@ SRC_URI = " \
     file://patches-7.2/0127-media-linlon-add-missing-VIDEOBUF2_DMA_SG-and-VIDEOB.patch \
     file://patches-7.2/0128-media-cix-add-linux-string.h-includes-7.2-build-fix.patch \
     file://patches-7.2/0129-media-cix-handle-missing-VPU-firmware-cleanly.patch \
+    file://patches-7.2/0130-media-cix-vpu-sync-upstream-v1.0.1-irq-reset-race-fix.patch \
 "
 
 S = "${WORKDIR}/git"
