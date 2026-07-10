@@ -29,6 +29,21 @@
 #   SOC_SKY1=y; SOC_DEFAULT/SOC_R329 explicitly off (each .c calls
 #   module_platform_driver, so the linker errors on duplicate
 #   init_module/cleanup_module if both SOCs compile into the same module).
+# VPU (Linlon AMLogic-derived codec, ACPI HID CIXH3010): ADDED via
+#   patches 0126-0128. The Entrpi v7.1 sky1-next Linlon VPU driver
+#   (63 files, ~39K lines, Kconfig symbol VIDEO_LINLON) was carried
+#   over from the 7.1 squashed tree and forward-ported onto v7.2-rc1:
+#   add the missing "select VIDEOBUF2_DMA_SG" / "select VIDEOBUF2_MEMOPS"
+#   in Kconfig (so the dep chain resolves when no other driver enables
+#   videobuf2-dma-sg), and add explicit "#include <linux/string.h>" +
+#   strncpy->strscpy in three cix files where the 7.2 include chain
+#   no longer drags string.h primitives in transitively. The result is
+#   drivers/media/platform/cix/amvx.ko (~575 KB unstripped, ~118 KB
+#   installed + xz), depends=videobuf2-v4l2,videodev,videobuf2-dma-sg,
+#   videobuf2-common. Requires the cix-vpu-umd userspace firmware
+#   blobs staged at /lib/firmware/ (separate recipe) for the
+#   H.264/H.265/AV1 decode/encode firmwares; this kernel-side work
+#   only adds the driver, it does not stage the firmware.
 
 RTC (RA8900CE, ACPI HID RX008900): RESOLVED. cixtech vendor issue #39
 #   (Orange Pi 6 Plus, 2026-07-03) = mainline rtc-ds1307 supports ra8900
@@ -205,6 +220,9 @@ SRC_URI = " \
     file://patches-7.2/0123-misc-armchina-npu-force-D0-before-probe.patch \
     file://patches-7.2/0124-acpi-sta_quirk-tighten-hidden-Sky1-SCMI-NPU-child.patch \
     file://patches-7.2/0125-misc-armchina-npu-platform_remove-void-7.2.patch \
+    file://patches-7.2/0126-media-cix-add-Sky1-video-codec-VPU-driver.patch \
+    file://patches-7.2/0127-media-linlon-add-missing-VIDEOBUF2_DMA_SG-and-VIDEOB.patch \
+    file://patches-7.2/0128-media-cix-add-linux-string.h-includes-7.2-build-fix.patch \
 "
 
 S = "${WORKDIR}/git"
