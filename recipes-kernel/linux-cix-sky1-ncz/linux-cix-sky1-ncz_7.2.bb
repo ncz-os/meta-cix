@@ -45,7 +45,7 @@
 #   H.264/H.265/AV1 decode/encode firmwares; this kernel-side work
 #   only adds the driver, it does not stage the firmware.
 
-RTC (RA8900CE, ACPI HID RX008900): RESOLVED. cixtech vendor issue #39
+# RTC (RA8900CE, ACPI HID RX008900): RESOLVED. cixtech vendor issue #39
 #   (Orange Pi 6 Plus, 2026-07-03) = mainline rtc-ds1307 supports ra8900
 #   only via i2c_device_id (no ACPI table), so ACPI-enumerated RTC never
 #   binds -> rtc-efi fallback, clock resets. Vendor fix = patch
