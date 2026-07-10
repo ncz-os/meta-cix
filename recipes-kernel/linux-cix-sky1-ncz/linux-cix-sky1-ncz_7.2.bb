@@ -75,6 +75,33 @@
 #   (clk-sky1-acpi, patch 0096) can provide the 207 consumer clocks;
 #   without it every apb/pclk consumer (PCIe/USB PHYs, pwm, uart) is
 #   clockless and NVMe never appears (patches 0093-0098 chain).
+# linlon-dp (linlondp + trilin-dptx): the 26q2 driver set is carried as
+#   0008 (base) + 0067 (the 26q2 feature merge: cluster, single-master DRM,
+#   pipeline binding/source_id consolidation, ACPI CIXH50C0 cluster +
+#   CIXH5010 DPU slave detection, cluster PM, IOMMU-on-demand, etc.). The
+#   0067 swap rebuilds linlondp_kms/linlondp_drv/linlondp_cluster and the
+#   dptx/* files on top of 0008 (the v7.2 driver surface). The v7.2 API
+#   drift is fixed by 0081 (private-obj init -> .atomic_create_state,
+#   drm_atomic_state -> drm_atomic_commit, fbdev_generic -> drm_client_setup,
+#   drm_panel_prepare/enable return void, MST add/remove payload split,
+#   const display_mode, drm_format_info const, panel->init devm alloc,
+#   edp panel return-void, from_timer -> timer_container_of,
+#   drm_atomic_commit_put, color format enums -> BIT(...)). Patch 0131
+#   (this series) is the v7.2 port of cix k6.6.89 1009 (WERROR fixups
+#   only — static-marking file-local helpers, __maybe_unused on debug
+#   locals, missing-include fixes); the drm_atomic.c %llx->%x revert
+#   hunk from 1009 is dropped (already in the right state on v7.2-rc1).
+#   Single-master DRM enumeration requires 26q2 firmware exposing the
+#   cluster (ACPI _HID CIXH50C0 parent of CIXH5010 DPU children). With
+#   older firmware the four DPU devices appear as siblings and each
+#   registers its own DRM card (the "Cannot find any crtc or sizes"
+#   path); that fallback is graceful — no kernel crash, just a less
+#   usable user-mode display. Metal validation pending: QEMU-virt has no
+#   Sky1 display hardware, so this kernel+recipe change can only be
+#   proven to boot + compile cleanly here; the single-card vs multi-card
+#   behaviour has to be checked on a real CIX SKY1 board with 26q2
+#   firmware. Do not enable CONFIG_DRM_CIX_COMPONENT_BIND_BYPASSED —
+#   it forces the multi-card path and defeats the 26q2 single-master code.
 
 SUMMARY = "NCZ Linux kernel for Cix Sky1 / CP8180 (v7.2-rc1 + CIX 2026q2 patch set)"
 DESCRIPTION = "NCZ kernel: mainline Linux v7.2-rc1 plus the cixtech 2026q2 Sky1 driver set forward-ported by NCZ. Not a CIX/vendor release."
@@ -228,6 +255,7 @@ SRC_URI = " \
     file://patches-7.2/0128-media-cix-add-linux-string.h-includes-7.2-build-fix.patch \
     file://patches-7.2/0129-media-cix-handle-missing-VPU-firmware-cleanly.patch \
     file://patches-7.2/0130-media-cix-vpu-sync-upstream-v1.0.1-irq-reset-race-fix.patch \
+    file://patches-7.2/0131-drm-linlondp-fix-WERROR.patch \
 "
 
 COMPATIBLE_MACHINE = "(cixmini)"
