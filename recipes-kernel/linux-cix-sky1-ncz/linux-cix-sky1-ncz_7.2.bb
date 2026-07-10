@@ -230,13 +230,14 @@ SRC_URI = " \
     file://patches-7.2/0130-media-cix-vpu-sync-upstream-v1.0.1-irq-reset-race-fix.patch \
 "
 
-S = "${WORKDIR}/git"
 COMPATIBLE_MACHINE = "(cixmini)"
+S = "${UNPACKDIR}/${BB_GIT_DEFAULT_DESTSUFFIX}"
+
 PROVIDES = "${PN} virtual/kernel"
 
 do_configure:prepend() {
     cd ${S}
-    cp ${WORKDIR}/config-7.2.defconfig ${B}/.config
+    cp ${UNPACKDIR}/config-7.2.defconfig ${B}/.config
     oe_runmake ARCH=arm64 O=${B} olddefconfig
 }
 

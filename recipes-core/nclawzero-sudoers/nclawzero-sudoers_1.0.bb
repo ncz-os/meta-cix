@@ -14,14 +14,14 @@ LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/Apache-2.0;md5=89aea4e17d99a7ca
 
 SRC_URI = "file://nclawzero"
 
-S = "${WORKDIR}"
+S = "${UNPACKDIR}"
 
 RDEPENDS:${PN} = "sudo"
 
 # /etc/sudoers.d files MUST be mode 0440 (visudo / sudo enforces this).
 do_install() {
     install -d -m 0750 ${D}${sysconfdir}/sudoers.d
-    install -m 0440 ${WORKDIR}/nclawzero ${D}${sysconfdir}/sudoers.d/nclawzero
+    install -m 0440 ${UNPACKDIR}/nclawzero ${D}${sysconfdir}/sudoers.d/nclawzero
 }
 
 FILES:${PN} = "${sysconfdir}/sudoers.d/nclawzero"
