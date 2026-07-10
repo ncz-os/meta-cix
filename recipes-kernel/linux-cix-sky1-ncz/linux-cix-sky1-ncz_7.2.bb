@@ -17,7 +17,20 @@
 # Config: config-7.2.defconfig = 7.1 NCZ config + olddefconfig on v7.2-rc1
 #   + CIX 2026q2 symbols + CONFIG_BTRFS_FS=y (built-in; btrfs root without
 #   initrd module).
-# RTC (RA8900CE, ACPI HID RX008900): RESOLVED. cixtech vendor issue #39
+# NPU (Zhouyi V3/V3_1, CIX Sky1 CRE0-2): ADDED via patches 0119-0125.
+#   The Entrpi v7.1 sky1-next armchina-npu driver (46 files, ~12K lines)
+#   was carried over from the 7.1 squashed tree and forward-ported onto
+#   v7.2-rc1: pm_runtime_put() now void (7.0.x), platform_driver::remove
+#   now void (7.1), NULL pd_core[] guards (BIOS v1.0 CRE0-2 missing _HID),
+#   ACPI _STA quirks for CIXH4000/NPU0 children, force-D0 on missing
+#   pd_core, and the tightening of the hidden Sky1 SCMI/NPU child device
+#   match (parent HID + child ACPI name + uid). CONFIG_ARMCHINA_NPU=m,
+#   ARCH_V3=y (Sky1 reports ZHOUYI V3, ISA version 5) + ARCH_V3_1=y +
+#   SOC_SKY1=y; SOC_DEFAULT/SOC_R329 explicitly off (each .c calls
+#   module_platform_driver, so the linker errors on duplicate
+#   init_module/cleanup_module if both SOCs compile into the same module).
+
+RTC (RA8900CE, ACPI HID RX008900): RESOLVED. cixtech vendor issue #39
 #   (Orange Pi 6 Plus, 2026-07-03) = mainline rtc-ds1307 supports ra8900
 #   only via i2c_device_id (no ACPI table), so ACPI-enumerated RTC never
 #   binds -> rtc-efi fallback, clock resets. Vendor fix = patch
@@ -185,6 +198,13 @@ SRC_URI = " \
     file://patches-7.2/0116-usb-cdns3-restore-sky1-next-Kconfig-Makefile-USB_CDN.patch \
     file://patches-7.2/0117-pmdomain-arm-export-CIX-SCMI-perf-helpers.patch \
     file://patches-7.2/0118-usb-typec-restore-rts5453-Sky1-driver.patch \
+    file://patches-7.2/0119-misc-armchina-npu-add-Zhouyi-NPU-driver-for-CIX-Sky1.patch \
+    file://patches-7.2/0120-misc-armchina-npu-fix-pm_runtime_put-void-return-7.2.patch \
+    file://patches-7.2/0121-misc-armchina-npu-sky1-null-pd-core-guard.patch \
+    file://patches-7.2/0122-acpi-sta_quirk-add-cixh4010-npu-cores.patch \
+    file://patches-7.2/0123-misc-armchina-npu-force-D0-before-probe.patch \
+    file://patches-7.2/0124-acpi-sta_quirk-tighten-hidden-Sky1-SCMI-NPU-child.patch \
+    file://patches-7.2/0125-misc-armchina-npu-platform_remove-void-7.2.patch \
 "
 
 S = "${WORKDIR}/git"
