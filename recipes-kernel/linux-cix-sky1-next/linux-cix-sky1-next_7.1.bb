@@ -72,7 +72,7 @@ SRC_URI = " \
     file://next-patches-v7.1/0010-soc-cix-acpi-resource-lookup-resolve-dev_id-by-acpi.patch \
 "
 
-S = "${WORKDIR}/git"
+S = "${UNPACKDIR}/${BB_GIT_DEFAULT_DESTSUFFIX}"
 
 COMPATIBLE_MACHINE = "(cixmini)"
 
@@ -83,7 +83,7 @@ PROVIDES = "${PN}"
 
 do_configure:prepend() {
     cd ${S}
-    cp ${WORKDIR}/config.sky1-next ${B}/.config
+    cp ${UNPACKDIR}/config.sky1-next ${B}/.config
     sed -i "s|^CONFIG_EXTRA_FIRMWARE=.*|# CONFIG_EXTRA_FIRMWARE is not set|" ${B}/.config
     sed -i "/^CONFIG_EXTRA_FIRMWARE_DIR=/d" ${B}/.config
     oe_runmake ARCH=arm64 O=${B} olddefconfig
