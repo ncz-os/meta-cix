@@ -7,6 +7,8 @@ linux/of_gpio.h is removed in v7.1 and this driver does not use any
 legacy of_gpio APIs. Drop the stale include to restore compilation.
 
 Signed-off-by: Jason Perlow <jperlow@gmail.com>
+
+Upstream-Status: Inappropriate [oe-specific]
 ---
  drivers/rtc/rtc-rx8900.c | 1 -
  1 file changed, 1 deletion(-)

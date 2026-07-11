@@ -6,6 +6,8 @@ Subject: [PATCH 77/83] pmdomain: add acpi support to cix soc (NCZ 0008
 
 Keep the v7.2 of_genpd child-ids teardown but guard the DT-provider
 paths on np for ACPI boot.
+
+Upstream-Status: Inappropriate [oe-specific]
 ---
  drivers/pmdomain/arm/scmi_perf_domain.c | 151 ++++++++++++-
  drivers/pmdomain/arm/scmi_pm_domain.c   |  79 +++++--

@@ -3,6 +3,7 @@ From: Jianfeng Liu <Jianfeng.Liu@cixtech.com>
 Date: Sat, 23 May 2026 13:01:30 +0800
 Subject: [PATCH 40/83] add hym8563/rx8900 rtc driver
 
+Upstream-Status: Inappropriate [oe-specific]
 ---
  drivers/rtc/Kconfig       |    9 +
  drivers/rtc/Makefile      |    1 +

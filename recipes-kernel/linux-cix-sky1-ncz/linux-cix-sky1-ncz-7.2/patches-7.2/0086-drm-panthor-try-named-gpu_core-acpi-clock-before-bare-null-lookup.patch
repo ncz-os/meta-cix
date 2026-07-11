@@ -19,6 +19,8 @@ confirmed on real hardware tonight:
 Fix: when the bare lookup fails AND the device has an ACPI companion
 matching CIXH5000, try the named gpu_core lookup before giving up.
 Falls through to the original error path unchanged if that also fails.
+
+Upstream-Status: Inappropriate [oe-specific]
 ---
  drivers/gpu/drm/panthor/panthor_device.c | 3 +++
  1 file changed, 3 insertions(+)

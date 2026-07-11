@@ -1,3 +1,12 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jason Perlow <jperlow@gmail.com>
+Date: Fri, 10 Jul 2026 22:58:21 +0000
+Subject: [PATCH] usb-cdns3-restore-cdnsp-sky1-acpi-host-bringup
+
+Upstream-Status: Inappropriate [oe-specific]
+
+---
+
 diff --git a/drivers/usb/cdns3/cdnsp-sky1.c b/drivers/usb/cdns3/cdnsp-sky1.c
 index f2fc7a212b3d..c43b07d51a85 100644
 --- a/drivers/usb/cdns3/cdnsp-sky1.c

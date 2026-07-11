@@ -3,6 +3,7 @@ From: Jianfeng Liu <Jianfeng.Liu@cixtech.com>
 Date: Fri, 20 Mar 2026 18:12:35 +0800
 Subject: [PATCH 56/83] linlondp: disable enable_render by default
 
+Upstream-Status: Inappropriate [oe-specific]
 ---
  drivers/gpu/drm/cix/linlon-dp/linlondp_kms.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)

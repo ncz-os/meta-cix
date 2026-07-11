@@ -12,6 +12,8 @@ probe can touch hardware registers while the SCMI mailbox/clock tree
 is still settling, raising an SError. Defer the
 genpd_add_fwnode_provider_onecell() call to late_initcall, after the
 SCMI stack and core clock/reset providers are stable. DT boot unchanged.
+
+Upstream-Status: Inappropriate [oe-specific]
 ---
  drivers/pmdomain/arm/scmi_perf_domain.c | 36 ++++++++++++++++++++++---
  1 file changed, 32 insertions(+), 4 deletions(-)

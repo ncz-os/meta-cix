@@ -16,6 +16,8 @@ Add "select VIDEOBUF2_DMA_SG" and "select VIDEOBUF2_MEMOPS" to fix
 the dependency chain on 7.2 too. Without this, defconfig builds that
 have VIDEO_LINLON=m but no other consumer of videobuf2-dma-sg fail
 with undefined references at module link time.
+
+Upstream-Status: Inappropriate [oe-specific]
 ---
  drivers/media/platform/cix/Kconfig | 2 ++
  1 file changed, 2 insertions(+)

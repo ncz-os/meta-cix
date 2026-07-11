@@ -3,6 +3,7 @@ From: Jianfeng Liu <Jianfeng.Liu@cixtech.com>
 Date: Tue, 20 Jan 2026 13:41:12 +0800
 Subject: [PATCH 55/83] linlondp: add api fix up to 6.18
 
+Upstream-Status: Inappropriate [oe-specific]
 ---
  drivers/gpu/drm/cix/cix_virtual.c             |  7 +++++
  drivers/gpu/drm/cix/dptx/cix_edp_panel.c      | 15 ++++++++++

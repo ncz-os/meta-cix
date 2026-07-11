@@ -16,6 +16,8 @@ platform_driver contract (sky1_npu_remove was already void since the
 7.0.x BSP).
 
 No functional change; device removal cannot fail at this layer.
+
+Upstream-Status: Inappropriate [oe-specific]
 ---
  drivers/misc/armchina-npu/default/default.c | 4 ++--
  drivers/misc/armchina-npu/r329/r329.c       | 5 ++---

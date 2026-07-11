@@ -23,6 +23,8 @@ regmap_read in reset_update/status) -- added guards there too, since
 removing the EPROBE_DEFER without them would trade a safe indefinite
 defer for a NULL-pointer-deref crash the first time a reset operation
 actually runs.
+
+Upstream-Status: Inappropriate [oe-specific]
 ---
  drivers/clk/cix/clk-sky1-audss.c | 58 +++++++++++++++++++++-----------
  drivers/reset/reset-sky1-audss.c | 17 ++++++++--

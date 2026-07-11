@@ -4,6 +4,7 @@ Date: Wed, 29 Apr 2026 12:56:40 +0800
 Subject: [PATCH 61/83] acpi: add backward complibility to old firmware with
  SCMI channel _STA=0
 
+Upstream-Status: Inappropriate [oe-specific]
 ---
  drivers/acpi/Makefile    |  2 +-
  drivers/acpi/bus.c       |  5 +++++

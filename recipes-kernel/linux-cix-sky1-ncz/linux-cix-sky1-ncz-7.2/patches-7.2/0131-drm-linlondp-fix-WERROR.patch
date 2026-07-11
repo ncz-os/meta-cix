@@ -41,6 +41,8 @@ CC: stable for any unexpected context-line shift; the WERROR symbols here
 are simple and the conflicts against 0067/0081 should be manageable.
 
 Signed-off-by: Jason Perlow <jperlow@gmail.com>
+
+Upstream-Status: Backport [cix-linux-main 1009 (cixtech 2026q2 patches-7.1)]
 ---
 
 diff --git a/drivers/gpu/drm/cix/dptx/hdcp/cix_hdcp_ioctl.c b/drivers/gpu/drm/cix/dptx/hdcp/cix_hdcp_ioctl.c

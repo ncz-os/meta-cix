@@ -33,6 +33,8 @@ depend on vendor-only CIX compat headers (`<linux/string_compat.h>`,
 that do not exist in Linux 7.2 mainline.  They are deferred to a
 follow-up patch series once the 7.2 mainline SCMI/glue helpers the
 upstream assumes are imported.
+
+Upstream-Status: Backport [cix_opensource__vpu_driver v1.0.1]
 ---
 diff --git a/drivers/media/platform/cix/dev/mvx_dev.c b/drivers/media/platform/cix/dev/mvx_dev.c
 index 16b794b2319d..8b0e335bd1d6 100755

@@ -14,6 +14,8 @@ kworker ioremap (cdns_i2c probe) BUG_ONs in __get_vm_area_node -> 1.5s
 boot crash on metal. Use devm_reset_control_get_optional so an absent
 reset is NULL (assert is a no-op) and bail via dev_err_probe on real
 errors.
+
+Upstream-Status: Inappropriate [oe-specific]
 ---
  drivers/phy/cix/phy-cix-usbdp.c | 18 +++++++++---------
  1 file changed, 9 insertions(+), 9 deletions(-)

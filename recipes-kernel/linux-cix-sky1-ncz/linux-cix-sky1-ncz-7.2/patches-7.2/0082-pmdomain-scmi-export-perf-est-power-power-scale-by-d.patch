@@ -7,6 +7,8 @@ Subject: [PATCH 82/83] pmdomain: scmi: export perf est-power/power-scale by
 Only the scmi_perf_domain helper exports from NCZ 0061; the thermal/cix
 GPU energy-model registration itself comes from the cixtech 2026q2
 CIX_SCMI_ENERGY_MODEL driver.
+
+Upstream-Status: Inappropriate [oe-specific]
 ---
  drivers/pmdomain/arm/scmi_perf_domain.c | 45 +++++++++++++++++++++++++
  include/linux/scmi_perf_domain.h        | 17 ++++++++++

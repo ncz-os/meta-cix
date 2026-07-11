@@ -3,6 +3,7 @@ From: Jianfeng Liu <Jianfeng.Liu@cixtech.com>
 Date: Wed, 13 May 2026 14:49:05 +0800
 Subject: [PATCH 26/83] add cix vendor pci driver
 
+Upstream-Status: Inappropriate [oe-specific]
 ---
  drivers/pci/controller/cadence/Makefile       |    2 +
  drivers/pci/controller/cadence/pci-sky1-cix.c | 2578 +++++++++++++++++

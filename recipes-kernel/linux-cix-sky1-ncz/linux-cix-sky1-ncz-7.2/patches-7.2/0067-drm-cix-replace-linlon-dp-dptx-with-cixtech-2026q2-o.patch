@@ -4,6 +4,7 @@ Date: Thu, 2 Jul 2026 21:48:58 -0400
 Subject: [PATCH 67/83] drm: cix: replace linlon-dp/dptx with cixtech 2026q2
  (one-card cluster)
 
+Upstream-Status: Inappropriate [oe-specific]
 ---
  drivers/gpu/drm/cix/Kconfig                   |   6 -
  drivers/gpu/drm/cix/cix_virtual.c             |   8 -
@@ -176,7 +177,7 @@ index 65ec6e2c57d3..f303515053d4 100644
  //      0x2 = I2C over AUX Write Status
  //
 -//  3:0 ï¿½ BYTE_COUNT:
-+//  3:0 – BYTE_COUNT:
++//  3:0 ï¿½ BYTE_COUNT:
  //      Specifies the number of bytes to transfer with the current command.
  //      The range of the register is 0 to 15 indicating between 1 and 16 bytes of data.
  //------------------------------------------------------------------------------
@@ -185,13 +186,13 @@ index 65ec6e2c57d3..f303515053d4 100644
  //  is repeated below for clarity.
  //
 -//  1:0 ï¿½ AUX channel native reply codes received from the sink device.
-+//  1:0 – AUX channel native reply codes received from the sink device.
++//  1:0 ï¿½ AUX channel native reply codes received from the sink device.
  //  0x0 = Native AUX ACK
  //  0x1 = Native AUX NACK
  //  0x2 = Native AUX Defer
  //
 -//  3:2 ï¿½ AUX channel I2C reply codes received from the sink device.
-+//  3:2 – AUX channel I2C reply codes received from the sink device.
++//  3:2 ï¿½ AUX channel I2C reply codes received from the sink device.
  //  0x0 = I2C over AUX ACK
  //  0x4 = I2C over AUX NACK
  //  0x8 = I2C over AUX Defer
@@ -200,22 +201,22 @@ index 65ec6e2c57d3..f303515053d4 100644
  //  are checked for errors. These bits are always valid:
  //
 -//  3 ï¿½ REPLY_ERROR: When set to a 1, the AUX reply logic has detected an error in
-+//  3 – REPLY_ERROR: When set to a 1, the AUX reply logic has detected an error in
++//  3 ï¿½ REPLY_ERROR: When set to a 1, the AUX reply logic has detected an error in
  //      the reply to the most recent AUX transaction. Errors are detected when the
  //      precharge and sync phases of the reply last more than 38 cycles instead of the maximum 32.
  //      This condition typically indicates noise on the AUX channel data signals.
  //
 -//  2 ï¿½ REQUEST_IN_PROGRESS: The AUX transaction request controller sets this bit to a 1
-+//  2 – REQUEST_IN_PROGRESS: The AUX transaction request controller sets this bit to a 1
++//  2 ï¿½ REQUEST_IN_PROGRESS: The AUX transaction request controller sets this bit to a 1
  //      while actively transmitting a request on the AUX channel. The bit is set to 0 when
  //      the AUX transaction request controller is idle.
  //
 -//  1 ï¿½ REPLY_IN_PROGRESS: The AUX reply detection logic sets this bit to a 1 while
-+//  1 – REPLY_IN_PROGRESS: The AUX reply detection logic sets this bit to a 1 while
++//  1 ï¿½ REPLY_IN_PROGRESS: The AUX reply detection logic sets this bit to a 1 while
  //      receiving a reply on the AUX channel. The bit is 0 otherwise.
  //
 -//  0 ï¿½ REPLY_RECEIVED: This bit is set to 0 when the AUX request controller begins
-+//  0 – REPLY_RECEIVED: This bit is set to 0 when the AUX request controller begins
++//  0 ï¿½ REPLY_RECEIVED: This bit is set to 0 when the AUX request controller begins
  //      sending bits on the AUX serial bus. The AUX reply controller sets this bit
  //      to 1 when a complete and valid reply transaction has been received.
  //      This bit is cleared when a request transaction has been initiated by the request controller.

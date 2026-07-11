@@ -5,6 +5,8 @@ Subject: [PATCH 11/83] kernel: dma: Export dma_declare_coherent_memory for
  module use
 
 Signed-off-by: Jianfeng Liu <Jianfeng.Liu@cixtech.com>
+
+Upstream-Status: Inappropriate [oe-specific]
 ---
  kernel/dma/coherent.c | 10 +++++++++-
  1 file changed, 9 insertions(+), 1 deletion(-)

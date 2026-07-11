@@ -4,6 +4,8 @@ Date: Wed, 18 Mar 2026 14:29:40 +0800
 Subject: [PATCH 09/83] irqchip: add cix sky1 pdc driver
 
 Signed-off-by: Jianfeng Liu <Jianfeng.Liu@cixtech.com>
+
+Upstream-Status: Inappropriate [oe-specific]
 ---
  drivers/irqchip/Kconfig        |   8 +
  drivers/irqchip/Makefile       |   3 +-

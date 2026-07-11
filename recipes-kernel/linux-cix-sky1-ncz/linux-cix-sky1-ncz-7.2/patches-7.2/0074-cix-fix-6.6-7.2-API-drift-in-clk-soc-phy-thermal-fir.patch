@@ -11,6 +11,8 @@ Subject: [PATCH 74/83] cix: fix 6.6->7.2 API drift in
 - strncpy removed -> strscpy; asm/unaligned.h -> linux/unaligned.h
 - scmi perf device_domain_id dropped: local clocks-phandle helper
 - guard vendor SMMU attach-notifier + dfx hisysevent (not ported)
+
+Upstream-Status: Inappropriate [oe-specific]
 ---
  drivers/clk/cix/acpi_clk.c                  | 13 +++++----
  drivers/clk/cix/clk-sky1-audss.c            | 29 +-------------------

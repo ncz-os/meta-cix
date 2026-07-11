@@ -2,6 +2,7 @@ From: Jason Perlow <jperlow@gmail.com>
 Date: Wed, 8 Jul 2026 20:00:00 -0400
 Subject: [PATCH] iommu/arm-smmu-v3: sky1 disable PRI + restore event queue (supersedes 0106)
 
+Upstream-Status: Inappropriate [oe-specific]
 ---
 diff --git a/drivers/iommu/arm/arm-smmu-v3/arm-smmu-v3.c b/drivers/iommu/arm/arm-smmu-v3/arm-smmu-v3.c
 index a3b2335edc7a..dad9bf6822d2 100644

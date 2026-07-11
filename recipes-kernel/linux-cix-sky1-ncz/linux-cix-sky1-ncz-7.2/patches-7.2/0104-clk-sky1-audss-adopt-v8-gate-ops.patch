@@ -6,6 +6,8 @@ Drop the vendor gate_enable/disable power.lock + pm_runtime_active
 dance in favor of the upstream v8 form (gate->lock only, via
 sky1_audss_clk_gate_endisable). Ref lore [PATCH v8 2/4] clk: cix:
 add sky1 audss clock controller.
+
+Upstream-Status: Inappropriate [oe-specific]
 ---
 diff --git a/drivers/clk/cix/clk-sky1-audss.c b/drivers/clk/cix/clk-sky1-audss.c
 index 524f478cfab0..412c89609c45 100644

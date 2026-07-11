@@ -3,6 +3,7 @@ From: Jianfeng Liu <Jianfeng.Liu@cixtech.com>
 Date: Thu, 21 May 2026 18:11:17 +0800
 Subject: [PATCH 32/83] pci: cadence: add PCI_SKY1_HOST_CIX for bsp driver
 
+Upstream-Status: Inappropriate [oe-specific]
 ---
  drivers/pci/controller/cadence/Kconfig  | 6 ++++++
  drivers/pci/controller/cadence/Makefile | 5 ++---

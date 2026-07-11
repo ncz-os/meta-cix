@@ -3,6 +3,7 @@ From: Jianfeng Liu <liujianfeng1994@gmail.com>
 Date: Wed, 27 May 2026 17:55:26 +0800
 Subject: [PATCH 46/83] drm/cix/dptx: trigger connector hotplug on resume_early
 
+Upstream-Status: Inappropriate [oe-specific]
 ---
  drivers/gpu/drm/cix/dptx/trilin_dptx.c | 1 +
  1 file changed, 1 insertion(+)

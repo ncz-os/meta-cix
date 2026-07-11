@@ -4,6 +4,7 @@ Date: Mon, 16 Mar 2026 19:04:34 +0800
 Subject: [PATCH 59/83] gpio: gpio-cadence: fix crashing pcie on cix p1 acpi
  system
 
+Upstream-Status: Inappropriate [oe-specific]
 ---
  drivers/gpio/gpio-cadence.c | 83 ++++++++++++++++++++++++++++++-------
  1 file changed, 67 insertions(+), 16 deletions(-)

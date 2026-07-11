@@ -4,6 +4,8 @@ Date: Wed, 18 Mar 2026 14:29:42 +0800
 Subject: [PATCH 19/83] sound: soc: add cix soc support
 
 Signed-off-by: Jianfeng Liu <Jianfeng.Liu@cixtech.com>
+
+Upstream-Status: Inappropriate [oe-specific]
 ---
  sound/soc/Kconfig           |    1 +
  sound/soc/Makefile          |    1 +

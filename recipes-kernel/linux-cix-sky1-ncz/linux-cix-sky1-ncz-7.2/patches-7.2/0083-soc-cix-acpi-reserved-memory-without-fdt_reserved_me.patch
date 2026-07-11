@@ -4,6 +4,7 @@ Date: Thu, 2 Jul 2026 22:26:47 -0400
 Subject: [PATCH 83/83] soc: cix: acpi reserved-memory without
  fdt_reserved_mem_save_node (removed in v7.2)
 
+Upstream-Status: Inappropriate [oe-specific]
 ---
  drivers/soc/cix/acpi/reserved_memory.c | 4 +---
  1 file changed, 1 insertion(+), 3 deletions(-)

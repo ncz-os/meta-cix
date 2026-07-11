@@ -4,6 +4,7 @@ Date: Thu, 21 May 2026 18:15:14 +0800
 Subject: [PATCH 34/83] thermal: set thermal_zone type from firmware in
  acpi_thermal_register_thermal_zone
 
+Upstream-Status: Inappropriate [oe-specific]
 ---
  drivers/acpi/thermal.c | 5 +++--
  1 file changed, 3 insertions(+), 2 deletions(-)

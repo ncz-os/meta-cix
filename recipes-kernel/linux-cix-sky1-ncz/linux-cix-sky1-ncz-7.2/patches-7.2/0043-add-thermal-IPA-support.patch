@@ -3,6 +3,7 @@ From: Jianfeng Liu <Jianfeng.Liu@cixtech.com>
 Date: Fri, 22 May 2026 12:40:36 +0800
 Subject: [PATCH 43/83] add thermal IPA support
 
+Upstream-Status: Inappropriate [oe-specific]
 ---
  drivers/acpi/cppc_acpi.c         |   4 +
  drivers/acpi/processor_thermal.c | 235 +++++++++++++++++++++++++++++++

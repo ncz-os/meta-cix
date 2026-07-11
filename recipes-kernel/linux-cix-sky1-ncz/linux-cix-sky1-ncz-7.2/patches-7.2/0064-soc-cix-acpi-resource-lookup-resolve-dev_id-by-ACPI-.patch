@@ -20,6 +20,8 @@ bus id, so fall back to that deterministic name when the platform_device
 is not (yet) registered. This makes the reset lookups order-independent.
 
 Signed-off-by: Jason Perlow <jperlow@gmail.com>
+
+Upstream-Status: Inappropriate [oe-specific]
 ---
  drivers/soc/cix/cix-acpi-resource-lookup.c | 37 +++++++++++++++-------
  1 file changed, 26 insertions(+), 11 deletions(-)

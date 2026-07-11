@@ -3,6 +3,7 @@ From: Jianfeng Liu <liujianfeng1994@gmail.com>
 Date: Wed, 3 Jun 2026 13:12:51 +0800
 Subject: [PATCH 49/83] optee: check system_state when probing at shutdown
 
+Upstream-Status: Inappropriate [oe-specific]
 ---
  drivers/tee/optee/smc_abi.c | 7 +++++++
  1 file changed, 7 insertions(+)

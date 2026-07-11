@@ -14,6 +14,8 @@ blocker. Port the proven clk-sky1-acpi CLKT bridge from the
 cix-sky1-next 7.0/7.1 tree (bridges CLKT entries to clk-scmi
 scmi-clk-<id> clkdev aliases, defers until SCMI clocks appear) and
 unmatch acpi_clk so the bridge owns CIXHA010.
+
+Upstream-Status: Inappropriate [oe-specific]
 ---
  drivers/clk/cix/Makefile        |   1 +
  drivers/clk/cix/acpi_clk.c      |   8 +-

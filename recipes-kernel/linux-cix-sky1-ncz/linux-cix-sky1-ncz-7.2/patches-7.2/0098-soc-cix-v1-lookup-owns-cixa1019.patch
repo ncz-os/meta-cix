@@ -4,6 +4,7 @@ Date: Tue, 7 Jul 2026 06:31:06 -0400
 Subject: [PATCH] soc: cix: let the v1 resource-lookup bridge own CIXA1019 on
  BIOS 1.0
 
+Upstream-Status: Inappropriate [oe-specific]
 ---
  drivers/soc/cix/acpi/acpi_resource_lookup.c | 6 +++++-
  1 file changed, 5 insertions(+), 1 deletion(-)

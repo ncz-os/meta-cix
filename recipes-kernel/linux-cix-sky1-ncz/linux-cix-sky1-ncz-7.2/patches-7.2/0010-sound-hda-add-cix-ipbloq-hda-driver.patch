@@ -4,6 +4,8 @@ Date: Wed, 18 Mar 2026 14:29:41 +0800
 Subject: [PATCH 10/83] sound: hda: add cix ipbloq hda driver
 
 Signed-off-by: Jianfeng Liu <Jianfeng.Liu@cixtech.com>
+
+Upstream-Status: Inappropriate [oe-specific]
 ---
  sound/hda/controllers/cix-ipbloq.c | 849 ++++++++++++++++++++++++-----
  1 file changed, 720 insertions(+), 129 deletions(-)

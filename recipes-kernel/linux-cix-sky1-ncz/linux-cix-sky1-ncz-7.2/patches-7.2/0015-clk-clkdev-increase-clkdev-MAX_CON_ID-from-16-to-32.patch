@@ -4,6 +4,8 @@ Date: Wed, 18 Mar 2026 14:29:41 +0800
 Subject: [PATCH 15/83] clk: clkdev: increase clkdev MAX_CON_ID from 16 to 32
 
 Signed-off-by: Jianfeng Liu <Jianfeng.Liu@cixtech.com>
+
+Upstream-Status: Inappropriate [oe-specific]
 ---
  drivers/clk/clkdev.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)

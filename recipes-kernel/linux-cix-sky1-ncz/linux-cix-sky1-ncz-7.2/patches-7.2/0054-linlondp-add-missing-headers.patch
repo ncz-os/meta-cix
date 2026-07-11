@@ -3,6 +3,7 @@ From: Jianfeng Liu <Jianfeng.Liu@cixtech.com>
 Date: Tue, 20 Jan 2026 14:42:11 +0800
 Subject: [PATCH 54/83] linlondp: add missing headers
 
+Upstream-Status: Inappropriate [oe-specific]
 ---
  drivers/gpu/drm/cix/cix_virtual.c                    | 1 +
  drivers/gpu/drm/cix/dptx/cix_edp_panel.c             | 1 +

@@ -13,6 +13,8 @@ devices were never created. After the child scan, activate any
 remaining protocol in the 8-bit id space that the firmware reports as
 implemented. Do NOT activate unimplemented ids: probing those crashes
 the Sky1 SCP (hard SoC reset with DDR loss, observed on cixmini).
+
+Upstream-Status: Inappropriate [oe-specific]
 ---
  drivers/firmware/arm_scmi/driver.c | 29 +++++++++++++++++++++++++++++
  1 file changed, 29 insertions(+)

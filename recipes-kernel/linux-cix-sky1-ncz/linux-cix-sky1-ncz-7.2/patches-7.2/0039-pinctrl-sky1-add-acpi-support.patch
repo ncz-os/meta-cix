@@ -3,6 +3,7 @@ From: Jianfeng Liu <Jianfeng.Liu@cixtech.com>
 Date: Fri, 22 May 2026 18:02:44 +0800
 Subject: [PATCH 39/83] pinctrl: sky1: add acpi support
 
+Upstream-Status: Inappropriate [oe-specific]
 ---
  drivers/pinctrl/Makefile                |   1 +
  drivers/pinctrl/cix/pinctrl-sky1-base.c | 973 ++++++++++++++----------
