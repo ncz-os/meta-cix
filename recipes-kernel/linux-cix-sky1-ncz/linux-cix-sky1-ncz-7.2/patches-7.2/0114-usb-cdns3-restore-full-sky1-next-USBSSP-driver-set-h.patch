@@ -13,6 +13,8 @@ Restore the complete sky1-next cdnsp USBSSP driver set (core, drd, host,
 cdnsp-plat/gadget/ep0/mem/ring + headers) which is proven on this exact
 CIX Sky1 hardware+ACPI (edge boots USB/kbd/mouse/BT). Supersedes the
 partial 0112/0113 port work.
+
+Upstream-Status: Inappropriate [oe-specific]
 ---
  drivers/usb/cdns3/cdnsp-gadget.c  |  50 ++--
  drivers/usb/cdns3/cdnsp-gadget.h  |   1 -

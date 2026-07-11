@@ -12,6 +12,8 @@ children with no _HID).
 
 Source: linux-cix-sky1-next-7.1/patches-7.1/2006-armchina-npu-sky1-null-pd-core-guard.patch
 Applies unchanged.
+
+Upstream-Status: Inappropriate [oe-specific]
 ---
  drivers/misc/armchina-npu/sky1/sky1.c | 33 ++++++++++++++++++++++-----
  1 file changed, 27 insertions(+), 6 deletions(-)

@@ -9,6 +9,8 @@ values used as bit positions. Add a local compatibility shim so existing
 CIX code keeps working as bitmasks during the forward-port.
 
 Signed-off-by: Jason Perlow <jperlow@gmail.com>
+
+Upstream-Status: Inappropriate [oe-specific]
 ---
  drivers/gpu/drm/cix/linlon-dp/linlondp_kms.h | 12 ++++++++++++
  1 file changed, 12 insertions(+)

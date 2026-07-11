@@ -3,6 +3,7 @@ From: Jianfeng Liu <liujianfeng1994@gmail.com>
 Date: Thu, 28 May 2026 10:38:56 +0800
 Subject: [PATCH 47/83] dptx: check null pointer in trilin_dp_panel_hw_cfg
 
+Upstream-Status: Inappropriate [oe-specific]
 ---
  drivers/gpu/drm/cix/dptx/trilin_dptx.c | 27 ++++++++++++++++++++++----
  1 file changed, 23 insertions(+), 4 deletions(-)

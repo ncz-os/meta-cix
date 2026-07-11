@@ -4,6 +4,8 @@ Date: Tue, 31 Mar 2026 14:25:26 +0800
 Subject: [PATCH 16/83] i2c: add acpi support for cadence driver
 
 Signed-off-by: Jianfeng Liu <Jianfeng.Liu@cixtech.com>
+
+Upstream-Status: Inappropriate [oe-specific]
 ---
  drivers/i2c/busses/i2c-cadence.c | 11 +++++++++++
  1 file changed, 11 insertions(+)

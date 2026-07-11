@@ -4,6 +4,8 @@ Date: Wed, 18 Mar 2026 14:29:38 +0800
 Subject: [PATCH 04/83] clk: add cix clk driver
 
 Signed-off-by: Jianfeng Liu <Jianfeng.Liu@cixtech.com>
+
+Upstream-Status: Inappropriate [oe-specific]
 ---
  drivers/clk/Kconfig                    |   1 +
  drivers/clk/Makefile                   |   1 +

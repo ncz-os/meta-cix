@@ -10,6 +10,8 @@ host-bridge/ECAM path -- no vendor platform driver at all. Native mode
 needs clock/reset/strap plumbing still incomplete on this firmware
 generation and currently hangs or fails probe. Default stays native;
 sky1_pcie_native=off restores the standard path.
+
+Upstream-Status: Inappropriate [oe-specific]
 ---
  drivers/pci/controller/cadence/pci-sky1-acpi.c | 16 +++++++++++++++-
  1 file changed, 15 insertions(+), 1 deletion(-)

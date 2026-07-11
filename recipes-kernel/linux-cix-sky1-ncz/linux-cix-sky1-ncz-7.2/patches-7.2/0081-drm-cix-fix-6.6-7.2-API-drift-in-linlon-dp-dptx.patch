@@ -17,6 +17,8 @@ Subject: [PATCH 81/83] drm: cix: fix 6.6->7.2 API drift in linlon-dp + dptx
 - hdmi codec get_dai_id gains data arg; debugfs/of includes
 - linlon-dp Makefile: $(srctree)/$(src) -> $(src) include paths
 - color format enums -> BIT(DRM_OUTPUT_COLOR_FORMAT_*)
+
+Upstream-Status: Inappropriate [oe-specific]
 ---
  drivers/gpu/drm/cix/dptx/cix_edp_panel.c      |  14 +-
  drivers/gpu/drm/cix/dptx/trilin_dptx.c        |  22 +-

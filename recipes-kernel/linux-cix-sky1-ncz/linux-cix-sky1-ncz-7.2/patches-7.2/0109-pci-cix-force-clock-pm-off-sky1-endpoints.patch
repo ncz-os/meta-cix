@@ -24,6 +24,8 @@ This is a combined create+modify (originally split as 0108a + 0109 by
 the human operator, but the modify-side patch was authored assuming
 the create-side already existed in the patch list.  Merged into one
 patch to fit cleanly into the SRC_URI list.).
+
+Upstream-Status: Inappropriate [oe-specific]
 ---
  drivers/pci/quirks.c | 68 +++++++++++++++++++++++++++++++++++++++++++++++++++++
  1 file changed, 68 insertions(+)

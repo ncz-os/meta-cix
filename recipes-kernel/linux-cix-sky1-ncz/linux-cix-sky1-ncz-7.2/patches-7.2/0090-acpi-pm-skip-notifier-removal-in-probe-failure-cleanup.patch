@@ -12,6 +12,8 @@ kernel panic (BUG: scheduling while atomic). Skip
 acpi_remove_pm_notifier() in acpi_dev_pm_detach() -- the notifier is
 safely cleaned up later by acpi_device_remove() during actual device
 teardown, which runs in sleepable context.
+
+Upstream-Status: Inappropriate [oe-specific]
 ---
  drivers/acpi/device_pm.c | 21 ++++++++++++++++++++-
  1 file changed, 20 insertions(+), 1 deletion(-)

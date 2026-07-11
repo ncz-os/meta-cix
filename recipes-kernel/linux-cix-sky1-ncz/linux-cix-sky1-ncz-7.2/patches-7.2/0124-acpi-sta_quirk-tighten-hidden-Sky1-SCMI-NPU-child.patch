@@ -20,6 +20,8 @@ Source: linux-cix-sky1-next-7.1/patches-7.1/2011-fix-acpi-force-enable-hidden-Sk
 
 Forward-port notes:
   - Reuses --ignore-whitespace to apply on top of 2007.
+
+Upstream-Status: Inappropriate [oe-specific]
 ---
  drivers/acpi/sta_quirk.c | 58 ++++++++++++++++++++++++++++++++--------
  1 file changed, 47 insertions(+), 11 deletions(-)

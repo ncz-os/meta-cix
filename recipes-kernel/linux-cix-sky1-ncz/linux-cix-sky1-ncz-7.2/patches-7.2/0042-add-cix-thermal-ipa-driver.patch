@@ -3,6 +3,7 @@ From: Jianfeng Liu <Jianfeng.Liu@cixtech.com>
 Date: Fri, 22 May 2026 12:40:06 +0800
 Subject: [PATCH 42/83] add cix thermal ipa driver
 
+Upstream-Status: Inappropriate [oe-specific]
 ---
  drivers/thermal/Kconfig               |   5 +
  drivers/thermal/Makefile              |   1 +

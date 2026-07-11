@@ -4,6 +4,7 @@ Date: Fri, 20 Mar 2026 18:13:52 +0800
 Subject: [PATCH 57/83] linlondp: set DRM_FBDEV_DMA_DRIVER_OPS for linlondp kms
  driver
 
+Upstream-Status: Inappropriate [oe-specific]
 ---
  drivers/gpu/drm/cix/linlon-dp/linlondp_kms.c | 2 ++
  1 file changed, 2 insertions(+)

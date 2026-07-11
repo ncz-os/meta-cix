@@ -18,6 +18,8 @@ register block directly via devm_ioremap+devm_regmap_init_mmio when
 has_acpi_companion(), add the CIXHA020/CIXHA021 ACPI match table, and
 register at subsys_initcall so the controller is ready before consumers
 (audss et al.) probe. DT boot path unchanged.
+
+Upstream-Status: Inappropriate [oe-specific]
 ---
  drivers/reset/reset-sky1.c | 56 ++++++++++++++++++++++++++++++++++----
  1 file changed, 50 insertions(+), 6 deletions(-)

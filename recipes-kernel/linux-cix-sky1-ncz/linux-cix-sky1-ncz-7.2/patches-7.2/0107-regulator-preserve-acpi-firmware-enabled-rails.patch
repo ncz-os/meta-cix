@@ -2,6 +2,7 @@ From: Jason Perlow <jperlow@gmail.com>
 Date: Wed, 8 Jul 2026 20:00:00 -0400
 Subject: [PATCH] regulator: fixed: preserve firmware-enabled ACPI rails (RTL8127 NIC power fix)
 
+Upstream-Status: Inappropriate [oe-specific]
 ---
 diff --git a/drivers/regulator/fixed.c b/drivers/regulator/fixed.c
 index 230cdb75968c..e179f91c24ad 100644

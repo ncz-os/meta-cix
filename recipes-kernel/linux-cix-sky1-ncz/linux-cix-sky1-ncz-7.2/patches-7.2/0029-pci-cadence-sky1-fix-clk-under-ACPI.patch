@@ -3,6 +3,7 @@ From: Jianfeng Liu <Jianfeng.Liu@cixtech.com>
 Date: Thu, 21 May 2026 18:06:36 +0800
 Subject: [PATCH 29/83] pci: cadence: sky1: fix clk under ACPI
 
+Upstream-Status: Inappropriate [oe-specific]
 ---
  drivers/pci/controller/cadence/pci-sky1-cix.c | 107 +++++++++++++++++-
  1 file changed, 105 insertions(+), 2 deletions(-)
