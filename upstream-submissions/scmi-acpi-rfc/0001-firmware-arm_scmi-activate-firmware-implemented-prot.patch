@@ -1,0 +1,82 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jason Perlow <jperlow@gmail.com>
+Date: Tue, 7 Jul 2026 05:31:30 -0400
+Subject: [RFC PATCH 1/2] firmware: arm_scmi: activate firmware-implemented
+ protocols on ACPI
+
+On DT the SCMI node carries one child node per protocol, each with a
+"reg" property, and scmi_probe() activates protocols by walking those
+children and calling scmi_create_protocol_devices() for each.
+
+On ACPI there is (in practice) no per-protocol child object under the
+SCMI device: the ACPI description names the SCMI transport, but the set
+of protocols is discovered at runtime from the firmware, not from the
+namespace. As a result the child-node loop in scmi_probe() activates
+nothing, no protocol devices are created, and every consumer driver
+(clocks, perf, power domains, hwmon, reset, ...) fails to bind because
+its backing SCMI protocol device never appears.
+
+After the DT child scan, when the SCMI fwnode is an ACPI node, activate
+every protocol in the 8-bit id space that the firmware reports as
+implemented via BASE_DISCOVER_LIST_PROTOCOLS (scmi_is_protocol_implemented()).
+Do NOT probe ids the firmware does not implement: on at least one SCP
+implementation, issuing traffic to an unimplemented protocol wedges the
+firmware and forces a full SoC reset. Restricting activation to the
+firmware-advertised set avoids that.
+
+This is deliberately minimal and self-contained: the DT path is untouched
+(the new block only runs for is_acpi_node(np)), and it reuses the existing
+protocol-discovery and device-creation helpers.
+
+Note: as written this patch creates the protocol devices but does not yet
+set up each protocol's Tx/Rx channel; without that, transfers on the
+activated protocols fail. The channel setup is added in patch 2/2 of this
+series. The two are split for review clarity but should land together.
+
+Not-yet-Signed-off-by: Jason Perlow <jperlow@gmail.com>
+---
+ drivers/firmware/arm_scmi/driver.c | 29 +++++++++++++++++++++++++++++
+ 1 file changed, 29 insertions(+)
+
+diff --git a/drivers/firmware/arm_scmi/driver.c b/drivers/firmware/arm_scmi/driver.c
+index 9477e4d9b0c5..b38d76461f39 100644
+--- a/drivers/firmware/arm_scmi/driver.c
++++ b/drivers/firmware/arm_scmi/driver.c
+@@ -3366,6 +3366,35 @@ static int scmi_probe(struct platform_device *pdev)
+ 		scmi_create_protocol_devices(child, info, prot_id, NULL);
+ 	}
+
++	/*
++	 * ACPI: the SCMI node has no protocol child nodes carrying a
++	 * "reg" property, so the loop above activates nothing.  Fall
++	 * back to activating every protocol the firmware reports as
++	 * implemented so consumer drivers (clocks, perf, genpd, hwmon,
++	 * reset) get their scmi devices.
++	 */
++	if (is_acpi_node(np)) {
++		int prot_id;
++
++		for (prot_id = SCMI_PROTOCOL_BASE + 1;
++		     prot_id <= 0xFF; prot_id++) {
++			if (!scmi_is_protocol_implemented(handle, prot_id))
++				continue;
++			if (idr_find(&info->active_protocols, prot_id))
++				continue;
++
++			ret = idr_alloc(&info->active_protocols, (void *)np,
++					prot_id, prot_id + 1, GFP_KERNEL);
++			if (ret != prot_id)
++				continue;
++
++			fwnode_handle_get(np);
++			dev_info(dev, "ACPI: activating SCMI protocol 0x%x\n",
++				 prot_id);
++			scmi_create_protocol_devices(np, info, prot_id, NULL);
++		}
++	}
++
+ 	return 0;
+
+ notification_exit:
+--
+2.51.0
