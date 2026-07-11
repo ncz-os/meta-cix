@@ -256,6 +256,7 @@ SRC_URI = " \
     file://patches-7.2/0129-media-cix-handle-missing-VPU-firmware-cleanly.patch \
     file://patches-7.2/0130-media-cix-vpu-sync-upstream-v1.0.1-irq-reset-race-fix.patch \
     file://patches-7.2/0131-drm-linlondp-fix-WERROR.patch \
+    file://patches-7.2/0132-firmware-arm_scmi-setup-channel-for-acpi-activated-protocols.patch \
 "
 
 COMPATIBLE_MACHINE = "(cixmini)"
