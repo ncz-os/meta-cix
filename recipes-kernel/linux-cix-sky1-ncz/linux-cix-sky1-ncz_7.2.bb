@@ -112,15 +112,15 @@ LIC_FILES_CHKSUM = "file://COPYING;md5=6bc538ed5bd9a7fc9398086aedcd7e46"
 inherit kernel
 FILESEXTRAPATHS:prepend := "${THISDIR}/linux-cix-sky1-ncz-7.2:"
 
-LINUX_VERSION = "7.2-rc1"
+LINUX_VERSION = "7.2-rc2"
 KERNEL_LOCALVERSION = "-ncz"
 PATCHTOOL = "git"
 PV = "7.2+ncz"
 KBRANCH = "master"
 KERNEL_PACKAGE_NAME = "kernel-${PN}"
 
-# v7.2-rc1 tag commit (torvalds mainline, on master)
-SRCREV_kernel = "dc59e4fea9d83f03bad6bddf3fa2e52491777482"
+# v7.2-rc2 tag object (torvalds mainline, on master)
+SRCREV_kernel = "4c45e14df2f4e77982ad70d6d8e3fe750edd4c37"
 
 SRC_URI = " \
     git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git;protocol=https;branch=${KBRANCH};name=kernel \
@@ -259,6 +259,7 @@ SRC_URI = " \
     file://patches-7.2/0132-firmware-arm_scmi-setup-channel-for-acpi-activated-protocols.patch \
     file://patches-7.2/0133-drm-linlondp-pin-display-power-domain-unconditionally.patch \
     file://patches-7.2/0134-drm-trilin-dptx-restore-runtime-pm.patch \
+    file://patches-7.2/0135-media-cix-vpu-sync-upstream-v1.0.2.patch \
 "
 
 COMPATIBLE_MACHINE = "(cixmini)"
