@@ -119,8 +119,8 @@ PV = "7.2+ncz"
 KBRANCH = "master"
 KERNEL_PACKAGE_NAME = "kernel-${PN}"
 
-# v7.2-rc2 tag object (torvalds mainline, on master)
-SRCREV_kernel = "4c45e14df2f4e77982ad70d6d8e3fe750edd4c37"
+# v7.2-rc2 (tag deref to commit; bitbake SRCREV must be a commit sha) (torvalds mainline, on master)
+SRCREV_kernel = "8cdeaa50eae8dad34885515f62559ee83e7e8dda"
 
 SRC_URI = " \
     git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git;protocol=https;branch=${KBRANCH};name=kernel \
