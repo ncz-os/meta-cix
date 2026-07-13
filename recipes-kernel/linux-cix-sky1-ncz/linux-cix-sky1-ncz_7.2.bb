@@ -112,15 +112,15 @@ LIC_FILES_CHKSUM = "file://COPYING;md5=6bc538ed5bd9a7fc9398086aedcd7e46"
 inherit kernel
 FILESEXTRAPATHS:prepend := "${THISDIR}/linux-cix-sky1-ncz-7.2:"
 
-LINUX_VERSION = "7.2-rc1"
+LINUX_VERSION = "7.2-rc3"
 KERNEL_LOCALVERSION = "-ncz"
 PATCHTOOL = "git"
 PV = "7.2+ncz"
 KBRANCH = "master"
 KERNEL_PACKAGE_NAME = "kernel-${PN}"
 
-# v7.2-rc1 tag commit (torvalds mainline, on master)
-SRCREV_kernel = "dc59e4fea9d83f03bad6bddf3fa2e52491777482"
+# v7.2-rc3 tag object (torvalds mainline, on master)
+SRCREV_kernel = "a13c140cc289c0b7b3770bce5b3ad42ab35074aa"
 
 SRC_URI = " \
     git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git;protocol=https;branch=${KBRANCH};name=kernel \
@@ -221,6 +221,9 @@ SRC_URI = " \
     file://patches-7.2/0094-drm-panthor-sky1-acpi-defer-probe-gpu-clock-not-ready.patch \
     file://patches-7.2/0095-phy-cix-defer-probe-acpi-clkdev-clocks-not-registered.patch \
     file://patches-7.2/0096-clk-cix-sky1-clkt-clkdev-bridge-bios10.patch \
+    file://patches-7.2/0138-clk-cix-sky1-bind-acpi-bus.patch \
+    file://patches-7.2/0147-clk-cix-sky1-restore-platform-supplier.patch \
+    file://patches-7.2/0148-clk-cix-sky1-reject-partial-clkt-maps.patch \
     file://patches-7.2/0097-soc-cix-acpi-resource-lookup-v1-bios10.patch \
     file://patches-7.2/0098-soc-cix-v1-lookup-owns-cixa1019.patch \
     file://patches-7.2/0099-pci-sky1-acpi-standard-ecam-mode-knob.patch \
@@ -259,6 +262,9 @@ SRC_URI = " \
     file://patches-7.2/0132-firmware-arm_scmi-setup-channel-for-acpi-activated-protocols.patch \
     file://patches-7.2/0133-drm-linlondp-pin-display-power-domain-unconditionally.patch \
     file://patches-7.2/0134-drm-trilin-dptx-restore-runtime-pm.patch \
+    file://patches-7.2/0135-media-cix-vpu-sync-upstream-v1.0.2.patch \
+    file://patches-7.2/0152-media-cix-amvx-serror-drain-masked-reads.patch \
+    file://patches-7.2/0153-media-cix-amvx-scmi-perf-devfreq.patch \
 "
 
 COMPATIBLE_MACHINE = "(cixmini)"
