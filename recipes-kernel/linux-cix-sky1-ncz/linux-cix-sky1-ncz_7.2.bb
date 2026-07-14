@@ -265,6 +265,9 @@ SRC_URI = " \
     file://patches-7.2/0135-media-cix-vpu-sync-upstream-v1.0.2.patch \
     file://patches-7.2/0152-media-cix-amvx-serror-drain-masked-reads.patch \
     file://patches-7.2/0153-media-cix-amvx-scmi-perf-devfreq.patch \
+    file://patches-7.2/0154-drm-cix-dptx-validate-reset-and-clock-lookups.patch \
+    file://patches-7.2/0155-phy-cix-usbdp-acquire-pclk-before-asserting-resets.patch \
+    file://patches-7.2/0156-drm-cix-linlondp-propagate-aclk-enable-failures.patch \
 "
 
 COMPATIBLE_MACHINE = "(cixmini)"
