@@ -224,6 +224,7 @@ SRC_URI = " \
     file://patches-7.2/0138-clk-cix-sky1-bind-acpi-bus.patch \
     file://patches-7.2/0147-clk-cix-sky1-restore-platform-supplier.patch \
     file://patches-7.2/0148-clk-cix-sky1-reject-partial-clkt-maps.patch \
+    file://patches-7.2/0157-clk-cix-sky1-dont-defer-bridge-on-partial-scmi-readiness.patch \
     file://patches-7.2/0097-soc-cix-acpi-resource-lookup-v1-bios10.patch \
     file://patches-7.2/0098-soc-cix-v1-lookup-owns-cixa1019.patch \
     file://patches-7.2/0099-pci-sky1-acpi-standard-ecam-mode-knob.patch \
