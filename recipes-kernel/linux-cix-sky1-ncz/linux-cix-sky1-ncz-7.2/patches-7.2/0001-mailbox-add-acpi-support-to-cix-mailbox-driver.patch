@@ -4,6 +4,8 @@ Date: Wed, 18 Mar 2026 14:29:38 +0800
 Subject: [PATCH 01/83] mailbox: add acpi support to cix-mailbox driver
 
 Signed-off-by: Jianfeng Liu <Jianfeng.Liu@cixtech.com>
+
+Upstream-Status: Inappropriate [oe-specific]
 ---
  drivers/mailbox/cix-mailbox.c | 44 +++++++++++++++++++++++++++--------
  1 file changed, 34 insertions(+), 10 deletions(-)

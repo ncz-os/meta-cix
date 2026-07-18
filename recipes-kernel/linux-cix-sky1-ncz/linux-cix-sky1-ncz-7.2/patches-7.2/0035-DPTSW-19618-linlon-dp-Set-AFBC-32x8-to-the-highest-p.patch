@@ -14,6 +14,8 @@ This gives it the highest priority and ensures proper handling of wide AFBC buff
 
 Signed-off-by: cunyuan.liu <cunyuan.liu@cixtech.com>
 Change-Id: I2c6bc8b62247ab84b01dea89ac8b6f8ae039bb90
+
+Upstream-Status: Inappropriate [oe-specific]
 ---
  drivers/gpu/drm/cix/linlon-dp/linlondp_format_caps.c | 7 ++++++-
  1 file changed, 6 insertions(+), 1 deletion(-)

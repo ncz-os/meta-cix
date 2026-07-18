@@ -3,6 +3,7 @@ From: Jason Perlow <jperlow@gmail.com>
 Date: Thu, 2 Jul 2026 21:48:59 -0400
 Subject: [PATCH 69/83] thermal: cix: replace IPA drivers with cixtech 2026q2
 
+Upstream-Status: Inappropriate [oe-specific]
 ---
  drivers/thermal/cix/Kconfig                |  23 +++--
  drivers/thermal/cix/Makefile               |   5 +-

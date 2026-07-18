@@ -4,6 +4,8 @@ Date: Wed, 18 Mar 2026 14:29:38 +0800
 Subject: [PATCH 03/83] clk: clk-scmi: register clkdev for acpi
 
 Signed-off-by: Jianfeng Liu <Jianfeng.Liu@cixtech.com>
+
+Upstream-Status: Inappropriate [oe-specific]
 ---
  drivers/clk/clk-scmi.c | 23 +++++++++++++++++++----
  1 file changed, 19 insertions(+), 4 deletions(-)

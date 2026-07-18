@@ -9,6 +9,8 @@ gpu_core clkdev alias, devm_clk_get_optional() returns NULL, the GPU is
 unclocked, and the first register access raises an asynchronous SError
 that panics the whole boot (captured via ramoops on cixmini). Defer the
 probe until the clock is available and reports a real rate.
+
+Upstream-Status: Inappropriate [oe-specific]
 ---
  drivers/gpu/drm/panthor/panthor_device.c | 13 +++++++++++++
  1 file changed, 13 insertions(+)

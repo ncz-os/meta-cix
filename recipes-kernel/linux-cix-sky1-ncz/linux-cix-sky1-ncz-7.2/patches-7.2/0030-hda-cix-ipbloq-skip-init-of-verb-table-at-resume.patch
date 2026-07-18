@@ -3,6 +3,7 @@ From: Jianfeng Liu <Jianfeng.Liu@cixtech.com>
 Date: Thu, 21 May 2026 18:07:31 +0800
 Subject: [PATCH 30/83] hda: cix-ipbloq: skip init of verb table at resume
 
+Upstream-Status: Inappropriate [oe-specific]
 ---
  sound/hda/controllers/cix-ipbloq.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)

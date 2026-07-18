@@ -3,6 +3,7 @@ From: Jason Perlow <jperlow@gmail.com>
 Date: Thu, 2 Jul 2026 21:48:59 -0400
 Subject: [PATCH 71/83] firmware: cix: replace dsp ipc with cixtech 2026q2
 
+Upstream-Status: Inappropriate [oe-specific]
 ---
  drivers/firmware/cix/Kconfig     | 15 +++----
  drivers/firmware/cix/Makefile    |  3 +-

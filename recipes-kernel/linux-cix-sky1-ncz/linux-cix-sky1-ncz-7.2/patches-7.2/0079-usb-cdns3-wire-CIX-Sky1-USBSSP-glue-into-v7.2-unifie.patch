@@ -12,6 +12,8 @@ Subject: [PATCH 79/83] usb: cdns3: wire CIX Sky1 USBSSP glue into v7.2 unified
   these hooks not yet wired (vendor 2026q2 core fork carried it)
 - fix acpi/thermal free_memory label and i2s_sc remove() signature
   for v7.2
+
+Upstream-Status: Inappropriate [oe-specific]
 ---
  drivers/acpi/thermal.c               |  2 +-
  drivers/usb/cdns3/Kconfig            | 17 +++++++++++++++++

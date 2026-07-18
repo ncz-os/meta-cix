@@ -51,6 +51,8 @@ under clk-scmi (0003/0075), pmdomain-scmi (0077/0082), and panthor
 SCMI rate-limiting (0084) -- until this crash is fixed nothing
 downstream of SCMI (including NPU/VPU DKMS ACPI dependencies) is
 even reachable on 7.2.
+
+Upstream-Status: Inappropriate [oe-specific]
 ---
  drivers/firmware/arm_scmi/transports/mailbox.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)

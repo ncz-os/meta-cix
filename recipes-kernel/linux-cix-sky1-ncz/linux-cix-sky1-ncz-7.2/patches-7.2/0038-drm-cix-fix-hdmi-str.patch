@@ -3,6 +3,7 @@ From: leeboby <leeboby@aliyun.com>
 Date: Tue, 14 Apr 2026 10:24:36 +0800
 Subject: [PATCH 38/83] drm: cix: fix hdmi str
 
+Upstream-Status: Inappropriate [oe-specific]
 ---
  drivers/gpu/drm/cix/dptx/trilin_dptx_cix.c | 38 ++++++++++++++++++++++
  1 file changed, 38 insertions(+)

@@ -3,6 +3,7 @@ From: Jason Perlow <jperlow@gmail.com>
 Date: Thu, 9 Jul 2026 21:16:56 -0400
 Subject: [PATCH] media: cix: handle missing VPU firmware cleanly
 
+Upstream-Status: Inappropriate [oe-specific]
 ---
  drivers/media/platform/cix/if/mvx_firmware.c  | 13 +++++++++--
  .../platform/cix/if/mvx_firmware_cache.c      | 13 +++++------

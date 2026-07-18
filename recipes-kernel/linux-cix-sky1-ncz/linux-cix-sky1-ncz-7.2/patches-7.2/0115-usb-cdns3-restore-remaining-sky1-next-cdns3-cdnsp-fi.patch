@@ -7,6 +7,8 @@ Subject: [PATCH 115/115] usb: cdns3: restore remaining sky1-next cdns3/cdnsp
 cdns3-plat.c/cdns3-gadget.c/cdnsp-pci.c still referenced 7.2 struct fields
 (host_init, no_drd, cdns_core_init_role) absent from the restored sky1-next
 core.h. Restore them too so the whole cdns3 dir is internally consistent.
+
+Upstream-Status: Inappropriate [oe-specific]
 ---
  drivers/usb/cdns3/cdns3-gadget.c |   1 -
  drivers/usb/cdns3/cdns3-plat.c   |  60 ++------

@@ -4,6 +4,7 @@ Date: Thu, 2 Jul 2026 22:04:44 -0400
 Subject: [PATCH 78/83] pmdomain: fix dev_pm_domain_attach_by_name for sky1
  mali driver (NCZ 0040 forward-port to v7.2)
 
+Upstream-Status: Inappropriate [oe-specific]
 ---
  drivers/base/power/common.c             | 16 ++++++++++++++--
  drivers/pmdomain/arm/scmi_perf_domain.c | 18 +++++++++++++++++-

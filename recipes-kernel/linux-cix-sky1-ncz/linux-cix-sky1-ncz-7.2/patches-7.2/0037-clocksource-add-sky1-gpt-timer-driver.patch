@@ -3,6 +3,7 @@ From: Jianfeng Liu <Jianfeng.Liu@cixtech.com>
 Date: Thu, 21 May 2026 16:44:06 +0800
 Subject: [PATCH 37/83] clocksource: add sky1 gpt timer driver
 
+Upstream-Status: Inappropriate [oe-specific]
 ---
  drivers/clocksource/Kconfig          |   9 +
  drivers/clocksource/Makefile         |   1 +

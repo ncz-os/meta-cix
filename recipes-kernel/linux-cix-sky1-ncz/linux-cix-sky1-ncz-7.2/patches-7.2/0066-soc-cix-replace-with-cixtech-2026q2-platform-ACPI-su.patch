@@ -4,6 +4,7 @@ Date: Thu, 2 Jul 2026 21:48:58 -0400
 Subject: [PATCH 66/83] soc: cix: replace with cixtech 2026q2 platform/ACPI
  support
 
+Upstream-Status: Inappropriate [oe-specific]
 ---
  drivers/soc/cix/Kconfig                       |   70 +-
  drivers/soc/cix/Makefile                      |   14 +-

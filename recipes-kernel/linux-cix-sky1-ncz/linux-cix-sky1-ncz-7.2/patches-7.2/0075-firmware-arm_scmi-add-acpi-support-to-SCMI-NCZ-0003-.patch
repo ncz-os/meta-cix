@@ -6,6 +6,8 @@ Subject: [PATCH 75/83] firmware: arm_scmi: add acpi support to SCMI (NCZ 0003
 
 Hand-merged: v7.2 introduced the scmi_transport_supplier machinery in
 DEFINE_SCMI_TRANSPORT_DRIVER; keep it and add the __acpi_match parameter.
+
+Upstream-Status: Inappropriate [oe-specific]
 ---
  drivers/firmware/arm_scmi/bus.c               | 23 ++---
  drivers/firmware/arm_scmi/common.h            | 12 +--

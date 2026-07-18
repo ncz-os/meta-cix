@@ -10,6 +10,8 @@ sky1_npu_runtime_suspend() to fix compile error on 7.2.
 
 Source: linux-cix-sky1-next-7.1/patches-7.1/2005-armchina-npu-fix-pm-runtime-put-void-7.0.9.patch
 Applies unchanged.
+
+Upstream-Status: Inappropriate [oe-specific]
 ---
  drivers/misc/armchina-npu/sky1/sky1.c | 15 +++------------
  1 file changed, 3 insertions(+), 12 deletions(-)

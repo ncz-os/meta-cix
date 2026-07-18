@@ -4,6 +4,7 @@ Date: Thu, 2 Jul 2026 21:48:58 -0400
 Subject: [PATCH 65/83] clk: cix: replace with cixtech 2026q2 (k6.6.89) driver
  set
 
+Upstream-Status: Inappropriate [oe-specific]
 ---
  drivers/clk/cix/Kconfig              |   46 +-
  drivers/clk/cix/Makefile             |    9 +-

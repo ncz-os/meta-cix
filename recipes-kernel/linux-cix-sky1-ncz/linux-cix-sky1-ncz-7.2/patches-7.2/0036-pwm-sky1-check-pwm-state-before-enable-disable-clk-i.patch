@@ -4,6 +4,7 @@ Date: Thu, 21 May 2026 18:17:49 +0800
 Subject: [PATCH 36/83] pwm: sky1: check pwm state before enable/disable clk in
  STR
 
+Upstream-Status: Inappropriate [oe-specific]
 ---
  drivers/pwm/pwm-sky1.c | 13 +++++++++----
  1 file changed, 9 insertions(+), 4 deletions(-)

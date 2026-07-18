@@ -12,6 +12,8 @@ base 0x0b010000, pre-install bypass STEs for the known root-port SIDs,
 and force EATS on PCIe masters (Sky1 DTI ATS Master emits translated
 TLPs for non-ATS endpoints). Ported from the working cix-sky1-next
 7.0/7.1 tree.
+
+Upstream-Status: Inappropriate [oe-specific]
 ---
  drivers/iommu/arm/arm-smmu-v3/arm-smmu-v3.c | 67 ++++++++++++++++++++-
  drivers/iommu/arm/arm-smmu-v3/arm-smmu-v3.h |  1 +

@@ -4,6 +4,8 @@ Date: Wed, 18 Mar 2026 14:29:42 +0800
 Subject: [PATCH 18/83] sound: soc: add cix sof driver
 
 Signed-off-by: Jianfeng Liu <Jianfeng.Liu@cixtech.com>
+
+Upstream-Status: Inappropriate [oe-specific]
 ---
  sound/soc/sof/Kconfig          |   1 +
  sound/soc/sof/Makefile         |   1 +

@@ -3,6 +3,7 @@ From: Jianfeng Liu <Jianfeng.Liu@cixtech.com>
 Date: Tue, 31 Mar 2026 14:25:25 +0800
 Subject: [PATCH 22/83] typec: add rts5453 driver
 
+Upstream-Status: Inappropriate [oe-specific]
 ---
  drivers/usb/typec/Kconfig   |  13 +
  drivers/usb/typec/Makefile  |   1 +

@@ -4,6 +4,8 @@ Date: Wed, 18 Mar 2026 14:29:39 +0800
 Subject: [PATCH 06/83] soc: add cix acpi resource lookup driver
 
 Signed-off-by: Jianfeng Liu <Jianfeng.Liu@cixtech.com>
+
+Upstream-Status: Inappropriate [oe-specific]
 ---
  drivers/soc/Kconfig                        |   1 +
  drivers/soc/Makefile                       |   1 +

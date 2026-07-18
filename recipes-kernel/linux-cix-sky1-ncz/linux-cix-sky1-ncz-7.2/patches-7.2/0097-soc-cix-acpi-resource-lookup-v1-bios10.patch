@@ -10,6 +10,8 @@ on cixmini BIOS 1.0 -- sky1-pcie never gets its rcsu_strap resource
 names and USB/PHY reset lookups (RSTL) are never registered. Port the
 proven cix-sky1-next bridge (subsys_initcall + late-consumer fallbacks)
 alongside, with renamed symbols to avoid initcall collisions.
+
+Upstream-Status: Inappropriate [oe-specific]
 ---
  drivers/soc/cix/acpi/Makefile                 |   1 +
  .../cix/acpi/cix-acpi-resource-lookup-v1.c    | 409 ++++++++++++++++++

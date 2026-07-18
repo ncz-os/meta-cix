@@ -24,6 +24,8 @@ fields safely.
 
 Signed-off-by: devin.li <Devin.Li@cixtech.com>
 Change-Id: I8b28e046bed57610279f6fc5244d1da21b7cd19f
+
+Upstream-Status: Inappropriate [oe-specific]
 ---
  drivers/acpi/thermal.c            | 31 ++++++++++++++++++++++
  drivers/thermal/devfreq_cooling.c | 39 +++------------------------

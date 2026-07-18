@@ -4,6 +4,8 @@ Date: Wed, 18 Mar 2026 14:29:41 +0800
 Subject: [PATCH 14/83] gpio: add acpi support to cadence driver
 
 Signed-off-by: Jianfeng Liu <Jianfeng.Liu@cixtech.com>
+
+Upstream-Status: Inappropriate [oe-specific]
 ---
  drivers/gpio/gpio-cadence.c | 342 +++++++++++++++++++++++++++---------
  1 file changed, 257 insertions(+), 85 deletions(-)

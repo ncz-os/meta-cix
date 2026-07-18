@@ -4,6 +4,8 @@ Date: Wed, 18 Mar 2026 14:29:38 +0800
 Subject: [PATCH 02/83] acpi: Add a property reference count interface
 
 Signed-off-by: Jianfeng Liu <Jianfeng.Liu@cixtech.com>
+
+Upstream-Status: Inappropriate [oe-specific]
 ---
  drivers/acpi/property.c  | 82 ++++++++++++++++++++++++++++++++++++++++
  drivers/base/property.c  | 10 +++++

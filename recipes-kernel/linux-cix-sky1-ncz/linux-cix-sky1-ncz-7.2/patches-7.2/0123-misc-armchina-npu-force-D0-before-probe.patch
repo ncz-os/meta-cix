@@ -19,6 +19,8 @@ _PR0/SCMI path) to bring hardware to D0.
 
 Source: linux-cix-sky1-next-7.1/patches-7.1/2008-armchina-npu-force-D0-before-probe.patch
 Applies unchanged on top of 2006.
+
+Upstream-Status: Inappropriate [oe-specific]
 ---
  drivers/misc/armchina-npu/sky1/sky1.c | 13 +++++++++++++
  1 file changed, 13 insertions(+)
