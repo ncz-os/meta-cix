@@ -272,6 +272,7 @@ SRC_URI = " \
     file://patches-7.2/0156-drm-cix-linlondp-propagate-aclk-enable-failures.patch \
     file://patches-7.2/0159-armchina-npu-drop-irqf-oneshot.patch \
     file://patches-7.2/0160-hwmon-scmi-dont-skip-thermal-zone-on-config-set-fail.patch \
+    file://patches-7.2/0161-drm-cix-edp-panel-acpi-desc-properties.patch \
 "
 
 COMPATIBLE_MACHINE = "(cixmini)"
