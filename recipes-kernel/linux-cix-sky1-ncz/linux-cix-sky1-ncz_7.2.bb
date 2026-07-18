@@ -259,6 +259,7 @@ SRC_URI = " \
     file://patches-7.2/0132-firmware-arm_scmi-setup-channel-for-acpi-activated-protocols.patch \
     file://patches-7.2/0133-drm-linlondp-pin-display-power-domain-unconditionally.patch \
     file://patches-7.2/0134-drm-trilin-dptx-restore-runtime-pm.patch \
+    file://patches-7.2/0135-armchina-npu-drop-irqf-oneshot.patch \
 "
 
 COMPATIBLE_MACHINE = "(cixmini)"

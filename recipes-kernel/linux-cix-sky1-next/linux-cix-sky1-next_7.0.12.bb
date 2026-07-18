@@ -129,6 +129,7 @@ SRC_URI = " \
     file://next-patches/2015-ALSA-hda-cix-ipbloq-Add-ACPI-binding-DMA-range-map-a.patch \
     file://next-patches/2016-ALSA-hda-realtek-Add-CIX-Sky1-Phecda-board-fixup.patch \
     file://next-patches/2017-ALSA-hda-cix-ipbloq-Fix-ACPI-reset-clock-resource-na.patch \
+    file://next-patches/2018-armchina-npu-drop-irqf-oneshot.patch \
 "
 
 
