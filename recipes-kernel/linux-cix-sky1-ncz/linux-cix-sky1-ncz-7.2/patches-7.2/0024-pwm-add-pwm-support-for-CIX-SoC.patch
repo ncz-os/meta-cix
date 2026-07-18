@@ -3,6 +3,7 @@ From: Jianfeng Liu <Jianfeng.Liu@cixtech.com>
 Date: Thu, 30 Apr 2026 11:35:14 +0800
 Subject: [PATCH 24/83] pwm: add pwm support for CIX SoC
 
+Upstream-Status: Inappropriate [oe-specific]
 ---
  drivers/pwm/Kconfig    |   9 ++
  drivers/pwm/Makefile   |   1 +

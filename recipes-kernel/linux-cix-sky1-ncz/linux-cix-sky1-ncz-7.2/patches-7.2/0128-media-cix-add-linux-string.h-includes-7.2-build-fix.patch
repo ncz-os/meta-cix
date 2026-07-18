@@ -34,6 +34,8 @@ that's the correct contract).
 Result: drivers/media/platform/cix/amvx.ko builds clean, ~575 KB
 unstripped, depends=videobuf2-v4l2,videodev,videobuf2-dma-sg,
 videobuf2-common, vermagic=7.2.0-rc1-ncz.
+
+Upstream-Status: Inappropriate [oe-specific]
 ---
  drivers/media/platform/cix/if/mvx_firmware_v2.c      | 1 +
  drivers/media/platform/cix/if/v4l2/mvx_ext_v4l2.c    | 3 ++-

@@ -10,6 +10,8 @@ native driver probed it anyway -- its early controller reset kills the
 live firmware-configured links, leaving the root ports config-dead
 (D3cold-inaccessible) and SError-panicking the first NVMe access.
 Standard mode now claims CIXH2020 without creating a platform device.
+
+Upstream-Status: Inappropriate [oe-specific]
 ---
  drivers/pci/controller/cadence/pci-sky1-acpi.c | 18 ++++++++++++++++--
  1 file changed, 16 insertions(+), 2 deletions(-)

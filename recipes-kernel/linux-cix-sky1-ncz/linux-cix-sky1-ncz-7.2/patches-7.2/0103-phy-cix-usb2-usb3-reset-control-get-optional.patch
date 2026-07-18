@@ -10,6 +10,8 @@ bailing/NULLing, then (usb3) reset_control_assert on the ERR_PTR ->
 WARN reset/core.c:503 + preempt_count underflow -> in_hardirq ->
 cdns_i2c BUG. Switch both to devm_reset_control_get_optional + bail via
 dev_err_probe. hda (cix-ipbloq) already bails correctly.
+
+Upstream-Status: Inappropriate [oe-specific]
 ---
  drivers/phy/cix/phy-cix-usb2.c | 11 +++++------
  drivers/phy/cix/phy-cix-usb3.c | 18 +++++++++---------

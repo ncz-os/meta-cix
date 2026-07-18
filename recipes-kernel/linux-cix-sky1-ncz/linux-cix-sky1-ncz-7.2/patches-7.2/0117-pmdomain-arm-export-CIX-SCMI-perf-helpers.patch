@@ -6,6 +6,8 @@ Subject: [PATCH] pmdomain: arm: export CIX SCMI perf helpers
 Port the CIX 6.6 BSP scmi_device_get_freq(), scmi_device_set_freq(), and scmi_device_opp_table_parse() compatibility exports from drivers/soc/arm/scmi_perf_domain.c as found in the CIX cix_k6.6.89_2026q2 / ncz72-port cix-2026q2 tree.
 
 Adapt the implementation to the 7.2 SCMI perf-domain provider by passing the explicit domain id to device_opps_add() and treating an already-populated OPP table as success, since the local provider adds OPPs during genpd attach.
+
+Upstream-Status: Inappropriate [oe-specific]
 ---
  drivers/pmdomain/arm/scmi_perf_domain.c | 81 +++++++++++++++++++++++++
  include/linux/scmi_protocol.h           | 21 +++++++

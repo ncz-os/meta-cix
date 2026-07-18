@@ -31,6 +31,8 @@ Fix: explicitly clk_prepare_enable() the core clock right after
 panthor_clk_init() succeeds, independent of the pm_runtime path.
 clk_prepare_enable is refcounted, so this does not conflict with the
 resume callback also enabling it later once cix_system_ready flips true.
+
+Upstream-Status: Inappropriate [oe-specific]
 ---
  drivers/gpu/drm/panthor/panthor_device.c | 20 ++++++++++++++++++++
  1 file changed, 20 insertions(+)

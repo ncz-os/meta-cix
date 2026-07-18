@@ -4,6 +4,7 @@ Date: Thu, 2 Jul 2026 21:48:59 -0400
 Subject: [PATCH 70/83] ASoC/HDA: cix: replace SOF+machine+ipbloq with cixtech
  2026q2
 
+Upstream-Status: Inappropriate [oe-specific]
 ---
  sound/pci/hda/hda_cix_ipbloq.c | 905 +++++++++++++++++++++++++++++++++
  sound/soc/cix/Kconfig          |  42 +-

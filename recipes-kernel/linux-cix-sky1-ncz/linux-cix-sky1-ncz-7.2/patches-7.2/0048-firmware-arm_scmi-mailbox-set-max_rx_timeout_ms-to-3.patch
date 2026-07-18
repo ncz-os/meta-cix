@@ -4,6 +4,7 @@ Date: Wed, 3 Jun 2026 13:11:22 +0800
 Subject: [PATCH 48/83] firmware: arm_scmi: mailbox: set max_rx_timeout_ms to
  300ms
 
+Upstream-Status: Inappropriate [oe-specific]
 ---
  drivers/firmware/arm_scmi/transports/mailbox.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)

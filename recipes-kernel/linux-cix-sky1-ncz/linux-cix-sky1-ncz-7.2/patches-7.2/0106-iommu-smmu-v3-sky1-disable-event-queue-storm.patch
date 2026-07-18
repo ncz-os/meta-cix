@@ -6,6 +6,8 @@ Sky1 firmware truncates the PCIe SMMU stream table to 25 of 32
 Stream-ID bits, so every PCIe DMA raises a C_BAD_STREAMID event queue
 interrupt (~130/s on CPU0). Leave the event queue disabled for this
 SMMU (DMA still works via disable_bypass=0).
+
+Upstream-Status: Inappropriate [oe-specific]
 ---
 diff --git a/drivers/iommu/arm/arm-smmu-v3/arm-smmu-v3.c b/drivers/iommu/arm/arm-smmu-v3/arm-smmu-v3.c
 index bf4aef62ec99..a3b2335edc7a 100644

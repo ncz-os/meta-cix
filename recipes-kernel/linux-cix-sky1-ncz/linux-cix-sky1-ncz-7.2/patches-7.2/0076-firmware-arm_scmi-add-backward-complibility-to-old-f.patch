@@ -4,6 +4,7 @@ Date: Thu, 2 Jul 2026 22:03:39 -0400
 Subject: [PATCH 76/83] firmware arm_scmi add backward complibility to old f
  (NCZ forward-port to v7.2)
 
+Upstream-Status: Inappropriate [oe-specific]
 ---
  drivers/firmware/arm_scmi/shmem.c | 15 +++++++++++++++
  1 file changed, 15 insertions(+)

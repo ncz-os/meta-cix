@@ -8,6 +8,7 @@ table (7.0.12 did, because ACPI devices had no of_node). Result: cdnsp-sky1
 USB and arm-dma350/asoc audio get -ENOENT on their reset controls. Fall back
 to the registered lookup entries only when the native fwnode reset is absent.
 
+Upstream-Status: Inappropriate [oe-specific]
 ---
 diff --git a/drivers/reset/core.c b/drivers/reset/core.c
 index 8ecdf3bb5c19..5890a29e2f41 100644

@@ -3,6 +3,7 @@ From: Jianfeng Liu <Jianfeng.Liu@cixtech.com>
 Date: Mon, 25 May 2026 13:45:58 +0800
 Subject: [PATCH 41/83] arm64: add model name for Cix Sky1 Soc
 
+Upstream-Status: Inappropriate [oe-specific]
 ---
  arch/arm64/kernel/Makefile  |  1 +
  arch/arm64/kernel/cix_dmi.c | 54 +++++++++++++++++++++++++++++++++++++

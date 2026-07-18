@@ -21,6 +21,8 @@ hpd_plug_link_train defaults to Y (module param; set 0 to disable)
 Signed-off-by: wuyi.shen <wuyi.shen@cixtech.com>
 Change-Id: If18ddf64f6c465638f54e3167529b626165f2989
 Signed-off-by: wuyi.shen <wuyi.shen@cixtech.com>
+
+Upstream-Status: Inappropriate [oe-specific]
 ---
  drivers/gpu/drm/cix/dptx/trilin_dptx.c | 162 ++++++++++++++++++++++++-
  drivers/gpu/drm/cix/dptx/trilin_dptx.h |  10 ++

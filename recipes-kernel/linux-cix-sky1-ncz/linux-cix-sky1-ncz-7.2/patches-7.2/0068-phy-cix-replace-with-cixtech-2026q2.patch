@@ -3,6 +3,7 @@ From: Jason Perlow <jperlow@gmail.com>
 Date: Thu, 2 Jul 2026 21:48:58 -0400
 Subject: [PATCH 68/83] phy: cix: replace with cixtech 2026q2
 
+Upstream-Status: Inappropriate [oe-specific]
 ---
  drivers/phy/cix/Kconfig         | 37 +++++++--------
  drivers/phy/cix/Makefile        | 10 ++--

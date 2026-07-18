@@ -4,6 +4,8 @@ Date: Wed, 18 Mar 2026 14:29:39 +0800
 Subject: [PATCH 07/83] remoteproc: add cix dsp remoteproc driver
 
 Signed-off-by: Jianfeng Liu <Jianfeng.Liu@cixtech.com>
+
+Upstream-Status: Inappropriate [oe-specific]
 ---
  drivers/remoteproc/Kconfig               |   11 +
  drivers/remoteproc/Makefile              |    1 +

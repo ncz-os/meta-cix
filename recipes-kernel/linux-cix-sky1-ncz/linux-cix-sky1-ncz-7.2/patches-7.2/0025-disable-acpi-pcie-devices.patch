@@ -3,6 +3,7 @@ From: Jianfeng Liu <Jianfeng.Liu@cixtech.com>
 Date: Sat, 9 May 2026 10:07:38 +0800
 Subject: [PATCH 25/83] disable acpi pcie devices
 
+Upstream-Status: Inappropriate [oe-specific]
 ---
  drivers/pci/controller/cadence/Makefile       |   1 +
  .../pci/controller/cadence/pci-sky1-acpi.c    | 197 ++++++++++++++++++

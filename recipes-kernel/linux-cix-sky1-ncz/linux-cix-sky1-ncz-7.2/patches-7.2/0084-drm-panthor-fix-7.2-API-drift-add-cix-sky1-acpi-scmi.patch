@@ -112,6 +112,8 @@ Compile-tested on the v7.2-rc1 recipe (TORVALDS dc59e4fea9d8):
 See the commit log on this branch for the full kernel build output.
 
 Signed-off-by: Jason Perlow <jperlow@gmail.com>
+
+Upstream-Status: Inappropriate [oe-specific]
 ---
  drivers/gpu/drm/panthor/panthor_devfreq.c  | 290 +++++++++++++++++++++++++++--
  drivers/gpu/drm/panthor/panthor_device.c   | 141 +++++++++++++-

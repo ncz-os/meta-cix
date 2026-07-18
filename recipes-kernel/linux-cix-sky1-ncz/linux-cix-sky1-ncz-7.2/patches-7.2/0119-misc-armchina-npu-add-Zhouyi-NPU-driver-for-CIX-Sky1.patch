@@ -14,6 +14,8 @@ Drop 0016 from meta-cix linux-cix-sky1-next-7.1/patches-7.1/ once
 DKMS/OOT form stabilizes; the OOT cix-npu-kmd recipe is currently the
 preferred build path for 7.0.x BSP, and in-tree form is only used on
 7.2 NCZ where we control Kconfig and want V3+V3_1+V3_1 priv baked in.
+
+Upstream-Status: Inappropriate [oe-specific]
 ---
  drivers/misc/Kconfig                          |    1 +
  drivers/misc/Makefile                         |    1 +

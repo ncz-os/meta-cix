@@ -270,6 +270,7 @@ SRC_URI = " \
     file://patches-7.2/0154-drm-cix-dptx-validate-reset-and-clock-lookups.patch \
     file://patches-7.2/0155-phy-cix-usbdp-acquire-pclk-before-asserting-resets.patch \
     file://patches-7.2/0156-drm-cix-linlondp-propagate-aclk-enable-failures.patch \
+    file://patches-7.2/0159-armchina-npu-drop-irqf-oneshot.patch \
 "
 
 COMPATIBLE_MACHINE = "(cixmini)"

@@ -3,6 +3,7 @@ From: Jianfeng Liu <Jianfeng.Liu@cixtech.com>
 Date: Mon, 8 Jun 2026 11:24:30 +0800
 Subject: [PATCH 51/83] thermal: ipa: enhance ipa
 
+Upstream-Status: Inappropriate [oe-specific]
 ---
  drivers/acpi/processor_thermal.c      |  22 +++++
  drivers/acpi/thermal.c                |  10 ++-

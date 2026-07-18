@@ -3,6 +3,7 @@ From: Jianfeng Liu <Jianfeng.Liu@cixtech.com>
 Date: Sat, 30 May 2026 16:03:38 +0800
 Subject: [PATCH 52/83] add cix_dst driver
 
+Upstream-Status: Inappropriate [oe-specific]
 ---
  drivers/soc/cix/Kconfig                       |    1 +
  drivers/soc/cix/Makefile                      |    1 +

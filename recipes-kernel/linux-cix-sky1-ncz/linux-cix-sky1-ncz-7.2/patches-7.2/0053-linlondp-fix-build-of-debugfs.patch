@@ -3,6 +3,7 @@ From: Jianfeng Liu <Jianfeng.Liu@cixtech.com>
 Date: Tue, 20 Jan 2026 14:41:49 +0800
 Subject: [PATCH 53/83] linlondp: fix build of debugfs
 
+Upstream-Status: Inappropriate [oe-specific]
 ---
  drivers/gpu/drm/cix/dptx/trilin_drm.c        | 4 ++++
  drivers/gpu/drm/cix/linlon-dp/linlondp_dev.c | 4 ----
