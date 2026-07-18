@@ -130,6 +130,7 @@ SRC_URI = " \
     file://next-patches/2016-ALSA-hda-realtek-Add-CIX-Sky1-Phecda-board-fixup.patch \
     file://next-patches/2017-ALSA-hda-cix-ipbloq-Fix-ACPI-reset-clock-resource-na.patch \
     file://next-patches/2018-armchina-npu-drop-irqf-oneshot.patch \
+    file://next-patches/2019-hwmon-scmi-dont-skip-thermal-zone-on-config-set-fail.patch \
 "
 
 
