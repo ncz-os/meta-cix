@@ -1,0 +1,44 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jason Perlow <jperlow@gmail.com>
+Date: Sun, 20 Jul 2026 02:30:00 -0400
+Subject: [PATCH] clocksource: sky1: defer probe on missing timer clocks
+
+Confirmed live on Orion O6N 2026-07-19/20: sky1_timer_probe()
+already uses dev_err_probe() correctly here (unlike the 7.2 kernel's
+older implementation, which hard-returns -EINVAL and discards the
+real error) but is still missing the -ENOENT-to-EPROBE_DEFER
+translation, so a clock not yet mapped by clk-sky1-acpi at probe
+time is still treated as a terminal failure rather than retried.
+
+Same fix class as 2021-2024 (linlondp/usb3-phy/cdnsp-sky1/cdns-i2c).
+
+Signed-off-by: Jason Perlow <jperlow@gmail.com>
+---
+diff --git a/drivers/clocksource/timer-sky1-gpt.c b/drivers/clocksource/timer-sky1-gpt.c
+index df9db89..83f6fa0 100644
+--- a/drivers/clocksource/timer-sky1-gpt.c
++++ b/drivers/clocksource/timer-sky1-gpt.c
+@@ -221,7 +221,9 @@ static int sky1_timer_probe(struct platform_device *pdev)
+ 		sky1tm->pclk = devm_clk_get_optional_enabled(dev,
+ 							"fch_timer_apb_clk");
+ 	if (IS_ERR(sky1tm->pclk))
+-		return dev_err_probe(dev, PTR_ERR(sky1tm->pclk),
++		return dev_err_probe(dev,
++				     PTR_ERR(sky1tm->pclk) == -ENOENT ?
++				     -EPROBE_DEFER : PTR_ERR(sky1tm->pclk),
+ 				     "failed to get apb clock\n");
+ 
+ 	sky1tm->tclk = devm_clk_get_enabled(dev, "func");
+@@ -229,7 +231,9 @@ static int sky1_timer_probe(struct platform_device *pdev)
+ 		sky1tm->tclk = devm_clk_get_enabled(dev,
+ 						     "fch_timer_func_clk");
+ 	if (IS_ERR(sky1tm->tclk))
+-		return dev_err_probe(dev, PTR_ERR(sky1tm->tclk),
++		return dev_err_probe(dev,
++				     PTR_ERR(sky1tm->tclk) == -ENOENT ?
++				     -EPROBE_DEFER : PTR_ERR(sky1tm->tclk),
+ 				     "failed to get func clock\n");
+ 
+ 	rate = clk_get_rate(sky1tm->tclk);
+--
+2.51.0
