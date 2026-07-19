@@ -132,6 +132,10 @@ SRC_URI = " \
     file://next-patches/2018-armchina-npu-drop-irqf-oneshot.patch \
     file://next-patches/2019-hwmon-scmi-dont-skip-thermal-zone-on-config-set-fail.patch \
     file://next-patches/2020-drm-cix-edp-panel-acpi-desc-properties.patch \
+    file://next-patches/2021-drm-cix-linlondp-defer-on-missing-aclk-instead-of-failing.patch \
+    file://next-patches/2022-phy-cix-usb3-defer-on-missing-clocks-fix-ref-clk-check.patch \
+    file://next-patches/2023-usb-cdns3-cdnsp-sky1-defer-on-missing-clocks.patch \
+    file://next-patches/2024-i2c-cadence-defer-on-missing-clock.patch \
 "
 
 
