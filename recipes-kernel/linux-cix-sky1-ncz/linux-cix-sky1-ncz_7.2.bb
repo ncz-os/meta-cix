@@ -276,6 +276,7 @@ SRC_URI = " \
     file://patches-7.2/0162-drm-cix-linlondp-defer-on-missing-aclk-instead-of-failing.patch \
     file://patches-7.2/0163-phy-cix-usb3-defer-on-missing-clocks-fix-ref-clk-check.patch \
     file://patches-7.2/0164-usb-cdns3-cdnsp-sky1-defer-on-missing-clocks.patch \
+    file://patches-7.2/0165-i2c-cadence-defer-on-missing-clock.patch \
 "
 
 COMPATIBLE_MACHINE = "(cixmini)"

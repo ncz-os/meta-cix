@@ -1,0 +1,53 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jason Perlow <jperlow@gmail.com>
+Date: Sun, 20 Jul 2026 02:00:00 -0400
+Subject: [PATCH] phy: cix: usb3: defer on missing clocks, fix ref_clk error-check bug
+
+Confirmed live on Orion O6N, 2026-07-19/20: same class of bug as
+0162/0163/0164 (linlondp/usb3-phy/cdnsp-sky1) -- devm_clk_get() fails
+with -ENOENT when clk-sky1-acpi has not mapped this clock yet, and
+the driver returns that raw error straight out of probe instead of
+the retryable -EPROBE_DEFER, so the driver core never retries it.
+
+Same fix already proven working for cix-usbdp-phy (0155) and pwm-sky1
+(0158). Applies the identical -ENOENT-to-EPROBE_DEFER translation.
+
+Also fixes a pre-existing copy-paste bug: the ref_clk lookup checked
+IS_ERR(u3phy->apb_clk) instead of IS_ERR(u3phy->ref_clk), so a genuine
+ref_clk failure was silently masked whenever apb_clk had succeeded.
+
+Signed-off-by: Jason Perlow <jperlow@gmail.com>
+---
+diff --git a/drivers/phy/cix/phy-cix-usb3.c b/drivers/phy/cix/phy-cix-usb3.c
+index adec9bb..792dd71 100644
+--- a/drivers/phy/cix/phy-cix-usb3.c
++++ b/drivers/phy/cix/phy-cix-usb3.c
+@@ -376,16 +376,18 @@ static int cix_u3phy_probe(struct platform_device *pdev)
+ 	}
+ 
+ 	u3phy->apb_clk = devm_clk_get(dev, "apb_clk");
+-	if (IS_ERR(u3phy->apb_clk)) {
+-		dev_err(dev, "phy apb clock not found\n");
+-		return PTR_ERR(u3phy->apb_clk);
+-	}
++	if (IS_ERR(u3phy->apb_clk))
++		return dev_err_probe(dev,
++				     PTR_ERR(u3phy->apb_clk) == -ENOENT ?
++				     -EPROBE_DEFER : PTR_ERR(u3phy->apb_clk),
++				     "phy apb clock not found\n");
+ 
+ 	u3phy->ref_clk = devm_clk_get(dev, "ref_clk");
+-	if (IS_ERR(u3phy->apb_clk)) {
+-		dev_err(dev, "phy apb clock not found\n");
+-		return PTR_ERR(u3phy->apb_clk);
+-	}
++	if (IS_ERR(u3phy->ref_clk))
++		return dev_err_probe(dev,
++				     PTR_ERR(u3phy->ref_clk) == -ENOENT ?
++				     -EPROBE_DEFER : PTR_ERR(u3phy->ref_clk),
++				     "phy ref clock not found\n");
+ 
+ 	u3phy->base = devm_platform_ioremap_resource(pdev, 0);
+ 	if (IS_ERR(u3phy->base))
+--
+2.51.0

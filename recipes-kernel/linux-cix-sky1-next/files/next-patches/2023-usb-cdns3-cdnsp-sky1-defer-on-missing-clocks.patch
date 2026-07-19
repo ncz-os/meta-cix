@@ -1,0 +1,44 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jason Perlow <jperlow@gmail.com>
+Date: Sun, 20 Jul 2026 02:00:00 -0400
+Subject: [PATCH] usb: cdns3: cdnsp-sky1: defer probe on missing clocks instead of failing
+
+Confirmed live on Orion O6N, 2026-07-19/20: same class of bug as
+0162/0163/0164 (linlondp/usb3-phy/cdnsp-sky1) -- devm_clk_get() fails
+with -ENOENT when clk-sky1-acpi has not mapped this clock yet, and
+the driver returns that raw error straight out of probe instead of
+the retryable -EPROBE_DEFER, so the driver core never retries it.
+
+Same fix already proven working for cix-usbdp-phy (0155) and pwm-sky1
+(0158). Applies the identical -ENOENT-to-EPROBE_DEFER translation.
+
+Signed-off-by: Jason Perlow <jperlow@gmail.com>
+---
+diff --git a/drivers/usb/cdns3/cdnsp-sky1.c b/drivers/usb/cdns3/cdnsp-sky1.c
+index c43b07d..40e3d2f 100644
+--- a/drivers/usb/cdns3/cdnsp-sky1.c
++++ b/drivers/usb/cdns3/cdnsp-sky1.c
+@@ -92,7 +92,9 @@ static int sky1_usb_clk_enable_all(struct device *dev)
+ 	for (i = 0; i < CIX_USB_CLK_NUM; i++) {
+ 		cix_usb_clks[i] = devm_clk_get(dev, cix_usb_clk_names[i]);
+ 		if (IS_ERR(cix_usb_clks[i])) {
+-			ret = dev_err_probe(dev, PTR_ERR(cix_usb_clks[i]),
++			int clk_err = PTR_ERR(cix_usb_clks[i]) == -ENOENT ?
++				-EPROBE_DEFER : PTR_ERR(cix_usb_clks[i]);
++			ret = dev_err_probe(dev, clk_err,
+ 				"could not get %s clock\n", cix_usb_clk_names[i]);
+ 			goto err_usb_clks;
+ 		}
+@@ -699,7 +701,9 @@ static int cdnsp_sky1_probe(struct platform_device *pdev)
+ 			struct clk *clk = devm_clk_get(dev,
+ 						       cix_usb_clk_names[i]);
+ 			if (IS_ERR(clk))
+-				return dev_err_probe(dev, PTR_ERR(clk),
++				return dev_err_probe(dev,
++					PTR_ERR(clk) == -ENOENT ?
++					-EPROBE_DEFER : PTR_ERR(clk),
+ 					"could not get %s clock\n",
+ 					cix_usb_clk_names[i]);
+ 		}
+--
+2.51.0

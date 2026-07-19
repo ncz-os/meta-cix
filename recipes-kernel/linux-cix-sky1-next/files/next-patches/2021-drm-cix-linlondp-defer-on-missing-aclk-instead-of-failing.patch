@@ -1,0 +1,34 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jason Perlow <jperlow@gmail.com>
+Date: Sun, 20 Jul 2026 02:00:00 -0400
+Subject: [PATCH] drm/cix: linlondp: defer probe on missing aclk instead of failing
+
+Confirmed live on Orion O6N, 2026-07-19/20: same class of bug as
+0162/0163/0164 (linlondp/usb3-phy/cdnsp-sky1) -- devm_clk_get() fails
+with -ENOENT when clk-sky1-acpi has not mapped this clock yet, and
+the driver returns that raw error straight out of probe instead of
+the retryable -EPROBE_DEFER, so the driver core never retries it.
+
+Same fix already proven working for cix-usbdp-phy (0155) and pwm-sky1
+(0158). Applies the identical -ENOENT-to-EPROBE_DEFER translation.
+
+Signed-off-by: Jason Perlow <jperlow@gmail.com>
+---
+diff --git a/drivers/gpu/drm/cix/linlon-dp/linlondp_dev.c b/drivers/gpu/drm/cix/linlon-dp/linlondp_dev.c
+index feb1dde..fffdb6f 100644
+--- a/drivers/gpu/drm/cix/linlon-dp/linlondp_dev.c
++++ b/drivers/gpu/drm/cix/linlon-dp/linlondp_dev.c
+@@ -656,8 +656,9 @@ struct linlondp_dev *linlondp_dev_create(struct device *dev)
+ #if !IS_ENABLED(CONFIG_DRM_LINLONDP_CLOCK_FIXED)
+ 	mdev->aclk = devm_clk_get(dev, "aclk");
+ 	if (IS_ERR(mdev->aclk)) {
+-		DRM_ERROR("Get engine clk failed.\n");
+-		err = PTR_ERR(mdev->aclk);
++		err = PTR_ERR(mdev->aclk) == -ENOENT ?
++			-EPROBE_DEFER : PTR_ERR(mdev->aclk);
++		dev_err_probe(dev, err, "Get engine clk failed.\n");
+ 		mdev->aclk = NULL;
+ 		goto err_cleanup;
+ 	}
+--
+2.51.0
