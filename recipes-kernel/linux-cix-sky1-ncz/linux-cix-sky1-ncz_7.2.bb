@@ -273,6 +273,9 @@ SRC_URI = " \
     file://patches-7.2/0159-armchina-npu-drop-irqf-oneshot.patch \
     file://patches-7.2/0160-hwmon-scmi-dont-skip-thermal-zone-on-config-set-fail.patch \
     file://patches-7.2/0161-drm-cix-edp-panel-acpi-desc-properties.patch \
+    file://patches-7.2/0162-drm-cix-linlondp-defer-on-missing-aclk-instead-of-failing.patch \
+    file://patches-7.2/0163-phy-cix-usb3-defer-on-missing-clocks-fix-ref-clk-check.patch \
+    file://patches-7.2/0164-usb-cdns3-cdnsp-sky1-defer-on-missing-clocks.patch \
 "
 
 COMPATIBLE_MACHINE = "(cixmini)"
