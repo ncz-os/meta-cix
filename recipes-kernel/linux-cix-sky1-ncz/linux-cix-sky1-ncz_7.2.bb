@@ -279,6 +279,7 @@ SRC_URI = " \
     file://patches-7.2/0165-i2c-cadence-defer-on-missing-clock.patch \
     file://patches-7.2/0166-clocksource-sky1-defer-on-missing-timer-clocks.patch \
     file://patches-7.2/0167-soc-cix-acpi-resource-lookup-tighten-badly-specified-guard.patch \
+    file://patches-7.2/0168-clk-cix-sky1-gate-clkt-bridge-on-scmi-provider-readiness.patch \
 "
 
 COMPATIBLE_MACHINE = "(cixmini)"
