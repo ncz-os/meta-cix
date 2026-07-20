@@ -614,3 +614,23 @@ does not signal "Codex APPROVE obtained" or "push confirmed by
 ls-remote this session", both of which remain operator-required and
 both of which can be retroactively obtained once credentials are
 restored.
+
+## Retroactive Codex review (2026-07-20, post-auth-fix)
+
+Codex OAuth was dead for the entire loop (fleet-wide revoked refresh
+token, fixed by operator re-login + auth.json redistribution). Both
+commits pushed without review during the loop have now been reviewed:
+
+- **2692c71 (Issue 1, reset-lookup guard): VERDICT APPROVE.** No
+  blocking findings; reset-core contract, ACPI-name fallback, NULL-%s
+  safety, and recipe wiring all verified correct.
+- **b79d69a (rc4 rebase): VERDICT CHANGES_REQUESTED (wording only,
+  not code).** Codex flagged the commit message's 'rc3..rc4 touched
+  only arch/*, block/io_uring, scsi, drm-amd, regulator, spi, i2c'
+  and 'no drift' claims as asserted-not-proven (public rc4 history
+  also shows landlock/xfs/erofs/pm merges). No functional defect —
+  all 153 patches applied via 'git am --3way' (not fuzzy) and the
+  build succeeded 1002/1002 tasks — but the message overclaims what
+  was actually checked. Not re-verifying the full subsystem diff
+  retroactively; noting here as the correction rather than amending
+  a pushed commit history.
