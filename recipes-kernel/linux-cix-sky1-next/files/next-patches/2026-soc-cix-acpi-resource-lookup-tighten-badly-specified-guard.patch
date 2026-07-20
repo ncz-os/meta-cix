@@ -1,0 +1,115 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jason Perlow <jperlow@gmail.com>
+Date: Mon, 20 Jul 2026 13:05:00 +0800
+Subject: [PATCH] soc: cix: acpi-resource-lookup: validate RSTL entries +
+ add ACPI-name fallback
+
+Two coupled fixes for Orion O6N (CIX Sky1, ACPI) in the v7.0.12/stable
+tree; mirrors the v7.2/ncz tree's behaviour.
+
+1. Tighten the RSTL entry guard in reset_lookup_handle() to match
+   reset core's actual contract: drivers/reset/core.c rejects entries
+   with !dev_id || !provider.  The CIX RSTL parser used a different
+   condition (admitted NULL dev_id whenever con_id was non-NULL),
+   which let three unusable entries slip through to reset core, which
+   then emitted "reset lookup entry badly specified, skipping" three
+   times per boot on O6N.
+
+2. Add the ACPI-name fallback into acpi_obj_to_devname() that already
+   exists in the v7.2/ncz tree.  Without it, any RSTL entry whose
+   consumer's platform_device has not been instantiated yet at
+   subsys_initcall time (e.g. usb_reset/usb_preset on CIXH2030/CIXH2032
+   USB PHY/controller) gets dev_id == NULL and is now silently dropped
+   by the tightened guard from (1), regressing devm_reset_control_get()
+   resolution.  The fallback uses acpi_dev_name(adev) -- for
+   ACPI-enumerated platform devices, dev_name(dev) equals the ACPI
+   device's bus id, so the lookup remains matchable.
+
+Replace the dropped entries with a dev_dbg diagnostic so future debug
+runs can see which entry was rejected and why (provider/dev_id/con_id
+strings), instead of just "badly specified".
+
+The v7.2/ncz tree (drivers/soc/cix/acpi/cix-acpi-resource-lookup-v1.c)
+already has the fallback; this patch only adds the guard tightening
+there.  Same fix class as the night's -ENOENT-to-EPROBE_DEFER clock
+fixes -- O6N-specific, not a generic kernel bug.
+
+Signed-off-by: Jason Perlow <jperlow@gmail.com>
+---
+--- a/drivers/soc/cix/cix-acpi-resource-lookup.c
++++ b/drivers/soc/cix/cix-acpi-resource-lookup.c
+@@ -53,15 +53,48 @@
+ 	return bus_find_device_by_acpi_dev(&platform_bus_type, adev);
+ }
+ 
++static struct acpi_device *acpi_obj_to_acpi_dev(const union acpi_object *obj)
++{
++	if (!obj)
++		return NULL;
++
++	if (obj->type == ACPI_TYPE_LOCAL_REFERENCE)
++		return acpi_fetch_acpi_dev(obj->reference.handle);
++
++	if (obj->type == ACPI_TYPE_STRING) {
++		acpi_handle handle;
++		acpi_status status;
++
++		status = acpi_get_handle(NULL, obj->string.pointer, &handle);
++		if (ACPI_FAILURE(status))
++			return NULL;
++		return acpi_fetch_acpi_dev(handle);
++	}
++
++	return NULL;
++}
++
+ static const char *acpi_obj_to_devname(const union acpi_object *obj)
+ {
++	struct acpi_device *adev;
+ 	struct device *dev;
+ 
+ 	dev = acpi_obj_to_platform_device(obj);
+-	if (!dev)
+-		return NULL;
++	if (dev)
++		return dev_name(dev);
+ 
+-	return dev_name(dev);
++	/*
++	 * The target platform_device may not be instantiated yet when this
++	 * lookup runs (subsys_initcall ordering vs ACPI platform-device
++	 * creation).  For ACPI-enumerated platform devices, dev_name() equals
++	 * the ACPI device's bus id, so fall back to that deterministic name.
++	 * Without this, reset_control lookups for not-yet-probed consumers
++	 * (e.g. usb_reset/usb_preset on CIXH2030/CIXH2032) get a NULL dev_id
++	 * and the tightened guard below would silently drop them, leaving
++	 * USB PHY/controller resets unresolved.  Mirrors the v7.2/ncz tree.
++	 */
++	adev = acpi_obj_to_acpi_dev(obj);
++	return adev ? acpi_dev_name(adev) : NULL;
+ }
+ 
+ /*
+@@ -111,8 +144,18 @@
+ 			devm_kstrdup(dev, el[3].string.pointer, GFP_KERNEL)
+ 			: NULL;
+ 
+-		if (!lookup->provider || (!lookup->dev_id && !lookup->con_id))
++		/*
++		 * reset_controller_add_lookup() requires both fields, and lookup
++		 * matching starts with dev_id before considering con_id.  The ACPI
++		 * name fallback above covers consumers not instantiated yet, so a
++		 * missing name here denotes an unresolved firmware reference.
++		 */
++		if (!lookup->provider || !lookup->dev_id) {
++			dev_dbg(&adev->dev,
++				"invalid RSTL[%d]: provider[%s] dev[%s] con[%s]\n",
++				i, lookup->provider, lookup->dev_id, lookup->con_id);
+ 			continue;
++		}
+ 
+ 		reset_controller_add_lookup(lookup, 1);
+ 
+
+-- 
+2.53.0
