@@ -1,0 +1,10 @@
+Codex gpt-5.5 review attempts were invoked via stdin as required, including
+post-build Issue 1 and Issue 4 adversarial prompts. The configured Codex client
+failed before producing any review with HTTP 401 authentication errors:
+
+  refresh_token_reused
+  Provided authentication token is expired
+  Missing bearer or basic authentication in header
+
+No APPROVE verdict was produced or claimed. Reauthenticate the client and run
+.work/codex-review-issue1-final.prompt before pushing the Issue 1 commit.

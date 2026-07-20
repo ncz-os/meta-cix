@@ -1,0 +1,19 @@
+Perform an adversarial, read-only review of ONLY the O6N reset-lookup fix currently present in these files:
+
+- recipes-kernel/linux-cix-sky1-ncz/linux-cix-sky1-ncz_7.2.bb: SRC_URI entry 0167 only
+- recipes-kernel/linux-cix-sky1-next/linux-cix-sky1-next_7.0.12.bb: SRC_URI entry 2026 only
+- recipes-kernel/linux-cix-sky1-ncz/linux-cix-sky1-ncz-7.2/patches-7.2/0167-soc-cix-acpi-resource-lookup-tighten-badly-specified-guard.patch
+- recipes-kernel/linux-cix-sky1-next/files/next-patches/2026-soc-cix-acpi-resource-lookup-tighten-badly-specified-guard.patch
+
+The patched kernel worktrees are read-only references at:
+- /home/jasonperlow/yocto-docker/ybuild/tmp/work/cixmini-nclawzero-linux/linux-cix-sky1-ncz/7.2+ncz/kernel-source
+- /home/jasonperlow/yocto-docker/ybuild/tmp/work/cixmini-nclawzero-linux/linux-cix-sky1-next/7.0.12+sky1-next/kernel-source
+
+Both kernels completed a paired bitbake run, including do_patch, do_compile, do_compile_kernelmodules and packaging: "Tasks Summary: Attempted 1002 tasks of which 953 didn't need to be rerun and all succeeded."
+
+Review correctness, semantics, lifetime/ownership, NULL %s logging safety, scope, and recipe wiring. Verify directly against drivers/reset/core.c that reset_controller_add_lookup requires provider+dev_id and lookup matching checks dev_id before con_id. Verify that the 7.2 source already has an ACPI-name fallback, and that the 7.0.12 patch correctly backports the equivalent fallback rather than dropping valid not-yet-instantiated consumers. Distinguish unresolved/incomplete firmware references from platform-device ordering. Check whether using dev_name(dev) pointers without putting the reference returned by bus_find_device_by_acpi_dev is pre-existing and whether this patch worsens it. Ignore Issue 4 and PROGRESS.md.
+
+Do not modify any files. Findings ordered by severity. End with exactly one line:
+VERDICT: APPROVE
+or
+VERDICT: CHANGES_REQUESTED

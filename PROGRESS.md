@@ -209,7 +209,7 @@ Author identity for commits in this log: `Jason Perlow <jperlow@gmail.com>`.
 - **Disposition**: the prototype was removed from both recipes and is not
   committed. The rejected patch files were removed from the layer so they cannot be
   accidentally wired later; the investigation and failed-review evidence is
-  retained under `.work/issue4-review-analysis.md` and `.work/review-results/`. A correct fix requires querying/tracking
+  retained in `.work/issue4-review-analysis.md`. A correct fix requires querying/tracking
   the actual SCMI performance state and reconciling suppressed target calls,
   then human-supervised O6N runtime validation. That cannot be established by
   compile-only desk work, so no speculative kernel patch is forced.
@@ -253,7 +253,8 @@ Author identity for commits in this log: `Jason Perlow <jperlow@gmail.com>`.
   returns the built tree to a strict subset of that successful compile.
 - Codex is externally blocked by expired/invalid credentials (HTTP 401).
 - Push is externally blocked by origin SSH authentication. Local HEAD is
-  `2692c71`, one commit ahead of origin `b79d69a`.
+  three commits ahead of origin `b79d69a` (`2692c71` Issue 1,
+  `ce923fc` final report, plus the tracked installer handoff artifacts commit).
 
 ## Final state / operator handoff
 
@@ -271,8 +272,7 @@ Required operator actions:
 1. Reauthenticate `~/.local/bin/codex`, run the saved Issue 1 review prompt at
    `.work/codex-review-issue1-final.prompt`, and require `VERDICT: APPROVE`.
 2. Restore SSH credentials for origin
-   `root@192.168.207.101:/mnt/datapool/git/meta-cix.git` and push `2692c71`
-   without force.
+   `root@192.168.207.101:/mnt/datapool/git/meta-cix.git` and push local HEAD (including `2692c71`) without force.
 3. Apply `.work/cix-installer-fix/cix_resume_prepare.sh.diff` in the scoped
    cix-installer repository on ARGOS, review/build there, and push separately.
 4. If Issue 4 is pursued, implement actual SCMI current-state tracking and test
