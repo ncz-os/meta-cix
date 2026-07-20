@@ -137,6 +137,7 @@ SRC_URI = " \
     file://next-patches/2023-usb-cdns3-cdnsp-sky1-defer-on-missing-clocks.patch \
     file://next-patches/2024-i2c-cadence-defer-on-missing-clock.patch \
     file://next-patches/2025-clocksource-sky1-defer-on-missing-timer-clocks.patch \
+    file://next-patches/2026-soc-cix-acpi-resource-lookup-tighten-badly-specified-guard.patch \
 "
 
 
