@@ -6,5 +6,24 @@ failed before producing any review with HTTP 401 authentication errors:
   Provided authentication token is expired
   Missing bearer or basic authentication in header
 
-No APPROVE verdict was produced or claimed. Reauthenticate the client and run
-.work/codex-review-issue1-final.prompt before pushing the Issue 1 commit.
+UPDATED 2026-07-20 15:08 UTC+08:
+  `codex login status` now reads "Not logged in" -- not just a stale
+  refresh token, but a fully logged-out state. The requests carry no
+  bearer token at all. Reauthenticate at a human terminal:
+    ~/.local/bin/codex login    (interactive OAuth)
+  Then re-run the saved Issue 1 review prompt at
+  `.work/codex-review-issue1-final.prompt` and require `VERDICT: APPROVE`.
+
+  See .work/CODEX-AUTH-LOGGEDOUT.txt for full diagnostic evidence.
+
+No APPROVE verdict was produced or claimed in any iteration. The
+Issue 1 patch (`2692c71 fix(soc): validate CIX ACPI reset lookup entries`)
+was independently re-audited in the 15:05 UTC+08 iteration against fresh
+pristine source: drivers/reset/core.c contract `if (!entry->dev_id ||
+!entry->provider)` is exactly what the patch enforces; lookup matching
+checks dev_id (`strcmp(lookup->dev_id, dev_id)`) before con_id so the
+patch is semantically correct; the v7.2 source already has the ACPI-name
+fallback via acpi_dev_name(adev) and the v7.0.12 sibling patch backports
+it before tightening the guard, so it does not regress not-yet-probed
+consumers; `git apply --check -p1` exits 0 against fresh copies of both
+pristine trees.
