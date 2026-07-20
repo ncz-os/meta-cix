@@ -3,24 +3,24 @@
 #
 # Linux kernel for Cix Sky1 / CP8180 -- NCZ 7.2 track.
 #
-# Base: torvalds mainline v7.2-rc1 (no linux-7.2.y stable branch yet, so
-#       KBRANCH=master + SRCREV pinned to the v7.2-rc1 tag commit).
+# Base: torvalds mainline v7.2-rc4 (no linux-7.2.y stable branch yet, so
+#       KBRANCH=master + SRCREV pinned to the v7.2-rc4 tag commit).
 # Patches: patches-7.2 = cixtech 2026q2 vendor driver set
 #   (github.com/cixtech/cix_opensource__linux @ cix_k6.6.89_2026q2)
-#   forward-ported from k6.6.89 onto v7.2-rc1, PLUS the NCZ core ACPI
+#   forward-ported from k6.6.89 onto v7.2-rc4, PLUS the NCZ core ACPI
 #   glue patches (from patches-7.1) that still apply.
-#   Upstream v7.2-rc1 already carries: sky1-orion-o6 DTS, cix-mailbox,
+#   Upstream v7.2-rc4 already carries: sky1-orion-o6 DTS, cix-mailbox,
 #   pci-sky1 (Cadence HPA, OF), pinctrl-sky1, reset-sky1, HDA cix-ipbloq
 #   -- those are used as-is with NCZ ACPI deltas on top.
 #   USB host role initialization is completed by patch 0112, which connects
 #   the imported USBSSP platform driver to the v7.2 unified cdns3 role core.
-# Config: config-7.2.defconfig = 7.1 NCZ config + olddefconfig on v7.2-rc1
+# Config: config-7.2.defconfig = 7.1 NCZ config + olddefconfig on v7.2-rc4
 #   + CIX 2026q2 symbols + CONFIG_BTRFS_FS=y (built-in; btrfs root without
 #   initrd module).
 # NPU (Zhouyi V3/V3_1, CIX Sky1 CRE0-2): ADDED via patches 0119-0125.
 #   The Entrpi v7.1 sky1-next armchina-npu driver (46 files, ~12K lines)
 #   was carried over from the 7.1 squashed tree and forward-ported onto
-#   v7.2-rc1: pm_runtime_put() now void (7.0.x), platform_driver::remove
+#   v7.2-rc4: pm_runtime_put() now void (7.0.x), platform_driver::remove
 #   now void (7.1), NULL pd_core[] guards (BIOS v1.0 CRE0-2 missing _HID),
 #   ACPI _STA quirks for CIXH4000/NPU0 children, force-D0 on missing
 #   pd_core, and the tightening of the hidden Sky1 SCMI/NPU child device
@@ -32,7 +32,7 @@
 # VPU (Linlon AMLogic-derived codec, ACPI HID CIXH3010): ADDED via
 #   patches 0126-0129. The Entrpi v7.1 sky1-next Linlon VPU driver
 #   (63 files, ~39K lines, Kconfig symbol VIDEO_LINLON) was carried
-#   over from the 7.1 squashed tree and forward-ported onto v7.2-rc1:
+#   over from the 7.1 squashed tree and forward-ported onto v7.2-rc4:
 #   add the missing "select VIDEOBUF2_DMA_SG" / "select VIDEOBUF2_MEMOPS"
 #   in Kconfig (so the dep chain resolves when no other driver enables
 #   videobuf2-dma-sg), and add explicit "#include <linux/string.h>" +
@@ -61,7 +61,7 @@
 # AUDSS clk+reset: kept as cixtech 2026q2 self-contained drivers
 #   (clk-sky1-audss.c, reset-sky1-audss.c; compat "cix,sky1-audss-reset",
 #   ACPI HID CIXH6062). The upstream "Add Cix Sky1 AUDSS clock and reset
-#   support" series (Zabel reviewing ~2026-06-30) is NOT in v7.2-rc1 and
+#   support" series (Zabel reviewing ~2026-06-30) is NOT in v7.2-rc4 and
 #   is DT-oriented; adopting an in-review series would be worse than the
 #   vendor driver, and only the vendor form carries the ACPI HID cixmini
 #   needs. The audss determine_rate migration (old hand-patch 9001) is
@@ -90,7 +90,7 @@
 #   (this series) is the v7.2 port of cix k6.6.89 1009 (WERROR fixups
 #   only — static-marking file-local helpers, __maybe_unused on debug
 #   locals, missing-include fixes); the drm_atomic.c %llx->%x revert
-#   hunk from 1009 is dropped (already in the right state on v7.2-rc1).
+#   hunk from 1009 is dropped (already in the right state on v7.2-rc4).
 #   Single-master DRM enumeration requires 26q2 firmware exposing the
 #   cluster (ACPI _HID CIXH50C0 parent of CIXH5010 DPU children). With
 #   older firmware the four DPU devices appear as siblings and each
@@ -103,8 +103,8 @@
 #   firmware. Do not enable CONFIG_DRM_CIX_COMPONENT_BIND_BYPASSED —
 #   it forces the multi-card path and defeats the 26q2 single-master code.
 
-SUMMARY = "NCZ Linux kernel for Cix Sky1 / CP8180 (v7.2-rc1 + CIX 2026q2 patch set)"
-DESCRIPTION = "NCZ kernel: mainline Linux v7.2-rc1 plus the cixtech 2026q2 Sky1 driver set forward-ported by NCZ. Not a CIX/vendor release."
+SUMMARY = "NCZ Linux kernel for Cix Sky1 / CP8180 (v7.2-rc4 + CIX 2026q2 patch set)"
+DESCRIPTION = "NCZ kernel: mainline Linux v7.2-rc4 plus the cixtech 2026q2 Sky1 driver set forward-ported by NCZ. Not a CIX/vendor release."
 SECTION = "kernel"
 LICENSE = "GPL-2.0-only"
 LIC_FILES_CHKSUM = "file://COPYING;md5=6bc538ed5bd9a7fc9398086aedcd7e46"
@@ -112,15 +112,15 @@ LIC_FILES_CHKSUM = "file://COPYING;md5=6bc538ed5bd9a7fc9398086aedcd7e46"
 inherit kernel
 FILESEXTRAPATHS:prepend := "${THISDIR}/linux-cix-sky1-ncz-7.2:"
 
-LINUX_VERSION = "7.2-rc3"
+LINUX_VERSION = "7.2-rc4"
 KERNEL_LOCALVERSION = "-ncz"
 PATCHTOOL = "git"
 PV = "7.2+ncz"
 KBRANCH = "master"
 KERNEL_PACKAGE_NAME = "kernel-${PN}"
 
-# v7.2-rc3 tag object (torvalds mainline, on master)
-SRCREV_kernel = "a13c140cc289c0b7b3770bce5b3ad42ab35074aa"
+# v7.2-rc4 tag commit (torvalds mainline, on master)
+SRCREV_kernel = "1590cf0329716306e948a8fc29f1d3ee87d3989f"
 
 SRC_URI = " \
     git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git;protocol=https;branch=${KBRANCH};name=kernel \
