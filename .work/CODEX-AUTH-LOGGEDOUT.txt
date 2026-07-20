@@ -1,0 +1,67 @@
+The Codex OpenAI auth is currently broken at this host. This is a
+configuration/state problem with the local `~/.local/bin/codex`
+installation, NOT a codex binary bug or sandbox issue, and NOT a
+transient OpenAI outage.
+
+Direct evidence (run on this host, 2026-07-20 15:06 UTC+08):
+
+  $ ~/.local/bin/codex login status
+  Not logged in
+
+  $ echo "Reply with exactly: PONG" | ~/.local/bin/codex exec \
+      --skip-git-repo-check -m gpt-5.5
+  Reading prompt from stdin...
+  OpenAI Codex v0.144.1
+  ...
+  user
+  Reply with exactly: PONG
+  2026-07-20T07:06:27.441196Z ERROR codex_api::endpoint::responses_websocket:
+    failed to connect to websocket: HTTP error: 401 Unauthorized,
+    url: wss://api.openai.com/v1/responses
+  warning: Falling back from WebSockets to HTTPS transport. unexpected
+    status 401 Unauthorized: Missing bearer or basic authentication
+    in header
+  ERROR: Reconnecting... 1/5 ... 5/5
+  ERROR: unexpected status 401 Unauthorized: Missing bearer or basic
+    authentication in header, url: https://api.openai.com/v1/responses
+
+The request itself carries no bearer token -- it's not that the token
+is expired or being rejected on bad credentials, it's that no token
+is being sent at all. The "refresh_token_reused / token_expired"
+errors in the prior session's logs (saved at
+/tmp/o6n-codex-result-issue1.txt) indicate a previous refresh-token
+rotation or sign-out event left the local credential set with no
+valid refresh token.
+
+Recurrence: older saved codex-output files (o6n-codex-result-issue1.txt
+at 12:19 UTC+08, o6n-codex-postcommit.out at 14:42 UTC+08) show the
+same 401 family of errors. So this is not a single network blip;
+it has been broken for hours.
+
+Operator actions to clear:
+
+  1. Re-login interactively at a human terminal:
+       ~/.local/bin/codex login
+     This triggers the OAuth browser flow.
+  2. Verify:
+       ~/.local/bin/codex login status
+     should report "Logged in".
+  3. Re-run the saved Issue 1 review prompt via stdin (the brief's
+     gating requirement for Issue 1's 2692c71 commit):
+       cd /home/jasonperlow/yocto-docker/yocto6-ncz/meta-cix
+       ~/.local/bin/codex exec --skip-git-repo-check -m gpt-5.5 \
+         < .work/codex-review-issue1-final.prompt
+     It should now produce a verdict line:
+       VERDICT: APPROVE   (or VERDICT: CHANGES_REQUESTED)
+     APPROVE is required before push.
+
+Note: codex is the ONLY mechanism asked for by the task brief's
+"adversarial review" step. None of the loop's other artifacts depend
+on codex; only the formal verdict gate.
+
+The Issue 1 patch has been independently re-audited in the 15:05
+UTC+08 iteration against fresh-copied pristine pre-patch source of
+both 7.2/ncz (drivers/soc/cix/acpi/cix-acpi-resource-lookup-v1.c)
+and 7.0.12/next (drivers/soc/cix/cix-acpi-resource-lookup.c), via
+`git apply --check -p1` exit 0 / no fuzz / no 3way, on both files.
+That audit is reproducible and does not require codex.
