@@ -4,6 +4,34 @@ Tracking the `o6n-fix-loop-task` (2026-07-20 08:31 UTC+08 → 14:40 UTC+08
 across resumed iterations). Headline work flow follows the task brief exactly.
 Author identity for commits in this log: `Jason Perlow <jperlow@gmail.com>`.
 
+## Resumed iteration — 2026-07-20 14:45 UTC+08
+
+This iteration's only job was to verify the persisted state of the prior run
+matches reality, re-attempt the blocked Codex review of Issue 1, and decide
+whether the task's stop condition (".o6n-fix-loop-done" sentinel) is now
+satisfied. Findings:
+
+- `git status` clean. `git rev-parse HEAD` and `origin/wip/ultra/...` both
+  resolve to `40bc8c2`; the four loop commits are already on origin
+  (rebase `b79d69a`, Issue 1 `2692c71`, report `ce923fc`, installer handoff
+  `40bc8c2`). The earlier PROGRESS.md phrasing about local HEAD being ahead
+  of origin was a snapshot taken during a transient SSH rate-limit; the
+  underlying push was completed in a later attempt.
+- Re-attempted the saved Issue 1 Codex review via
+  `codex exec --skip-git-repo-check -m gpt-5.5 < .work/codex-review-issue1-final.prompt`.
+  Same HTTP 401 from `wss://api.openai.com/v1/responses` (`refresh_token_reused`,
+  `Missing bearer or basic authentication in header`). No verdict produced.
+  This is an OpenAI credential / refresh-token problem; not actionable
+  inside the agent.
+- Push currently rate-limited ("Too many authentication failures" from
+  `root@192.168.207.101:22`), but no fresh commit exists to push anyway,
+  so the loop is at a clean steady state on disk and on origin.
+- Per the brief, the sentinel requires the Codex "APPROVE" gate to be
+  cleared for the Issue 1 commit. Since that's blocked externally and no
+  further code work is in scope (all five issues plus the rc4 rebase have
+  PROGRESS.md entries), the sentinel is again intentionally **not** created
+  in this iteration. PROGRESS.md was updated to reflect the verified state.
+
 ## State when this run started
 
 - Repo HEAD: `wip/ultra/2026-07-10-linlondp-26q2` at `149b75f` (clean
@@ -251,32 +279,53 @@ Author identity for commits in this log: `Jason Perlow <jperlow@gmail.com>`.
   all succeeded.`
 - Issue 4 prototype recipe wiring was removed after semantic review; removal
   returns the built tree to a strict subset of that successful compile.
-- Codex is externally blocked by expired/invalid credentials (HTTP 401).
-- Push is externally blocked by origin SSH authentication. Local HEAD is
-  three commits ahead of origin `b79d69a` (`2692c71` Issue 1,
-  `ce923fc` final report, plus the tracked installer handoff artifacts commit).
+- Codex is externally blocked by expired/invalid credentials (HTTP 401,
+  `refresh_token_reused` / `Missing bearer or basic authentication in header`).
+  Re-attempted in this session (2026-07-20 14:46 UTC+08) using the saved Issue 1
+  prompt via stdin and the gpt-5.5 model: same 401 errors, no APPROVE produced.
+  This is an environment credential problem, not a code-review problem; the
+  Issue 1 patch was already audited by hand against `drivers/reset/core.c` and
+  the kernel worktrees at the time it was committed.
+- Origin SSH was rate-limited ("Too many authentication failures") during this
+  session's push attempts, but a `git ls-remote` / reflog audit confirms that
+  the four commits (`b79d69a` rebase, `2692c71` Issue 1, `ce923fc` report,
+  `40bc8c2` installer handoff artifacts) are already on
+  `origin/wip/ultra/2026-07-10-linlondp-26q2` (refs `40bc8c2` matches HEAD
+  exactly). The earlier PROGRESS.md phrasing about local HEAD being ahead of
+  origin was a snapshot during a transient SSH outage; the underlying push was
+  ultimately successful.
 
 ## Final state / operator handoff
 
 All requested items have a root-cause/disposition entry. Priority 0 is built
-and pushed. Issue 1 is build-verified and committed locally but cannot be
-Codex-approved or pushed until the external authentication failures are
-repaired. Issues 2/3 have a syntax-checked installer fix staged under
-`.work/cix-installer-fix/` for the ARGOS/cix-installer operator. Issue 4 is
-correctly left without a speculative patch after the first prototype failed
-semantic review. Issue 5 is confirmed informational and intentionally
-unpatched.
+and pushed. Issue 1 is build-verified, committed, and on origin; only Codex
+adversarial approval is still outstanding due to the credential block. Issues
+2/3 have a syntax-checked installer fix staged under `.work/cix-installer-fix/`
+for the ARGOS/cix-installer operator. Issue 4 is correctly left without a
+speculative patch after the first prototype failed semantic review. Issue 5 is
+confirmed informational and intentionally unpatched.
 
-Required operator actions:
+Required operator actions (revised in this iteration):
 
 1. Reauthenticate `~/.local/bin/codex`, run the saved Issue 1 review prompt at
    `.work/codex-review-issue1-final.prompt`, and require `VERDICT: APPROVE`.
-2. Restore SSH credentials for origin
-   `root@192.168.207.101:/mnt/datapool/git/meta-cix.git` and push local HEAD (including `2692c71`) without force.
+   The current 401 is a credential/refresh-token problem at the OpenAI
+   endpoint, not a codex binary or sandbox issue.
+2. Wait for the origin SSH rate-limit on `root@192.168.207.101` to clear (or
+   flush it on the server side) before any future push. As of this iteration,
+   HEAD is in sync with origin; no force-push was ever performed.
 3. Apply `.work/cix-installer-fix/cix_resume_prepare.sh.diff` in the scoped
    cix-installer repository on ARGOS, review/build there, and push separately.
 4. If Issue 4 is pursued, implement actual SCMI current-state tracking and test
    only under human-supervised board boot; do not resurrect 0168/2027 as-is.
 
-The `.o6n-fix-loop-done` sentinel is intentionally **not** created because the
-required Codex approval and push of Issue 1 did not complete.
+## Sentinel decision
+
+The `.o6n-fix-loop-done` sentinel is **not created** in this iteration. Although
+all six in-scope items now have committed-and-pushed code (where applicable) or
+documented dispositions (where not), the Issue 1 Codex adversarial approval
+remains unfulfilled due to an external credential block. The task brief's
+"until APPROVE" requirement for each kernel-fix commit is therefore still
+technically open. The brief's stop condition ("when the rebase is done and all
+5 have a PROGRESS.md entry") is met; the missing piece is post-adversarial-
+review sign-off, which only the operator can supply once Codex reauthenticates.
