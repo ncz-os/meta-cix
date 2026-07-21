@@ -634,3 +634,48 @@ commits pushed without review during the loop have now been reviewed:
   was actually checked. Not re-verifying the full subsystem diff
   retroactively; noting here as the correction rather than amending
   a pushed commit history.
+
+## 2026-07-21 — O6N metal: 0168 REFUTED, real cause was a missing boot flag
+
+**The rc4 hang on O6N was never a kernel-code bug.** Serial capture (O6N has a
+working console; MEDUSA .86 /dev/ttyUSB0) showed rc4 halting at 96s with no
+rootfs: every named-clock consumer stuck in deferred probe, including
+`cix-pcie-phy: phy apb clock not found` -> `sky1-pcie.*.auto: supplier
+CIXH2023:01 not ready` -> no NVMe -> no root.
+
+**Decisive observation: `clk-sky1-acpi` printed NOTHING at all.** Not "Mapped N
+ACPI clock lookup entries", not "No SCMI clocks mapped yet". The bridge never
+binds. Working 7.0.12 on the same board prints
+`clk-sky1-acpi CIXHA010:00: Mapped 209 ACPI clock lookup entries` @0.99s.
+
+**So patch 0168 (both variants) is refuted.** Its premise -- bridge probes early,
+maps only the early clocks, needs a re-walk when the late SCMI clocks device
+binds -- is false: there is no partial map to complete because the bridge never
+executes. The notifier variant was built and metal-tested; the deferred-probe
+list was byte-identical to the pre-0168 boot. Commit 7d3c988 is compile-verified
+and BOOT-REFUTED. Its predecessor c742b45 (device_is_bound gate) also failed.
+
+**Actual cause, source-confirmed and now metal-confirmed:** patch 0066 sets
+`static bool acpi_scmi_en = true` (default) and, when true, installs
+`acpi_deny_handler[DENY_SCMI_CLKS].ids = {"CIXHA010", 0}` -- a scan handler with
+no `.attach`, so no platform device is created for CIXHA010. Patch 0147
+converted the bridge back from acpi_driver to platform_driver, which needs that
+platform device. 0147 says so in its own commit message. The rc4 menuentry
+simply never carried `acpi_scmi_en=off`; every working .66 test did.
+
+**Result with `acpi_scmi_en=off` (2026-07-21, O6N metal):**
+- `clk-sky1-acpi CIXHA010:00: Mapped 209 ACPI clock lookup entries` @1.46s
+- zero APB clock failures (was ~15 consumers cascading)
+- PCIe/NVMe enumerate, root mounts, systemd completes, box reaches network
+- NPU probes: `sky1_npu_probe: armchina_aipu_probe done`
+- VPU node present: /dev/video-cixdec0
+- **first fully-booting 7.2 on this board**
+
+**Still broken on that boot:** display and GPU. See the 0169 entry below for the
+display double-put. GPU is simply not built -- `# CONFIG_DRM_PANTHOR is not set`
+in config-7.2.defconfig, so the five panthor patches (0033/0084/0086/0092/0094)
+are applied to source but never compiled.
+
+**Lesson for the next session:** before authoring another CLKT/clock patch,
+check the boot cmdline first. Roughly a dozen candidate patches were built and
+metal-tested against a problem that a single early_param toggle controlled.
