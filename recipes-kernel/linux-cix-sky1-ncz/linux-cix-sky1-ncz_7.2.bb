@@ -113,7 +113,7 @@ inherit kernel
 FILESEXTRAPATHS:prepend := "${THISDIR}/linux-cix-sky1-ncz-7.2:"
 
 LINUX_VERSION = "7.2-rc4"
-KERNEL_LOCALVERSION = "-ncz"
+KERNEL_LOCALVERSION = "-sky1-ncz"
 PATCHTOOL = "git"
 PV = "7.2+ncz"
 KBRANCH = "master"
