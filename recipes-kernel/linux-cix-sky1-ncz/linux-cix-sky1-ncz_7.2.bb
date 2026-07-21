@@ -280,6 +280,8 @@ SRC_URI = " \
     file://patches-7.2/0166-clocksource-sky1-defer-on-missing-timer-clocks.patch \
     file://patches-7.2/0167-soc-cix-acpi-resource-lookup-tighten-badly-specified-guard.patch \
     file://patches-7.2/0168-clk-cix-sky1-remap-clkt-bridge-on-scmi-clocks-bind.patch \
+    file://patches-7.2/0169-drm-cix-linlondp-dont-double-put-acpi-pxlclk.patch \
+    file://patches-7.2/0170-drm-cix-dptx-optional-phy-reset-and-vid-clk23.patch \
 "
 
 COMPATIBLE_MACHINE = "(cixmini)"
