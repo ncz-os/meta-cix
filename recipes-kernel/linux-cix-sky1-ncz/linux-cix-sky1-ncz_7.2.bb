@@ -124,7 +124,7 @@ SRCREV_kernel = "1590cf0329716306e948a8fc29f1d3ee87d3989f"
 
 SRC_URI = " \
     git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git;protocol=https;branch=${KBRANCH};name=kernel \
-    file://config-7.2.defconfig \
+    file://config-7.2-lean-msr1-o6n.defconfig \
     file://patches-7.2/0001-mailbox-add-acpi-support-to-cix-mailbox-driver.patch \
     file://patches-7.2/0002-acpi-Add-a-property-reference-count-interface.patch \
     file://patches-7.2/0003-clk-clk-scmi-register-clkdev-for-acpi.patch \
@@ -283,6 +283,8 @@ SRC_URI = " \
     file://patches-7.2/0169-drm-cix-linlondp-dont-double-put-acpi-pxlclk.patch \
     file://patches-7.2/0170-drm-cix-dptx-optional-phy-reset-and-vid-clk23.patch \
     file://patches-7.2/0171-asoc-cix-pick-hdmi-codec-child-explicitly.patch \
+    file://patches-7.2/0172-thermal-cix-resolve-scmi-perf-domain-via-genpd-acpi.patch \
+    file://patches-7.2/0173-amvx-vb2-queue-lock-7.2.patch \
 "
 
 COMPATIBLE_MACHINE = "(cixmini)"
@@ -292,7 +294,7 @@ PROVIDES = "${PN} virtual/kernel"
 
 do_configure:prepend() {
     cd ${S}
-    cp ${UNPACKDIR}/config-7.2.defconfig ${B}/.config
+    cp ${UNPACKDIR}/config-7.2-lean-msr1-o6n.defconfig ${B}/.config
     oe_runmake ARCH=arm64 O=${B} olddefconfig
 }
 
