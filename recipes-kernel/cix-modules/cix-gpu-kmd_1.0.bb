@@ -16,6 +16,7 @@ SRCREV = "a752e916d18484dd4f67bb6b351543447c978135"
 
 SRC_URI = " \
     git://github.com/minisforum-cix-p1-repo/cix_opensource__gpu_kernel.git;protocol=https;branch=a0fb5/5cf6e/cix_p1_mg_dev;name=gpukmd \
+    file://0001-mali-kbase-wq-unbound-flags.patch \
 "
 SRCREV_FORMAT = "gpukmd"
 
