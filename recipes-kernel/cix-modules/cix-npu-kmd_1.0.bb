@@ -27,7 +27,6 @@ SRC_URI = "git://github.com/minisforum-cix-p1-repo/cix_opensource__npu_driver.gi
 # Patches apply at S=${WORKDIR}/git
 FILESEXTRAPATHS:prepend := "${THISDIR}/cix-npu-kmd-1.0:"
 
-S = "${WORKDIR}/git"
 B = "${S}/driver"
 COMPATIBLE_MACHINE = "(cixmini)"
 
