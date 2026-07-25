@@ -29,6 +29,7 @@ SRC_URI = " \
     file://0011-mali-kbase-timer-delete-rename.patch \
     file://0012-mali-kbase-dma-fence-signal-void-return.patch \
     file://0013-mali-kbase-shmem-file-setup-vma-flags-t.patch \
+    file://0014-mali-kbase-mmap-non-ack-vma-search.patch \
 "
 SRCREV_FORMAT = "gpukmd"
 
