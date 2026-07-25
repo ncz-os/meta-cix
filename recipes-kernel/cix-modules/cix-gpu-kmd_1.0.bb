@@ -17,6 +17,12 @@ SRCREV = "a752e916d18484dd4f67bb6b351543447c978135"
 SRC_URI = " \
     git://github.com/minisforum-cix-p1-repo/cix_opensource__gpu_kernel.git;protocol=https;branch=a0fb5/5cf6e/cix_p1_mg_dev;name=gpukmd \
     file://0001-mali-kbase-wq-unbound-flags.patch \
+    file://0002-drivers-base-arm-fix-external-module-include-path.patch \
+    file://0003-mm-get-unmapped-area-5arg.patch \
+    file://0004-midgard-kbuild-fix-src-normalization.patch \
+    file://0005-mali-kbase-mem-migrate-page-movable-api-removed.patch \
+    file://0006-mali-kbase-hrtimer-setup-api.patch \
+    file://0007-mali-kbase-fence-ops-drop-fence-value-str.patch \
 "
 SRCREV_FORMAT = "gpukmd"
 
