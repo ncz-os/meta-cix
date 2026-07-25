@@ -23,6 +23,12 @@ SRC_URI = " \
     file://0005-mali-kbase-mem-migrate-page-movable-api-removed.patch \
     file://0006-mali-kbase-hrtimer-setup-api.patch \
     file://0007-mali-kbase-fence-ops-drop-fence-value-str.patch \
+    file://0008-midgard-makefile-route-config-defines-via-kcflags.patch \
+    file://0009-mali-kbase-hrtimer-setup-on-stack-api.patch \
+    file://0010-mali-kbase-devfreq-cix-scmi-register-em-perf-dev.patch \
+    file://0011-mali-kbase-timer-delete-rename.patch \
+    file://0012-mali-kbase-dma-fence-signal-void-return.patch \
+    file://0013-mali-kbase-shmem-file-setup-vma-flags-t.patch \
 "
 SRCREV_FORMAT = "gpukmd"
 
