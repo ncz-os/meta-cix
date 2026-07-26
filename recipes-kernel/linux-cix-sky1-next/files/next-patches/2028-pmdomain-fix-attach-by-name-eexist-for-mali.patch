@@ -1,0 +1,98 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jason Perlow <jperlow@gmail.com>
+Date: Sun, 26 Jul 2026 23:00:00 -0400
+Subject: [PATCH] pmdomain: fix dev_pm_domain_attach_by_name EEXIST short-circuit
+ for sky1 mali (forward-port of 7.2 0078 common.c+core.c hunks)
+
+NOT YET KNOWN TO BE NEEDED -- prepared as iteration-2 contingency for
+2027-pmdomain-scmi-perf-defer-fwnode-provider-for-mali.patch. Apply this
+ONLY if mali_kbase's CIXH5000:00 "perf" power-domain attach still spins
+in -EPROBE_DEFER after 2027 lands, and only once real dmesg/ftrace
+evidence on 7.0.12-cix-sky1-next hardware confirms dev->pm_domain is
+already set (e.g. by acpi_general_pm_domain) before mali_kbase's own
+dev_pm_domain_attach_by_name(kbdev->dev, "perf") call runs -- in which
+case drivers/base/power/common.c's unconditional
+"if (dev->pm_domain) return ERR_PTR(-EEXIST);" short-circuits before ever
+reaching the genpd-by-name lookup 2027 fixed, and mali_kbase's own
+IS_ERR_OR_NULL() catch-all re-reports that EEXIST as the same generic
+"not bound yet, deferring probe" -EPROBE_DEFER message regardless of the
+real underlying error -- so dmesg text alone cannot distinguish the two
+root causes; this must be confirmed before applying, not assumed.
+
+Ports the scmi_perf_domain.c-adjacent generic PM-domain-core hunks of
+7.2's 0078-pmdomain-fix-dev_pm_domain_attach_by_name-for-sky1-m.patch,
+unmodified beyond context-line offsets: dev_pm_domain_attach_by_id() and
+dev_pm_domain_attach_by_name() only reject an *extra* named/indexed
+domain attach when the device already has a non-ACPI-companion pm_domain
+(the common ACPI case legitimately needs a second, additional domain
+alongside the one ACPI's generic PM domain code already attached), and
+genpd_dev_pm_attach_by_id()'s ACPI path propagates the caller's fwnode
+onto the virtual attach device so downstream fwnode-based lookups (e.g.
+the provider 2027 registers) can actually resolve it.
+
+Upstream-Status: Inappropriate [oe-specific]
+Signed-off-by: Jason Perlow <jperlow@gmail.com>
+---
+ drivers/base/power/common.c | 16 ++++++++++++++--
+ drivers/pmdomain/core.c     |  3 +++
+ 2 files changed, 17 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/base/power/common.c b/drivers/base/power/common.c
+index 9bef924..f07fda7 100644
+--- a/drivers/base/power/common.c
++++ b/drivers/base/power/common.c
+@@ -118,6 +118,18 @@ int dev_pm_domain_attach(struct device *dev, u32 flags)
+ }
+ EXPORT_SYMBOL_GPL(dev_pm_domain_attach);
+ 
++/*
++ * dev_pm_domain_attach() may already have set a PM domain on @dev (typically
++ * acpi_general_pm_domain on ACPI platform devices).  attach_by_{id,name} still
++ * need to work in that case: they create a separate virtual device for an
++ * additional domain listed in power-domain-names / _DSD, not replace @dev's
++ * existing domain.
++ */
++static bool dev_pm_domain_attach_rejects_extra(struct device *dev)
++{
++	return dev->pm_domain && !has_acpi_companion(dev);
++}
++
+ /**
+  * dev_pm_domain_attach_by_id - Associate a device with one of its PM domains.
+  * @dev: The device used to lookup the PM domain.
+@@ -147,7 +159,7 @@ EXPORT_SYMBOL_GPL(dev_pm_domain_attach);
+ struct device *dev_pm_domain_attach_by_id(struct device *dev,
+ 					  unsigned int index)
+ {
+-	if (dev->pm_domain)
++	if (dev_pm_domain_attach_rejects_extra(dev))
+ 		return ERR_PTR(-EEXIST);
+ 
+ 	return genpd_dev_pm_attach_by_id(dev, index);
+@@ -164,7 +176,7 @@ EXPORT_SYMBOL_GPL(dev_pm_domain_attach_by_id);
+ struct device *dev_pm_domain_attach_by_name(struct device *dev,
+ 					    const char *name)
+ {
+-	if (dev->pm_domain)
++	if (dev_pm_domain_attach_rejects_extra(dev))
+ 		return ERR_PTR(-EEXIST);
+ 
+ 	return genpd_dev_pm_attach_by_name(dev, name);
+diff --git a/drivers/pmdomain/core.c b/drivers/pmdomain/core.c
+index 914c4f1..da51ad6 100644
+--- a/drivers/pmdomain/core.c
++++ b/drivers/pmdomain/core.c
+@@ -3575,8 +3575,11 @@ struct device *genpd_dev_pm_attach_by_id(struct device *dev,
+ 
+ 	/* Try to attach the device to the PM domain at the specified index. */
+ 	if (use_acpi)
++	{
++		virt_dev->fwnode = fwnode_handle_get(dev_fwnode(dev));
+ 		ret = __genpd_dev_pm_attach_acpi(virt_dev, dev, index,
+ 						 num_domains, false);
++	}
+ 	else
+ 		ret = __genpd_dev_pm_attach(virt_dev, dev, index,
+ 					    num_domains, false);
+--
+2.51.0
