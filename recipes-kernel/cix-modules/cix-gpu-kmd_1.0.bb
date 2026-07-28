@@ -30,6 +30,7 @@ SRC_URI = " \
     file://0012-mali-kbase-dma-fence-signal-void-return.patch \
     file://0013-mali-kbase-shmem-file-setup-vma-flags-t.patch \
     file://0014-mali-kbase-mmap-non-ack-vma-search.patch \
+    file://0015-mali-kbase-ipa-null-model-guard.patch \
 "
 SRCREV_FORMAT = "gpukmd"
 
@@ -43,9 +44,52 @@ CIX_DRIVER_MAKEFILE = "gpu.mk"
 # Mali kbase produces a single mali_kbase.ko (matches Sky1-Linux/cix-gpu-kmd
 # DKMS packaging).
 
+# LOCALVERSION=-sky1-ncz below: STAGING_KERNEL_DIR/setlocalversion does not
+# reliably thread linux-cix-sky1-ncz_7.2.bb KERNEL_LOCALVERSION into OOT module
+# builds -- confirmed 2026-07-28 (utsrelease.h came out bare 7.2.0-rc5 without
+# this override, causing a vermagic mismatch against the deployed kernel).
 # gpu.mk is an Android-product makefile: map its TARGET_* / CIX_* vars onto Yocto
 # paths, force the writable output dir, the cross prefix, and the "gpu" target.
+# do_compile:prepend -- pin the correct kernel release string into
+# STAGING_KERNEL_BUILDDIR before gpu.mk runs. Root cause (2026-07-28,
+# confirmed via three separate build attempts + a live GNU make precedence
+# test): STAGING_KERNEL_BUILDDIR resolves (via
+# work-shared/${MACHINE}/kernel-build-artifacts, a symlink) to the SAME
+# ${B}=build/ tree the kernel recipe's own do_compile uses. gpu.mk's inner
+# `make -C $(KERNEL_SRC) M=... modules` sub-make does not reliably forward
+# LOCALVERSION into that tree's own utsrelease.h/kernel.release regeneration,
+# so it silently reverts to bare KERNELVERSION (e.g. "7.2.0-rc5" instead of
+# "7.2.0-rc5-sky1-ncz") even when the outer oe_runmake call sets
+# LOCALVERSION=-sky1-ncz correctly. modpost embeds vermagic straight from
+# these two generated files, so patch them immediately before the build
+# that actually reads them, rather than trust upstream regeneration.
+do_compile:prepend() {
+    _rel="7.2.0-rc5-sky1-ncz"
+    if [ -f "${STAGING_KERNEL_BUILDDIR}/include/generated/utsrelease.h" ]; then
+        printf '#define UTS_RELEASE "%s"\n' "$_rel" > "${STAGING_KERNEL_BUILDDIR}/include/generated/utsrelease.h"
+    fi
+    if [ -f "${STAGING_KERNEL_BUILDDIR}/include/config/kernel.release" ]; then
+        printf '%s\n' "$_rel" > "${STAGING_KERNEL_BUILDDIR}/include/config/kernel.release"
+    fi
+    bbnote "cix-gpu-kmd: pinned STAGING_KERNEL_BUILDDIR release string to $_rel"
+}
+
 do_compile() {
+    # KERNEL_SRC override: module.bbclass unconditionally injects
+    # EXTRA_OEMAKE += "KERNEL_SRC=${STAGING_KERNEL_DIR}" (the raw, unconfigured
+    # kernel source checkout) for every module-class recipe. Stock module.bbclass
+    # do_compile pairs that with O=${STAGING_KERNEL_BUILDDIR} (the real, built
+    # tree with correct Module.symvers/utsrelease.h) -- but our gpu.mk-based
+    # do_compile never had an equivalent pairing, so gpu.mk (KERNEL_SRC :=
+    # $(CIX_KERNEL_PATH)/kernel) silently got the wrong KERNEL_SRC from
+    # EXTRA_OEMAKE instead, and its `make -C $(KERNEL_SRC) M=... modules`
+    # sub-make ran against unconfigured source -- confirmed 2026-07-28 via
+    # direct read of module.bbclass line 9 + module-base.bbclass line 20/22/23
+    # (which shows STAGING_KERNEL_BUILDDIR/kernel-abiversion and
+    # kernel-localversion are the canonical, correctly-suffixed source of
+    # truth). oe_runmake appends EXTRA_OEMAKE before "$@" (see base.bbclass
+    # oe_runmake_call: "${MAKE} ${EXTRA_OEMAKE} \"$@\""), so a later
+    # KERNEL_SRC= here overrides the earlier EXTRA_OEMAKE one.
     oe_runmake -f gpu.mk gpu \
         CIX_GPU_PATH=${S} \
         CIX_KERNEL_PATH=${STAGING_KERNEL_DIR} \
@@ -53,7 +97,9 @@ do_compile() {
         TARGET_OUT_INTERMEDIATES=${B} \
         TARGET_KERNEL_ARCH=arm64 ARCH=arm64 \
         GPU_CROSS_COMPILE=${TARGET_PREFIX} CROSS_COMPILE=${TARGET_PREFIX} \
-        KDIR=${STAGING_KERNEL_DIR} KSRC=${STAGING_KERNEL_DIR} \
+        KDIR=${STAGING_KERNEL_BUILDDIR} KSRC=${STAGING_KERNEL_DIR} \
+        KERNEL_SRC=${STAGING_KERNEL_BUILDDIR} \
+        LOCALVERSION=-sky1-ncz \
         hide= clean_build=0
 }
 
