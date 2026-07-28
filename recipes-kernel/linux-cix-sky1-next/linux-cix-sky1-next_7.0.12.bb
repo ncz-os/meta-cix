@@ -140,6 +140,7 @@ SRC_URI = " \
     file://next-patches/2026-soc-cix-acpi-resource-lookup-tighten-badly-specified-guard.patch \
     file://next-patches/2027-pmdomain-scmi-perf-defer-fwnode-provider-for-mali.patch \
     file://next-patches/2028-pmdomain-fix-attach-by-name-eexist-for-mali.patch \
+    file://next-patches/2029-media-cix-fix-mvx-devfreq-null-clk-deref.patch \
 "
 
 
