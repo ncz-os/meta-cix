@@ -304,6 +304,10 @@ SRC_URI = " \
     file://patches-7.2/0183-genpd-cix-dedupe-power-domain-opp-table.patch \
     file://patches-7.2/0184-thermal-cix-cpufreq-cooling-acpi-no-of-node.patch \
     file://patches-7.2/0185-firmware-arm-scmi-perf-skip-opp-repopulation.patch \
+    file://patches-7.2/0186-drm-panthor-sky1-power-on-GPU-via-raw-SMC-SCMI-before-first-MMIO.patch \
+    file://patches-7.2/0187-drm-panthor-sky1-ip-reset-and-rcsu-qchannel-clock-gate-enable.patch \
+    file://patches-7.2/0188-drm-panthor-sky1-reapply-hw-power-on-at-noirq-resume.patch \
+    file://patches-7.2/0189-iommu-arm-smmu-v3-skip-irq-request-and-msi-setup-on-resume.patch \
 "
 
 COMPATIBLE_MACHINE = "(cixmini)"
