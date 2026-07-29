@@ -262,6 +262,10 @@ SRC_URI = " \
     file://patches-7.2/0134-drm-trilin-dptx-restore-runtime-pm.patch \
     file://patches-7.2/0135-media-cix-vpu-sync-upstream-v1.0.2.patch \
     file://patches-7.2/0139-media-cix-vpu-deassert-rcsu-reset.patch \
+    file://patches-7.2/0140-drm-panthor-sky1-power-on-GPU-via-raw-SMC-SCMI-before-first-MMIO.patch \
+    file://patches-7.2/0141-drm-panthor-sky1-ip-reset-and-rcsu-qchannel-clock-gate-enable.patch \
+    file://patches-7.2/0142-drm-panthor-sky1-reapply-hw-power-on-at-noirq-resume.patch \
+    file://patches-7.2/0143-iommu-arm-smmu-v3-skip-irq-request-and-msi-setup-on-resume.patch \
 "
 
 COMPATIBLE_MACHINE = "(cixmini)"
