@@ -64,7 +64,22 @@ CIX_DRIVER_MAKEFILE = "gpu.mk"
 # these two generated files, so patch them immediately before the build
 # that actually reads them, rather than trust upstream regeneration.
 do_compile:prepend() {
-    _rel="7.2.0-rc5-sky1-ncz"
+    # Derive the release string from the kernel recipe's own authoritative
+    # artifact instead of hardcoding it. kernel-abiversion is staged by
+    # module-base.bbclass and already carries the correctly-suffixed release
+    # (e.g. "7.2.0-rc6-sky1-ncz"); kernel-localversion holds the suffix alone.
+    # A hardcoded literal here was the root cause of every OOT module being
+    # stamped with a stale vermagic across a kernel version bump -- rc5-stamped
+    # modules against an rc6 kernel load-fail silently and boot with no GPU.
+    _rel=""
+    if [ -r "${STAGING_KERNEL_BUILDDIR}/kernel-abiversion" ]; then
+        _rel="$(cat "${STAGING_KERNEL_BUILDDIR}/kernel-abiversion")"
+    elif [ -r "${STAGING_KERNEL_BUILDDIR}/include/config/kernel.release" ]; then
+        _rel="$(cat "${STAGING_KERNEL_BUILDDIR}/include/config/kernel.release")"
+    fi
+    if [ -z "$_rel" ]; then
+        bbfatal "cix-gpu-kmd: cannot determine the kernel release string (kernel-abiversion and kernel.release both missing or empty). Refusing to build modules with an unknown vermagic."
+    fi
     if [ -f "${STAGING_KERNEL_BUILDDIR}/include/generated/utsrelease.h" ]; then
         printf '#define UTS_RELEASE "%s"\n' "$_rel" > "${STAGING_KERNEL_BUILDDIR}/include/generated/utsrelease.h"
     fi
