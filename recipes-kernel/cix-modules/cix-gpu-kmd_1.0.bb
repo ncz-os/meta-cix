@@ -64,7 +64,21 @@ CIX_DRIVER_MAKEFILE = "gpu.mk"
 # these two generated files, so patch them immediately before the build
 # that actually reads them, rather than trust upstream regeneration.
 do_compile:prepend() {
-    _rel="7.2.0-rc5-sky1-ncz"
+    # DERIVED, NEVER HARDCODED (2026-08-10). This was a literal
+    # "7.2.0-rc5-sky1-ncz", so every module this recipe built got rc5 vermagic
+    # regardless of which kernel was actually staged. Building against rc7 then
+    # produced mali_kbase.ko with vermagic 7.2.0-rc5-sky1-ncz, installed under a
+    # .../7.2.0-rc7-sky1-ncz/ path -- modules that cannot load, i.e. a board
+    # with no /dev/mali0, and `cleansstate` could not fix it because the string
+    # was in the recipe rather than in stale state.
+    #
+    # The kernel's own System.map is named for its release, so take it from
+    # there. This must keep working across the rc -> final fast-forward without
+    # anyone remembering to edit this line.
+    _rel="$(basename "$(ls -1 ${STAGING_KERNEL_BUILDDIR}/System.map-* 2>/dev/null | head -1)" 2>/dev/null | sed 's/^System\.map-//')"
+    if [ -z "$_rel" ]; then
+        bbfatal "cix-gpu-kmd: cannot derive kernel release from ${STAGING_KERNEL_BUILDDIR}/System.map-* -- refusing to build modules with a guessed vermagic"
+    fi
     if [ -f "${STAGING_KERNEL_BUILDDIR}/include/generated/utsrelease.h" ]; then
         printf '#define UTS_RELEASE "%s"\n' "$_rel" > "${STAGING_KERNEL_BUILDDIR}/include/generated/utsrelease.h"
     fi
