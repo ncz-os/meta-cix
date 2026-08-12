@@ -871,6 +871,24 @@ CONFIG_VIDEO_LINLON=m
 CONFIG_SCSI=y
 CONFIG_BLK_DEV_SD=y
 CONFIG_SQUASHFS=m
+# The INSTALLER boots from an ISO9660 image. Without this the kernel brings up
+# the USB stick as a block device and then cannot mount it, and debian-installer
+# reports "No device for installation media was detected" -- which looks like a
+# missing storage driver but is not: USB_STORAGE, UAS, SCSI, BLK_DEV_SD and
+# XHCI are all already built in. The lean pass dropped ISO9660 as unnecessary,
+# which is true for the installed system and fatal for the installer.
+# JOLIET + NLS_UTF8 are needed for the long filenames the image actually uses.
+# The INSTALLER mounts its root filesystem out of base.squashfs and
+# desktop.squashfs, and a squashfs can only be mounted through a loop device.
+# Without this the install cannot complete no matter what else is fixed: d-i
+# gets past media detection and then has nothing to unpack from. The lean pass
+# dropped it because an installed system never loop-mounts anything.
+CONFIG_BLK_DEV_LOOP=y
+CONFIG_BLK_DEV_LOOP_MIN_COUNT=8
+CONFIG_ISO9660_FS=y
+CONFIG_JOLIET=y
+CONFIG_ZISOFS=y
+CONFIG_NLS_UTF8=y
 CONFIG_SQUASHFS_XZ=y
 CONFIG_PM_DEVFREQ=y
 CONFIG_DEVFREQ_GOV_PERFORMANCE=y
