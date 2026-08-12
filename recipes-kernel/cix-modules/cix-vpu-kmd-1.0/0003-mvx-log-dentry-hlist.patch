@@ -1,0 +1,32 @@
+From: Jason Perlow <jperlow@gmail.com>
+Subject: [PATCH] mvx_log: walk dentry children as an hlist on 6.8+
+
+Building against 7.2 fails with:
+
+  mvx_log.c:153:39: error: 'struct dentry' has no member named 'd_subdirs'
+  mvx_log.c:153:52: error: 'struct dentry' has no member named 'd_child';
+  did you mean 'd_children'?
+
+6.8 converted the dentry child list from a list_head to an hlist, renaming
+d_subdirs to d_children and d_child to d_sib. Add a version-gated branch
+using hlist_for_each_entry() and leave the existing branches in place so the
+driver still builds against older trees.
+
+Upstream-Status: Inappropriate [vendor tree]
+The CIX P1 VPU driver is a vendor drop with no upstream submission path;
+carried downstream only.
+
+Signed-off-by: Jason Perlow <jperlow@gmail.com>
+--- a/driver/mvx_log.c
++++ b/driver/mvx_log.c
+@@ -149,7 +149,9 @@
+     struct dentry *child;
+ 
+     /* Loop over directory entries in mvx/drain/. */
+-#if (KERNEL_VERSION(3, 18, 0) <= LINUX_VERSION_CODE)
++#if (KERNEL_VERSION(6, 8, 0) <= LINUX_VERSION_CODE)
++    hlist_for_each_entry(child, &parent->d_children, d_sib)
++#elif (KERNEL_VERSION(3, 18, 0) <= LINUX_VERSION_CODE)
+     list_for_each_entry(child, &parent->d_subdirs, d_child)
+ #else
+     list_for_each_entry(child, &parent->d_subdirs, d_u.d_child)

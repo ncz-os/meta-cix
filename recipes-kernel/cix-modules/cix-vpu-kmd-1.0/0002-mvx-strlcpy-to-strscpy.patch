@@ -1,0 +1,72 @@
+From: Jason Perlow <jperlow@gmail.com>
+Subject: [PATCH] mvx: use strscpy instead of removed strlcpy
+
+Building against 7.2 fails with:
+
+  if/mvx_firmware_v2.c:1125:9: error: implicit declaration of function
+  'strlcpy'; did you mean 'strcpy'? [-Wimplicit-function-declaration]
+
+strlcpy() was removed from the kernel; strscpy() is the replacement and
+takes the same (dest, src, size) arguments. The two differ in return value
+-- strscpy() returns -E2BIG on truncation where strlcpy() returned the
+source length -- but every call site here discards the return value, so the
+substitution is behaviour-preserving.
+
+Upstream-Status: Inappropriate [vendor tree]
+The CIX P1 VPU driver is a vendor drop with no upstream submission path;
+carried downstream only.
+
+Signed-off-by: Jason Perlow <jperlow@gmail.com>
+--- a/driver/if/mvx_firmware_v2.c
++++ b/driver/if/mvx_firmware_v2.c
+@@ -1122,7 +1122,7 @@
+             break;
+         }
+ 
+-        strlcpy(msg->error.message, fw_msg.error.message,
++        strscpy(msg->error.message, fw_msg.error.message,
+             min(sizeof(msg->error.message),
+                 sizeof(fw_msg.error.message)));
+ 
+@@ -1172,7 +1172,7 @@
+         if (msg->alloc_param.width < 144 || msg->alloc_param.height < 144) {
+             msg->code = MVX_FW_CODE_ERROR;
+             msg->error.error_code = MVX_FW_ERROR_INVALID_PARAM;
+-            strlcpy(msg->error.message, fw_msg.error.message,
++            strscpy(msg->error.message, fw_msg.error.message,
+                 min(sizeof(msg->error.message),
+                     sizeof(fw_msg.error.message)));
+         }
+@@ -1193,7 +1193,7 @@
+             /* If critical error event is received, convert it to error message, so the session can be exit */
+             msg->code = MVX_FW_CODE_ERROR;
+             msg->error.error_code = MVX_FW_ERROR_UNSUPPORTED;
+-            strlcpy(msg->error.message, fw_msg.event.event_data.message,
++            strscpy(msg->error.message, fw_msg.event.event_data.message,
+                 min(sizeof(msg->error.message),
+                     sizeof(fw_msg.error.message)));
+         } else {
+--- a/driver/if/v4l2/mvx_v4l2_vidioc.c
++++ b/driver/if/v4l2/mvx_v4l2_vidioc.c
+@@ -708,9 +708,9 @@
+ 
+     MVX_SESSION_INFO(&session->session, "v4l2: Query capabilities.");
+ 
+-    strlcpy(cap->driver, "mvx", sizeof(cap->driver));
+-    strlcpy(cap->card, "Linlon Video device", sizeof(cap->card));
+-    strlcpy(cap->bus_info, "platform:mvx", sizeof(cap->bus_info));
++    strscpy(cap->driver, "mvx", sizeof(cap->driver));
++    strscpy(cap->card, "Linlon Video device", sizeof(cap->card));
++    strscpy(cap->bus_info, "platform:mvx", sizeof(cap->bus_info));
+ 
+     cap->capabilities = V4L2_CAP_DEVICE_CAPS |
+                 V4L2_CAP_VIDEO_M2M |
+@@ -734,7 +734,7 @@
+ 
+     f->flags = mvx_fmt->flags;
+     f->pixelformat = mvx_fmt->pixelformat;
+-    strlcpy(f->description, mvx_fmt->description,
++    strscpy(f->description, mvx_fmt->description,
+         sizeof(f->description));
+ 
+     return 0;
