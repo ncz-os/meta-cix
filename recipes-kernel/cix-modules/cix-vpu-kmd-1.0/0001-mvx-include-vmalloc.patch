@@ -1,0 +1,30 @@
+From: Jason Perlow <jperlow@gmail.com>
+Subject: [PATCH] mvx: include linux/vmalloc.h explicitly
+
+Building against 7.2 fails with:
+
+  if/mvx_mmu.c:781:11: error: assignment to 'struct mvx_mmu_pages *' from
+  'int' makes pointer from integer without a cast [-Wint-conversion]
+      pages = vmalloc(sizeof(*pages) + sizeof(phys_addr_t) * capacity);
+
+vmalloc() is implicitly declared, so the compiler assumes it returns int.
+mvx_mmu.c never included <linux/vmalloc.h>; it had been getting the
+declaration transitively through another header, and that indirect include
+is gone in this kernel. Include it directly rather than relying on a
+transitive path that upstream is free to remove again.
+
+Upstream-Status: Inappropriate [vendor tree]
+The CIX P1 VPU driver is a vendor drop with no upstream submission path;
+sent downstream only.
+
+Signed-off-by: Jason Perlow <jperlow@gmail.com>
+--- a/driver/if/mvx_mmu.c
++++ b/driver/if/mvx_mmu.c
+@@ -40,6 +40,7 @@
+ #include <linux/dma-mapping.h>
+ #include <linux/list.h>
+ #include <linux/sched.h>
++#include <linux/vmalloc.h>
+ #include "mvx_mmu.h"
+ #include "mvx_log_group.h"
+ 
