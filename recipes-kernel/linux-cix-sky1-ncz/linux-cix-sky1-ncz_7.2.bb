@@ -332,6 +332,7 @@ SRC_URI = " \
     file://patches-7.2/0185-firmware-arm-scmi-perf-skip-opp-repopulation.patch \
     file://patches-7.2/0187-drm-panthor-route-scmi-dvfs-through-perf-opp.patch \
     file://patches-7.2/0190-soc-cix-only-deny-generic-ACPI-ids-on-sky1.patch \
+    file://patches-7.2/0191-soc-cix-default-acpi_scmi_en-off-so-the-clock-bridge-binds.patch \
 "
 
 COMPATIBLE_MACHINE = "(cixmini)"

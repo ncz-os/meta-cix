@@ -890,6 +890,15 @@ CONFIG_JOLIET=y
 CONFIG_ZISOFS=y
 CONFIG_NLS_UTF8=y
 CONFIG_SQUASHFS_XZ=y
+# uinput lets a userspace process create a virtual keyboard/mouse. The lean
+# pass dropped it, which is defensible for an appliance and costly for us: with
+# no /dev/uinput there is no way to drive the desktop from a script, so every
+# UI-level check on O6 (hot-corner behaviour, launcher open/close, overlay
+# dismissal) has to be done by hand at the machine. Measured 2026-08-12 --
+# `modprobe uinput` found nothing to load because it is not built at all, and
+# three Singularity fixes had to ship validated only at the Wayland-protocol
+# layer. Module, not builtin: nothing needs it at boot.
+CONFIG_INPUT_UINPUT=m
 CONFIG_PM_DEVFREQ=y
 CONFIG_DEVFREQ_GOV_PERFORMANCE=y
 CONFIG_DEVFREQ_GOV_POWERSAVE=y
