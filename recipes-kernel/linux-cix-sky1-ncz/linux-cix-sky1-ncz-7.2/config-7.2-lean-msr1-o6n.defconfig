@@ -836,8 +836,6 @@ CONFIG_PID_IN_CONTEXTIDR=y
 
 # --- M.2 E-key WiFi/BT coverage (ncz: keep broad; card is pluggable, any vendor) ---
 CONFIG_WLAN=y
-CONFIG_CFG80211=m
-CONFIG_MAC80211=m
 CONFIG_RTW89=m
 CONFIG_RTW89_CORE=m
 CONFIG_RTW89_PCI=m
@@ -847,7 +845,6 @@ CONFIG_RTW89_8922AE=m
 CONFIG_IWLWIFI=m
 CONFIG_IWLMVM=m
 CONFIG_IWLMLD=m
-CONFIG_MT7921E=m
 CONFIG_MT7925E=m
 CONFIG_ATH11K=m
 CONFIG_ATH11K_PCI=m
@@ -963,3 +960,32 @@ CONFIG_USB_RTL8152=m
 CONFIG_TYPEC_DP_ALTMODE=m
 CONFIG_TYPEC_UCSI=m
 CONFIG_EXTCON_USB_GPIO=y
+
+# ---------------------------------------------------------------------------
+# USB dual-role connect detection, restored from 7.0.12 (2026-08-13).
+#
+# cdnsp/cdns3 on Sky1 is a DUAL-ROLE controller. The lean pass dropped the
+# plumbing that decides a port has something plugged into it and settles the
+# port into host role. Everything below is present in 7.0.12, which installs
+# from a USB stick on this board; all of it is absent in the lean 7.2, which
+# does not.
+#
+# Measured on O6N from the d-i shell with the stick in a USB-A port:
+#   /proc/partitions      -> nvme0n1 only, zero sd*
+#   /sys/bus/usb/devices  -> usb1..usb14 root hubs, ZERO downstream devices
+#   dmesg                 -> xhci-hcd.N.auto registered, cdnsp-sky1 bound to
+#                            all nine CIXH2030 instances, and not one
+#                            "new ... USB device" line
+#
+# i.e. the controllers come up and no port ever reports a connect. Restoring
+# USB_CDNS3 to builtin did NOT change this (verified on metal), which is what
+# points at role/connect detection rather than the controller driver.
+CONFIG_USB_OTG=y
+CONFIG_USB_CONN_GPIO=y
+CONFIG_USB_ULPI_BUS=y
+
+# Type-C port management. TYPEC_RTS5453 (the controller these boards use) was
+# kept while the generic TCPM/UCSI layer underneath it was dropped, leaving it
+# with nothing to register against.
+CONFIG_TYPEC_TCPM=m
+CONFIG_TYPEC_TCPCI=m
