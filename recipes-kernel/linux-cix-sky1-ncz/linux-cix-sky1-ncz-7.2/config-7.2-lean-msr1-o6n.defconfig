@@ -547,7 +547,7 @@ CONFIG_USB_DYNAMIC_MINORS=y
 CONFIG_USB_XHCI_HCD=y
 # CONFIG_USB_XHCI_RCAR is not set
 CONFIG_USB_CDNS_SUPPORT=y
-CONFIG_USB_CDNS3=m
+CONFIG_USB_CDNS3=y
 CONFIG_USB_CDNS3_GADGET=y
 CONFIG_USB_CDNS3_HOST=y
 # CONFIG_USB_CDNS3_TI is not set
@@ -925,3 +925,41 @@ CONFIG_SND_SOC_SOF_CIX_TOPLEVEL=y
 CONFIG_SND_SOC_SOF_CIX_COMMON=m
 CONFIG_CFG80211_REQUIRE_SIGNED_REGDB=y
 CONFIG_CFG80211_USE_KERNEL_REGDB_KEYS=y
+
+# ---------------------------------------------------------------------------
+# Restored from the 7.0.12 config after a config diff, 2026-08-13.
+#
+# 7.0.12 installs from a USB stick on this hardware; 7.2 r218 does not -- d-i
+# fails at "Detect and mount installation media" with 14 xhci root hubs up,
+# cdnsp-sky1 bound to all nine CIXH2030 instances, and ZERO devices enumerated
+# on any port (serial-captured from the d-i shell on O6N). Diffing the two
+# BUILT configs is what surfaced these; the initrd module prune was not the
+# cause (drivers/usb and drivers/gpu are both present in the installer).
+#
+# PHYLINK: 7.0.12 had it builtin, 7.2 dropped it entirely. It is the generic
+# MAC<->PHY layer a lot of ethernet drivers bind through, so losing it can take
+# wired networking with it -- and d-i on O6N had no network at all (no ping, no
+# ssh) while the installed 7.2 system does.
+CONFIG_PHYLINK=y
+
+# USB ethernet: the whole class went away. These are the dongles people
+# actually install through when the on-board NIC is unusable, and d-i is
+# wired-only here because the wireless drivers are pruned from the initrd for
+# size. Cheap to carry as modules.
+CONFIG_USB_NET_DRIVERS=y
+CONFIG_USB_USBNET=m
+CONFIG_USB_NET_AX8817X=m
+CONFIG_USB_NET_AX88179_178A=m
+CONFIG_USB_NET_CDCETHER=m
+CONFIG_USB_NET_CDC_NCM=m
+CONFIG_USB_NET_SMSC95XX=m
+CONFIG_USB_LAN78XX=m
+CONFIG_USB_RTL8152=m
+
+# Type-C: RTS5453 (the controller these boards actually use) was kept while
+# the generic Type-C plumbing around it was dropped. Sky1's USB-C is a combo
+# USB/DP PHY, so alt-mode and mux support are part of getting a port into USB
+# role rather than DP.
+CONFIG_TYPEC_DP_ALTMODE=m
+CONFIG_TYPEC_UCSI=m
+CONFIG_EXTCON_USB_GPIO=y
