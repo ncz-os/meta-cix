@@ -989,3 +989,32 @@ CONFIG_USB_ULPI_BUS=y
 # with nothing to register against.
 CONFIG_TYPEC_TCPM=m
 CONFIG_TYPEC_TCPCI=m
+
+# ---------------------------------------------------------------------------
+# DEVTMPFS_MOUNT: the reason d-i drew on the serial line instead of the screen.
+#
+# This makes the KERNEL mount devtmpfs on /dev before init runs. The lean pass
+# dropped it; 7.0.12, which put the installer on the monitor for hundreds of
+# installs, has it.
+#
+# Without it /dev is only whatever the initrd shipped, and the d-i initrd ships
+# exactly one node:
+#
+#     crw-r--r-- 1 root root 5, 1 /dev/console      <- and nothing else
+#
+# d-i's reopen-console runs from /init BEFORE S01mount mounts /dev, and both
+# paths by which tty1 could become a console candidate are device-node tests:
+#
+#     [ -e "/dev/$cons" ] && ...        # cons=tty1 after the tty0 rename
+#     [ -c /dev/tty1 ] && ...           # the later fallback
+#
+# With an empty /dev both fail, the console list ends up empty, and it falls to
+# "Nothing found? Default to /dev/console". detect-console then classifies
+# /dev/console as TERM_TYPE=serial, so the installer renders on the UART and the
+# monitor gets nothing -- on every board, whatever console= says.
+#
+# That is why no cmdline change fixed this: console selection was never the
+# problem, the missing device node was. It also explains why writing to
+# /dev/tty1 from a shell DID appear on screen -- by then S01mount had mounted
+# devtmpfs and the node existed, long after reopen-console had decided.
+CONFIG_DEVTMPFS_MOUNT=y
