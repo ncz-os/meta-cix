@@ -312,10 +312,36 @@ CONFIG_NVME_MULTIPATH=y
 CONFIG_NVME_HWMON=y
 CONFIG_NVME_HOST_AUTH=y
 CONFIG_SRAM=y
-CONFIG_ARMCHINA_NPU=m
-CONFIG_ARMCHINA_NPU_ARCH_V3=y
-CONFIG_ARMCHINA_NPU_ARCH_V3_1=y
-CONFIG_ARMCHINA_NPU_SOC_SKY1=y
+# ARMCHINA_NPU MUST NOT BE BUILT IN-TREE. The accelerator ships as a vendor
+# DKMS module (cix-npu-kmd -> updates/dkms/aipu.ko), and an in-tree copy wins
+# modprobe, so the DKMS module is rejected outright. Measured on O6N with r239:
+#
+#   armchina CIXH4000:00: sky1_npu_probe: NPU core num is 3
+#   armchina CIXH4000:00: sky1_npu_probe: armchina_aipu_probe done
+#   aipu: exports duplicate symbol armchina_aipu_alloc_dma_buf (owned by armchina_npu)
+#   aipu: exports duplicate symbol armchina_aipu_alloc_dma_buf (owned by armchina_npu)
+#
+# i.e. the in-tree armchina_npu.ko (kernel/drivers/misc/armchina-npu/) claims
+# the symbols first and the vendor module cannot load at all. This is exactly
+# what build-kernel-debs.sh has been warning about on every single build:
+#
+#   WARN: [edge] CONFIG_ARMCHINA_NPU=m is IN-TREE ... an in-tree copy masks the
+#   validated overlay/DKMS module at modprobe time
+#
+# and it matches the standing rule that CIX accelerator drivers ship DKMS,
+# never in-tree.
+#
+# NOTE: turning this off does not by itself make the NPU usable. There is no
+# userspace driver on the image at all (nothing under /usr/lib matching noe/npu),
+# so the device has no consumer either way. What this fixes is the kernel side
+# sabotaging its own vendor module.
+#
+# CONFIG_VIDEO_LINLON is deliberately LEFT AS IS despite the same warning: on a
+# real r239 install no in-tree mvx module is produced at all, the only module on
+# disk is updates/dkms/amvx.ko, and the VPU works in both directions (H.264
+# decode 90 frames @45x, encode 60 frames verified). Nothing is shadowed there,
+# so changing it would be a blind edit to a working path.
+# CONFIG_ARMCHINA_NPU is not set
 CONFIG_MD=y
 CONFIG_BLK_DEV_MD=m
 CONFIG_MD_RAID0=m
