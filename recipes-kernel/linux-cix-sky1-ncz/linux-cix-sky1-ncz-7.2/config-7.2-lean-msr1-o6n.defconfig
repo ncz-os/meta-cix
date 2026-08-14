@@ -483,7 +483,32 @@ CONFIG_MEDIA_PCI_SUPPORT=y
 CONFIG_V4L_PLATFORM_DRIVERS=y
 CONFIG_V4L_MEM2MEM_DRIVERS=y
 CONFIG_V4L_TEST_DRIVERS=y
-CONFIG_DRM=m
+
+# ---------------------------------------------------------------------------
+# DRM CORE MUST BE BUILTIN on Sky1 -- =m costs ~10s of black screen at boot.
+#
+# 7.0.12 and 6.18, which put the installer on the monitor promptly for hundreds
+# of installs, both ship CONFIG_DRM=y with CONFIG_DRM_LINLONDP=m. The lean 7.2
+# pass dropped the core to =m with no recorded reason (every neighbouring entry
+# in this file carries a justification; this one did not), which means the WHOLE
+# stack -- drm core, kms_helper, display_helper, then linlondp -- has to be
+# pulled in by udev from the initrd before anything can paint. Measured on O6N
+# with r236/r237: roughly ten seconds of black screen with a blinking cursor
+# before the linlondp framebuffer takes over.
+#
+# Matching 7.0.12 exactly (core builtin, linlondp still a module) rather than
+# making linlondp builtin too: 7.0.12 proves =m for the driver is fine, so the
+# core tristate is the only variable worth changing.
+#
+# NOTE: a second candidate for the same ~10s remains open --
+# driver_deferred_probe_timeout defaults to 10 when CONFIG_MODULES=y, so a
+# late-loaded linlondp whose probe defers is released exactly on that deadline.
+# The two are distinguishable in one boot without a rebuild by appending
+# deferred_probe_timeout=1 to the cmdline: if the display comes up ~9s earlier
+# it is the deferred-probe deadline, not module-load latency. Check
+# "dmesg -t | grep -iE 'linlondp|deferred probe|Console: switching'" on the
+# installed system before assuming this change alone closed the gap.
+CONFIG_DRM=y
 CONFIG_DRM_PANIC=y
 CONFIG_DRM_PANIC_SCREEN="qr_code"
 CONFIG_DRM_LOAD_EDID_FIRMWARE=y
