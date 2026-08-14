@@ -550,6 +550,28 @@ CONFIG_USB_CDNS_SUPPORT=y
 CONFIG_USB_CDNS3=y
 CONFIG_USB_CDNS3_GADGET=y
 CONFIG_USB_CDNS3_HOST=y
+
+# CONFIG_USB_CDNS3_PCI_WRAP: MUST stay off on Sky1. It has no explicit line in
+# this defconfig, so olddefconfig took its Kconfig default (default USB_CDNS3)
+# and made it BUILTIN when USB_CDNS3 went to =y above. Its PCI match table is
+# PCI_VDEVICE(CDNS, 0x0100) -- and Sky1's own PCIe ROOT PORTS enumerate as
+# 17cd:0100 ("Cadence Design Systems, Inc. CIX PCIe Root Port", four of them,
+# confirmed with lspci -nn on cixmini). So the Cadence USB3 PCI wrapper binds to
+# the SoC's PCIe bridges and dereferences NULL in cdns3_pci_probe:
+#
+#   Unable to handle kernel NULL pointer dereference at virtual address 0x108
+#   Call trace: cdns3_pci_probe+0x12c/0x360 / local_pci_probe / pci_device_probe
+#   CPU 7 PID 1 Comm swapper/0 -- Kernel panic - not syncing: Oops: Fatal
+#
+# Measured on O6N with r236 at 1.2s into boot, six reboot loops on the serial
+# console. The faulting instruction f9008680 is str x0,[x20,#0x108] with x20=0,
+# which is exactly the reported fault address.
+#
+# Sky1's real USB is CDNSP over ACPI (cdns-usbssp CIXH2031:* / CIXH2030:*), not
+# the PCI wrapper, so nothing is lost by turning it off. The comment further up
+# already records that making USB_CDNS3 builtin did not change the USB symptom
+# it was meant to fix, so the wrapper it dragged in was pure cost.
+# CONFIG_USB_CDNS3_PCI_WRAP is not set
 # CONFIG_USB_CDNS3_TI is not set
 # CONFIG_USB_CDNS3_IMX is not set
 CONFIG_USB_CDNSP=y
