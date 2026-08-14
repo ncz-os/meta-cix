@@ -509,39 +509,6 @@ CONFIG_V4L_TEST_DRIVERS=y
 # "dmesg -t | grep -iE 'linlondp|deferred probe|Console: switching'" on the
 # installed system before assuming this change alone closed the gap.
 CONFIG_DRM=y
-
-# DRM_GEM_DMA_HELPER MUST BE BUILTIN TOO. Like USB_CDNS3_PCI_WRAP before it,
-# this symbol has no line of its own here, so olddefconfig resolves it to =m and
-# nothing in a diff ever shows it.
-#
-# Measured on O6N with r237, 2026-08-14: linlon_dp fails its FIRST load attempt,
-# in the initramfs, with eleven unresolved symbols --
-#
-#   [2.517165] linlon_dp: Unknown symbol drm_gem_dma_get_sg_table (err -2)
-#   [2.517444] linlon_dp: Unknown symbol drm_fbdev_dma_driver_fbdev_probe (err -2)
-#   ... 11 in total, every one a drm_gem_dma_* / drm_fb_dma_* symbol
-#
-# because drm_dma_helper is NOT in the initramfs while linlon-dp.ko is. Listing
-# the initrd shows 11 drm modules (drm, kms_helper, display_helper, client_lib,
-# dp_aux_bus, exec, gpuvm, gpu-sched, msm, trilin-dpsub, linlon-dp) and ZERO
-# matches for dma_helper.
-#
-# So the display cannot come up in the initramfs at all; it appears only after
-# the real root is mounted and the module loads on the retry:
-#
-#   [1.175962] Console: switching to colour frame buffer device 240x67  <- EFI fb
-#   [2.5171xx] linlon_dp load FAILS, missing symbols
-#   [4.534194] linlondp_platform_probe enter. dev.name=CIXH5010:00      <- retry OK
-#   [4.536218] Console: switching to colour dummy device 80x25          <- blanks
-#   [4.536744] [drm] Found ARMCHINA Linlon-D60 version r0p0
-#
-# about two seconds of avoidable black screen, before the panel even starts
-# re-locking after the mode change.
-#
-# CONFIG_DRM=y above did NOT fix this on its own: the helper is a separate
-# module and linlon_dp needs its symbols whether or not the core is builtin.
-# Setting it explicitly, so a future olddefconfig cannot quietly demote it.
-CONFIG_DRM_GEM_DMA_HELPER=y
 CONFIG_DRM_PANIC=y
 CONFIG_DRM_PANIC_SCREEN="qr_code"
 CONFIG_DRM_LOAD_EDID_FIRMWARE=y
