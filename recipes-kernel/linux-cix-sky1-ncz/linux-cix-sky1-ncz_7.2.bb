@@ -335,6 +335,7 @@ SRC_URI = " \
     file://patches-7.2/0191-soc-cix-default-acpi_scmi_en-off-so-the-clock-bridge-binds.patch \
     file://patches-7.2/0192-usb-cdns3-sky1-keep-the-wrapper-pinned-by-its-children.patch \
     file://patches-7.2/0193-usb-hub-give-root-hubs-the-same-power-on-good-floor.patch \
+    file://patches-7.2/0200-rpmsg-virtio-ratelimit-no-used-buffer.patch \
 "
 
 COMPATIBLE_MACHINE = "(cixmini)"
