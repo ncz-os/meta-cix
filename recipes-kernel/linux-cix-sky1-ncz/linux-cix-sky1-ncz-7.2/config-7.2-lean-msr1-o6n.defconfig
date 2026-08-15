@@ -1091,3 +1091,20 @@ CONFIG_TYPEC_TCPCI=m
 # /dev/tty1 from a shell DID appear on screen -- by then S01mount had mounted
 # devtmpfs and the node existed, long after reopen-console had decided.
 CONFIG_DEVTMPFS_MOUNT=y
+
+# --- HiFi5 DSP transport ---------------------------------------------------
+# CONFIG_CIX_DSP_RPROC boots the DSP fine on its own: dsp_fw.bin loads and the
+# driver logs "DSP ready", registers virtio0 (type 7 = VIRTIO_ID_RPMSG) and gets
+# mbox_send_message == 0. But RPMSG was never named in this defconfig, so
+# olddefconfig resolved it to n, virtio0 had no driver, no rpmsg channel was
+# created, and userspace had no /dev/rpmsgN to open -- which is what
+# libdsp_wrap.so (XAF, statically linked) needs to reach the DSP.
+#
+# cix_dsp_rproc.c implements the rpmsg-lite link-up handshake explicitly
+# (deferred vq0 kick, link_state, rpmsg_lite_tx_callback), so this transport is
+# required, not optional.
+CONFIG_RPMSG=y
+CONFIG_RPMSG_VIRTIO=y
+CONFIG_RPMSG_CHAR=y
+CONFIG_RPMSG_CTRL=y
+CONFIG_RPMSG_NS=y
