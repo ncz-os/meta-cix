@@ -3,8 +3,14 @@
 #
 # Linux kernel for Cix Sky1 / CP8180 -- NCZ 7.2 track.
 #
-# Base: torvalds mainline v7.2-rc6 (no linux-7.2.y stable branch yet, so
-#       KBRANCH=master + SRCREV pinned to the v7.2-rc7 tag commit).
+# Base: torvalds mainline v7.2-rc7 (no linux-7.2.y stable branch yet, so
+#       KBRANCH=master + SRCREV pinned to the v7.2-rc7 tag COMMIT).
+#       (Bumped 2026-08-16 from v7.2-rc6 -> v7.2-rc7. SRCREV already
+#       pointed at rc7 and the built kernel reports 7.2.0-rc7-sky1-ncz;
+#       only LINUX_VERSION/SUMMARY/DESCRIPTION had been left behind.
+#       Verified against git.kernel.org 2026-08-16:
+#         v7.2-rc6 = 075b74841bd0065a3bda3440873c747938e69b68
+#         v7.2-rc7 = db2ddb87143519e20a95aa36c60b36107b736a58)
 #       (Rebased 2026-08-02 from v7.2-rc5 -> v7.2-rc6: all 170 CIX commits
 #       replayed with ZERO conflicts and range-diff 170/170 "=".)
 #       (Forward-ported 2026-07-26 from v7.2-rc4 -> v7.2-rc5: the rc4->rc5
@@ -112,8 +118,8 @@
 #   firmware. Do not enable CONFIG_DRM_CIX_COMPONENT_BIND_BYPASSED —
 #   it forces the multi-card path and defeats the 26q2 single-master code.
 
-SUMMARY = "NCZ Linux kernel for Cix Sky1 / CP8180 (v7.2-rc6 + CIX 2026q2 patch set)"
-DESCRIPTION = "NCZ kernel: mainline Linux v7.2-rc6 plus the cixtech 2026q2 Sky1 driver set forward-ported by NCZ. Not a CIX/vendor release."
+SUMMARY = "NCZ Linux kernel for Cix Sky1 / CP8180 (v7.2-rc7 + CIX 2026q2 patch set)"
+DESCRIPTION = "NCZ kernel: mainline Linux v7.2-rc7 plus the cixtech 2026q2 Sky1 driver set forward-ported by NCZ. Not a CIX/vendor release."
 SECTION = "kernel"
 LICENSE = "GPL-2.0-only"
 LIC_FILES_CHKSUM = "file://COPYING;md5=6bc538ed5bd9a7fc9398086aedcd7e46"
@@ -121,7 +127,7 @@ LIC_FILES_CHKSUM = "file://COPYING;md5=6bc538ed5bd9a7fc9398086aedcd7e46"
 inherit kernel
 FILESEXTRAPATHS:prepend := "${THISDIR}/linux-cix-sky1-ncz-7.2:"
 
-LINUX_VERSION = "7.2-rc6"
+LINUX_VERSION = "7.2-rc7"
 KERNEL_LOCALVERSION = "-sky1-ncz"
 PATCHTOOL = "git"
 PV = "7.2+ncz"
