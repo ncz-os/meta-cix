@@ -310,6 +310,16 @@ CONFIG_BLK_DEV_NVME=y
 CONFIG_VIRTIO_BLK=y
 CONFIG_NVME_MULTIPATH=y
 CONFIG_NVME_HWMON=y
+# SCMI hwmon sensors. MEASURED 2026-08-16: absent from this lean defconfig, so
+# olddefconfig took the default n and the driver was never built. On O6N the
+# SCMI stack itself came up fine -- perf (12 domains), clocks and genpd all
+# registered, and the log even reads "ACPI: activating SCMI protocol 0x12",
+# the SENSOR protocol -- but no device was created for 0x12 and no hwmon chip
+# appeared. The board showed 5 bare ACPI thermal zones (TZB0 TZB1 TZM0 TZM1
+# TZGT, unlabelled) instead of the 22 labelled readings (CPU_B0, GPU_AVE, NPU,
+# VPU, DDR_top, PCB_AMB, ...) that 7.0.12 shows, where this symbol is =y.
+# Nothing to do with acpi_scmi_en, which only chooses a clock provider.
+CONFIG_SENSORS_ARM_SCMI=y
 CONFIG_NVME_HOST_AUTH=y
 CONFIG_SRAM=y
 # ARMCHINA_NPU MUST NOT BE BUILT IN-TREE. The accelerator ships as a vendor
@@ -1111,6 +1121,158 @@ CONFIG_RPMSG_NS=y
 
 # zram: compressed RAM swap (systemd-zram-generator drives it from userspace).
 # ZRAM selects ZSMALLOC; ZRAM_BACKEND_ZSTD selects ZSTD_COMPRESS/DECOMPRESS.
+#
+# NFS CLIENT. Required: the Sky1 build hosts mount their sources, sstate and
+# dist trees from ARGONAS over NFS. Without this the kernel has no nfs
+# filesystem at all and every mount fails with
+#     mount.nfs: failed to prepare mount: No such device
+# which reads as a client/export/credentials fault and is none of those.
+# Measured on cixmini 2026-08-17: /proc/filesystems had no nfs entry and
+# `modprobe nfs` returned "Module nfs not found" -- the support was never
+# built. Built in (=y) rather than modular so a root-on-NFS or early mount
+# cannot depend on module load order.
+#
+#
+# RESTORED SUPPORT (2026-08-17). The lean defconfig had been stripped past what
+# a desktop/build host can actually do. Each line below was verified ABSENT in
+# the built .config, not merely absent from this defconfig -- savedefconfig
+# omits any symbol matching its default, so four earlier "missing" findings
+# (CGROUPS, IPV6, NF_NAT, INTEGRITY) turned out to be present and were dropped
+# from this list.
+#
+# Filesystems a general-purpose machine is expected to read:
+#
+# USB SERIAL -- the fleet's console lifeline. The shipping config had ZERO
+# USB_SERIAL symbols and no /sys/bus/usb-serial at all, so no USB serial
+# adapter of any kind could attach. Verified absent on cixmini 2026-08-17.
+# These are the three adapters actually used on this fleet, plus CH341.
+CONFIG_USB_SERIAL=y
+CONFIG_USB_SERIAL_CONSOLE=y
+CONFIG_USB_SERIAL_GENERIC=y
+CONFIG_USB_SERIAL_CP210X=m
+CONFIG_USB_SERIAL_FTDI_SIO=m
+CONFIG_USB_SERIAL_PL2303=m
+CONFIG_USB_SERIAL_CH341=m
+#
+# Webcam (UVC). A desktop OS with no camera support.
+CONFIG_MEDIA_USB_SUPPORT=y
+CONFIG_USB_VIDEO_CLASS=m
+CONFIG_USB_VIDEO_CLASS_INPUT_EVDEV=y
+#
+# i2c-dev: userspace i2c, needed by ddcutil for external-monitor brightness.
+CONFIG_I2C_CHARDEV=m
+#
+# Common HID peripherals. HID_LOGITECH_HIDPP covers most wireless mice and
+# keyboards in use; the others are cheap to carry as modules.
+CONFIG_HID_LOGITECH=m
+CONFIG_HID_LOGITECH_HIDPP=m
+CONFIG_HID_APPLE=m
+CONFIG_HID_WACOM=m
+CONFIG_INPUT_JOYDEV=m
+#
+# Printing and phone tethering.
+CONFIG_USB_PRINTER=m
+CONFIG_USB_NET_RNDIS_HOST=m
+#
+# NOTE: CONFIG_SND_HDA_INTEL is deliberately NOT added. Audio on Sky1 works
+# through SND_HDA + SND_HDA_CIX_IPBLOQ + SND_HDA_CODEC_ALC269, which are
+# already set; SND_HDA_INTEL is the PCI Intel controller and is irrelevant
+# here. It showed as "missing" in the first audit pass and was a false
+# positive -- two sound cards are present and working.
+#
+# Container / virt networking. The container CORE (namespaces, overlayfs,
+# bridge, veth, NF_NAT, cgroup-bpf) was already intact; these are the pieces
+# that were missing around it. MASQUERADE is what docker's default bridge
+# uses for container->internet NAT -- without it outbound from a container
+# fails. Not currently breaking anything (docker is not installed on cixmini
+# post-reflash; Yocto builds moved to TYDEUS) but this host is specced as a
+# docker/Yocto build host, so the gap is latent rather than harmless.
+CONFIG_IP_NF_TARGET_MASQUERADE=m
+CONFIG_NFT_MASQ=m
+CONFIG_VXLAN=m
+CONFIG_VLAN_8021Q=m
+#
+# VFIO: this host is a KVM host with SMMU confirmed, so PCI passthrough
+# should be possible rather than silently unavailable.
+CONFIG_VFIO=m
+CONFIG_VFIO_PCI=m
+CONFIG_VFIO_PLATFORM=m
+CONFIG_IOMMUFD=m
+#
+# Bluetooth input. BT core and the USB HCI dongle driver were already present,
+# but HIDP was not -- so a Bluetooth keyboard or mouse could not work at all,
+# on a desktop that ships bluez and blueman.
+CONFIG_BT_HIDP=m
+CONFIG_BT_RFCOMM=m
+CONFIG_BT_BNEP=m
+#
+# ARM64 Crypto Extensions AES. Without this dm-crypt/LUKS falls back to
+# software AES on silicon that has hardware acceleration.
+CONFIG_CRYPTO_AES_ARM64_CE_BLK=y
+CONFIG_CRYPTO_AES_ARM64_CE_CCM=y
+CONFIG_CRYPTO_SHA2_ARM64_CE=y
+CONFIG_CRYPTO_CRCT10DIF_ARM64_CE=m
+#
+# NLS codepages. The config carried only 4 of 48. exFAT/NTFS3/UDF were added
+# above without their charset dependencies -- non-ASCII filenames on removable
+# media need these to mount and display correctly.
+CONFIG_NLS_CODEPAGE_850=m
+CONFIG_NLS_CODEPAGE_852=m
+CONFIG_NLS_CODEPAGE_1250=m
+CONFIG_NLS_CODEPAGE_1251=m
+CONFIG_NLS_ISO8859_2=m
+CONFIG_NLS_ISO8859_15=m
+CONFIG_NLS_MAC_ROMAN=m
+CONFIG_NLS_ASCII=m
+CONFIG_NLS_UTF8=y
+CONFIG_EXFAT_FS=y
+CONFIG_NTFS3_FS=y
+CONFIG_NTFS3_LZX_XPRESS=y
+CONFIG_UDF_FS=m
+CONFIG_XFS_FS=m
+CONFIG_F2FS_FS=m
+CONFIG_AUTOFS_FS=y
+#
+# squashfs zstd: OUR OWN INSTALLER LAYERS ARE ZSTD SQUASHFS. Without this the
+# kernel cannot mount base.squashfs/desktop.squashfs at all; it only works
+# today because the installer unpacks them in userspace with the bundled
+# sqtools/unsquashfs. Any kernel-side mount would fail.
+CONFIG_SQUASHFS_ZSTD=y
+CONFIG_SQUASHFS_XZ=y
+CONFIG_SQUASHFS_LZ4=y
+#
+# SMB/CIFS -- the fleet stores on TrueNAS, which serves SMB as well as NFS.
+CONFIG_CIFS=m
+CONFIG_CIFS_XATTR=y
+CONFIG_CIFS_POSIX=y
+#
+# tun/tap + vhost-net: rootless podman networking, qemu tap interfaces and the
+# KVM data path on the host that runs the ISO boot gate.
+CONFIG_TUN=y
+CONFIG_VHOST_NET=m
+CONFIG_VHOST=m
+#
+# WireGuard: sinty-nm advertises a WireGuard VPN backend, which cannot work
+# without it -- the feature was shipping as a no-op.
+CONFIG_WIREGUARD=m
+#
+# LUKS / encrypted volumes.
+CONFIG_DM_CRYPT=m
+CONFIG_CRYPTO_XTS=y
+#
+# USB audio: headsets and DACs on a desktop machine.
+CONFIG_SND_USB_AUDIO=m
+CONFIG_NFS_FS=y
+CONFIG_NFS_V3=y
+CONFIG_NFS_V3_ACL=y
+CONFIG_NFS_V4=y
+CONFIG_NFS_V4_1=y
+CONFIG_NFS_V4_2=y
+CONFIG_ROOT_NFS=y
+CONFIG_NFS_COMMON=y
+CONFIG_SUNRPC=y
+CONFIG_SUNRPC_GSS=y
+
 CONFIG_ZRAM=y
 CONFIG_ZRAM_BACKEND_ZSTD=y
 CONFIG_ZRAM_DEF_COMP_ZSTD=y
