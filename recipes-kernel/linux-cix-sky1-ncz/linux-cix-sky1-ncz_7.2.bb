@@ -3,7 +3,7 @@
 #
 # Linux kernel for Cix Sky1 / CP8180 -- NCZ 7.2 track.
 #
-# Base: torvalds mainline v7.2-rc7 (no linux-7.2.y stable branch yet, so
+# Base: torvalds mainline v7.2 RELEASE (no linux-7.2.y stable branch yet, so
 #       KBRANCH=master + SRCREV pinned to the v7.2-rc7 tag COMMIT).
 #       (Bumped 2026-08-16 from v7.2-rc6 -> v7.2-rc7. SRCREV already
 #       pointed at rc7 and the built kernel reports 7.2.0-rc7-sky1-ncz;
@@ -118,8 +118,8 @@
 #   firmware. Do not enable CONFIG_DRM_CIX_COMPONENT_BIND_BYPASSED —
 #   it forces the multi-card path and defeats the 26q2 single-master code.
 
-SUMMARY = "NCZ Linux kernel for Cix Sky1 / CP8180 (v7.2-rc7 + CIX 2026q2 patch set)"
-DESCRIPTION = "NCZ kernel: mainline Linux v7.2-rc7 plus the cixtech 2026q2 Sky1 driver set forward-ported by NCZ. Not a CIX/vendor release."
+SUMMARY = "NCZ Linux kernel for Cix Sky1 / CP8180 (v7.2 + CIX 2026q2 patch set)"
+DESCRIPTION = "NCZ kernel: mainline Linux v7.2 plus the cixtech 2026q2 Sky1 driver set forward-ported by NCZ. Not a CIX/vendor release."
 SECTION = "kernel"
 LICENSE = "GPL-2.0-only"
 LIC_FILES_CHKSUM = "file://COPYING;md5=6bc538ed5bd9a7fc9398086aedcd7e46"
@@ -127,7 +127,7 @@ LIC_FILES_CHKSUM = "file://COPYING;md5=6bc538ed5bd9a7fc9398086aedcd7e46"
 inherit kernel
 FILESEXTRAPATHS:prepend := "${THISDIR}/linux-cix-sky1-ncz-7.2:"
 
-LINUX_VERSION = "7.2-rc7"
+LINUX_VERSION = "7.2"
 KERNEL_LOCALVERSION = "-sky1-ncz"
 PATCHTOOL = "git"
 PV = "7.2+ncz"
@@ -161,7 +161,17 @@ do_shared_workdir:append() {
 # (b921b8613790, a3caaa068092), drivers/gpu/drm/arm (komeda/linlondp) is
 # untouched, realtek changes are rtase-only (not r8169), and the arm64 work
 # is KVM/vgic. Nothing here fixes a Sky1 failure mode -- this is hygiene.
-SRCREV_kernel = "db2ddb87143519e20a95aa36c60b36107b736a58"
+# Bumped 2026-08-17 from v7.2-rc7 to the v7.2 RELEASE.
+#   v7.2 = 8d3ae59288f1e7d58d76558a6ee96d533bc5019f  ("Linux 7.2", 2026-08-16)
+# Verified against git.kernel.org; releases.json still lagged at 7.2-rc7 when
+# this landed, so the tag was checked directly rather than trusted from there.
+# rc7 -> 7.2 is 247 commits / 222 files (+2494/-1079).
+# The CONFIG is deliberately UNCHANGED -- the same
+# config-7.2-lean-msr1-o6n.defconfig that produced the rc7 build, including
+# CONFIG_ZRAM=y and CONFIG_SENSORS_ARM_SCMI=y. Only the base tree moves.
+# The full 176-patch SRC_URI series was replayed onto v7.2 out of tree first:
+# 176 applied, 0 failed (build/port-series.sh v7.2).
+SRCREV_kernel = "8d3ae59288f1e7d58d76558a6ee96d533bc5019f"
 
 SRC_URI = " \
     git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git;protocol=https;branch=${KBRANCH};name=kernel \
