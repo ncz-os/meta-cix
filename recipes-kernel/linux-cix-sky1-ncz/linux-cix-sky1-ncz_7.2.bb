@@ -353,6 +353,24 @@ SRC_URI = " \
     file://patches-7.2/0193-usb-hub-give-root-hubs-the-same-power-on-good-floor.patch \
     file://patches-7.2/0194-amvx-fix-shutdown-workqueue-order.patch \
     file://patches-7.2/0200-rpmsg-virtio-ratelimit-no-used-buffer.patch \
+    file://patches-7.2/0201-acpi-table-upgrade-add-disable-and-exclude-options.patch \
+    file://patches-7.2/0202-platform-acpi-resolve-named-irq-resources.patch \
+    file://patches-7.2/0203-power-opp-accept-acpi-only-configurations.patch \
+    file://patches-7.2/0204-topology-has-missing-cpufreq-ref.patch \
+    file://patches-7.2/0205-acpi-processor-clarify-ignore-ppc-module-parameter.patch \
+    file://patches-7.2/0206-pstore-ramoops-parse-firmware-node-properties.patch \
+    file://patches-7.2/0207-drm-cix-demote-internal-tbu-noop-logs.patch \
+    file://patches-7.2/0208-bluetooth-btrtl-return-register-read-error.patch \
+    file://patches-7.2/0209-firmware-arm-scmi-use-rational-perf-frequency-conversion.patch \
+    file://patches-7.2/0210-acpi-thermal-bind-devfreq-cooling-devices-safely.patch \
+    file://patches-7.2/0211-drm-panthor-declare-scmi-perf-softdep.patch \
+    file://patches-7.2/0212-cacheinfo-share-global-firmware-ids-across-levels.patch \
+    file://patches-7.2/0213-hwmon-cix-add-safe-acpi-fan-control.patch \
+    file://patches-7.2/0214-acpi-demote-cix-sky1-ecam-duplicate-reservations.patch \
+    file://patches-7.2/0215-pci-cix-enable-root-port-io-window-assignment.patch \
+    file://patches-7.2/0216-resctrl-mpam-expose-proportional-bandwidth.patch \
+    file://patches-7.2/0217-rtw89-disable-hw-rfkill-polling-on-orion-o6.patch \
+    file://patches-7.2/0218-rtw89-check-acpi-dsm-before-evaluating.patch \
 "
 
 COMPATIBLE_MACHINE = "(cixmini)"
