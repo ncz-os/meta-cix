@@ -362,6 +362,7 @@ SRC_URI = " \
     file://patches-7.2/0220-misc-armchina-npu-use-irq-object-as-dev-id.patch \
     file://patches-7.2/0221-usb-cdns3-sky1-defer-child-until-wrapper-ready.patch \
     file://patches-7.2/0222-usb-hub-recover-connect-events-on-powered-but-runtime-suspended-ports.patch \
+    file://patches-7.2/0223-drm-cix-expose-dp-eld-to-hdmi-codec.patch \
 "
 
 COMPATIBLE_MACHINE = "(cixmini)"
