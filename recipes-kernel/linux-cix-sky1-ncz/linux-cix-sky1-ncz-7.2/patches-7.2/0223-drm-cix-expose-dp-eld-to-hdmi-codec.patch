@@ -7,8 +7,8 @@ trilin_connector_update_modes() updates the connector EDID property and adds EDI
 
 Implement get_eld by copying the SST connector ELD while the connector ELD mutex is held. Also keep the CEA channel allocation from hdmi-codec hw_params and send the DP Audio InfoFrame SDP through the existing infoframe writer so the sink receives the selected audio layout.
 ---
- drivers/gpu/drm/cix/dptx/trilin_dptx_audio.c | 42 +++++++++++++++++++-
- 1 file changed, 40 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/cix/dptx/trilin_dptx_audio.c | 46 +++++++++++++++++++-
+ 1 file changed, 41 insertions(+), 5 deletions(-)
 
 diff --git a/drivers/gpu/drm/cix/dptx/trilin_dptx_audio.c b/drivers/gpu/drm/cix/dptx/trilin_dptx_audio.c
 index 190e3d499d92..dcfdbe27c9ff 100644
@@ -63,7 +63,22 @@ index 190e3d499d92..dcfdbe27c9ff 100644
  static int dptx_audio_startup(struct device *dev, void *data)
  {
  	struct trilin_dp *dp = (struct trilin_dp *)data;
-@@ -118,16 +151,19 @@ static int dptx_audio_hw_params(struct device *dev, void *data,
+@@ -90,13 +123,11 @@ static int dptx_audio_startup(struct device *dev, void *data)
+ static void dptx_audio_shutdown(struct device *dev, void *data)
+ {
+ 	struct trilin_dp *dp = (struct trilin_dp *)data;
+ 	struct dptx_audio *dp_audio = &dp->dp_audio;
+ 
+-	if (!trilin_dp_plugged_status(dp))
+-		return;
+-
++	trilin_dp_write(dp, TRILIN_DPTX_SEC0_AUDIO_ENABLE, 0);
+ 	dp_audio->running = false;
+ }
+ 
+ static int dptx_audio_hw_params(struct device *dev, void *data,
+ 				struct hdmi_codec_daifmt *daifmt,
+@@ -118,16 +149,19 @@ static int dptx_audio_hw_params(struct device *dev, void *data,
  	dp_audio->params.sample_width = params->sample_width;
  	dp_audio->params.sample_rate = params->sample_rate;
  	dp_audio->params.channels = params->channels;
@@ -103,4 +118,3 @@ index 190e3d499d92..dcfdbe27c9ff 100644
  };
 -- 
 2.43.0
-
