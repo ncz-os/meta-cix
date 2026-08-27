@@ -1146,3 +1146,23 @@ CONFIG_ZRAM_DEF_COMP_ZSTD=y
 CONFIG_ANDROID_BINDER_IPC=y
 CONFIG_ANDROID_BINDERFS=y
 CONFIG_ANDROID_BINDER_DEVICES="binder,hwbinder,vndbinder"
+
+# NFS client support -- added 2026-08-27: CONFIG_NFS_FS was entirely absent,
+# blocking every fleet build host on this kernel from mounting the ARGONAS
+# NFS shares (DL_DIR/SSTATE_DIR, git, projects). Confirmed missing on both
+# O6N and .66 (identical r256 build). module, not built-in, matching how
+# SQUASHFS/DM are already configured in this defconfig.
+CONFIG_NFS_FS=m
+CONFIG_NFS_V2=y
+CONFIG_NFS_V3=y
+CONFIG_NFS_V4=y
+CONFIG_NFS_V4_1=y
+CONFIG_NFS_V4_2=y
+CONFIG_ROOT_NFS=y
+CONFIG_NFS_COMMON=y
+CONFIG_SUNRPC=y
+
+# vhost-net -- opportunistic add in the same rebuild: .66 is a KVM host,
+# without this QEMU networking falls back to slower userspace virtio-net.
+CONFIG_VHOST_NET=y
+CONFIG_VHOST=m
