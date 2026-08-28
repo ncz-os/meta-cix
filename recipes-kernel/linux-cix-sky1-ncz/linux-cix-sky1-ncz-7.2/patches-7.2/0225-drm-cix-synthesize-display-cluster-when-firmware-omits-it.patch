@@ -1,0 +1,481 @@
+From: Jason Perlow <jperlow@gmail.com>
+Subject: [PATCH] drm/cix: synthesize the display cluster when firmware omits CIXH50C0
+
+Minisforum MS-R1 firmware does not declare the CIXH50C0 display-cluster
+ACPI device that Radxa O6N declares. Measured on both boards running the
+identical 7.2.0-sky1-ncz kernel:
+
+  O6N   /sys/bus/platform/devices/CIXH50C0:00 present
+        -> linlondp-cluster binds, aggregates the DPUs
+        -> ONE DRM card (card0), all display ports on it
+  MS-R1 no CIXH50C0 device at all (CIXH5010:00..04 and CIXH502F:00..04
+        do exist)
+        -> every DPU falls through to the standalone path
+        -> FOUR DRM cards (card0..card3), two CRTCs each
+
+linlondp_acpi_is_cluster_dpu_slave() only treats a DPU as a cluster slave
+when its ACPI *parent* is CIXH50C0, and the cluster driver only probes on
+a CIXH50C0 device, so a board whose firmware omits that node has no path
+to a unified card.
+
+Four user-visible failures on MS-R1 trace to this single gap:
+
+  1. Moving a cable to a port owned by another card gives no signal --
+     the compositor only ever opened one DRM device, and no hotplug path
+     can recover a device it never opened.
+  2. Chromium accelerated video is dead. Captured live during playback:
+     the Chromium GPU process holds /dev/dri/renderD128 (card0, nothing
+     connected) while the compositor holds /dev/dri/renderD130 (card2,
+     the connected display). Buffers allocated on one DRM device cannot
+     be scanned out by a compositor on another, so it fails at buffer
+     allocation -- it never even opens a /dev/video* node, and the V4L2
+     decoder stack is byte-identical between the two boards.
+  3. Multi-monitor is unusable for the same reason.
+  4. HDMI audio is fragmented: the four hdmi-audio-codec instances hang
+     off the same four split DPTX pipelines.
+
+Synthesize the cluster when firmware does not declare one. At module
+init, if no CIXH50C0 device exists and two or more CIXH5010 devices do,
+build a claim list and register a synthetic platform device carrying the
+discovered ACPI paths, so the cluster driver reuses its existing
+cix,dpu-acpi-paths collection path unchanged.
+
+Boards whose firmware DOES declare CIXH50C0 are untouched: acpi_dev_found()
+is the first check and returns early, so the O6N path is preserved
+bit-for-bit. DT boards are unaffected. Single-DPU boards keep the
+standalone path (the >=2 guard).
+
+Signed-off-by: Jason Perlow <jperlow@gmail.com>
+---
+diff --git a/drivers/gpu/drm/cix/linlon-dp/linlondp_cluster.c b/drivers/gpu/drm/cix/linlon-dp/linlondp_cluster.c
+index dcc338c29b62..a5f98812fec2 100644
+--- a/drivers/gpu/drm/cix/linlon-dp/linlondp_cluster.c
++++ b/drivers/gpu/drm/cix/linlon-dp/linlondp_cluster.c
+@@ -499,6 +499,109 @@ static int linlondp_cluster_probe_of(struct platform_device *pdev)
+ 					       match);
+ }
+ 
++/*
++ * The cix,dpu-acpi-paths collection above is independent of the device
++ * being a real ACPI device; it only reads the property out of
++ * dev->fwnode. The synthetic cluster device has no ACPI_COMPANION() —
++ * its fwnode is the software_node registered by the linlondp driver —
++ * so it bypasses linlondp_cluster_probe_acpi() and goes through this
++ * trimmed path instead.
++ */
++static int linlondp_cluster_probe_synthetic(struct platform_device *pdev)
++{
++	struct device *dev = &pdev->dev;
++	struct linlondp_cluster *cl;
++	struct component_match *match = NULL;
++	const char *buf;
++	char *kbuf, *p, *token;
++	bool have_unprobed = false;
++	int n, err;
++
++	/*
++	 * The existing linlondp_cluster_collect_dpus_acpi_paths() helper
++	 * warns and skips a DPU whose drvdata is NULL (i.e. the DPU's
++	 * slave probe has not run yet). Silently skipping yields a cluster
++	 * with fewer DPUs than the firmware actually exposes, plus a
++	 * stand-alone card for the missed DPU. Walk the paths first and
++	 * request -EPROBE_DEFER if any DPU is not yet bound, so the
++	 * platform core re-tries us after the DPU probes land.
++	 */
++	if (device_property_read_string(dev, "cix,dpu-acpi-paths", &buf))
++		return dev_err_probe(dev, -EINVAL,
++				     "synthetic cluster: no cix,dpu-acpi-paths\n");
++
++	kbuf = kstrdup(buf, GFP_KERNEL);
++	if (!kbuf)
++		return -ENOMEM;
++
++	p = kbuf;
++	while ((token = strsep(&p, ","))) {
++		const char *path = token;
++		acpi_handle h;
++		struct acpi_device *adev;
++		struct device *phys;
++
++		while (*token == ' ' || *token == '\t')
++			token++;
++		if (!*token)
++			continue;
++
++		if (ACPI_FAILURE(acpi_get_handle(ACPI_ROOT_OBJECT, token, &h)))
++			continue;
++
++		adev = acpi_fetch_acpi_dev(h);
++		if (!adev)
++			continue;
++
++		phys = acpi_get_first_physical_node(adev);
++		if (!phys || !dev_is_platform(phys)) {
++			if (phys)
++				put_device(phys);
++			continue;
++		}
++
++		if (!platform_get_drvdata(to_platform_device(phys))) {
++			dev_dbg(dev,
++				"synthetic cluster: DPU %s not yet probed, deferring\n",
++				path);
++			have_unprobed = true;
++		}
++		put_device(phys);
++
++		if (have_unprobed)
++			break;
++	}
++	kfree(kbuf);
++
++	if (have_unprobed)
++		return -EPROBE_DEFER;
++
++	cl = devm_kzalloc(dev, sizeof(*cl), GFP_KERNEL);
++	if (!cl)
++		return -ENOMEM;
++
++	n = linlondp_cluster_collect_dpus_acpi_paths(dev, cl, &match);
++	if (n <= 0)
++		return dev_err_probe(dev, n == -ENOENT ? -EINVAL : n,
++				     "synthetic cluster: no DPUs from cix,dpu-acpi-paths\n");
++
++	cl->n_mdevs = n;
++	dev_set_drvdata(dev, cl);
++
++	dev_info(dev,
++		 "linlon-cluster: synthetic cluster registered %u DPU(s)\n",
++		 cl->n_mdevs);
++
++	/* Match the ACPI probe: keep direct_complete off. */
++	dev_pm_set_driver_flags(&pdev->dev, DPM_FLAG_NO_DIRECT_COMPLETE);
++
++	err = component_master_add_with_match(dev, &linlondp_cluster_master_ops,
++					      match);
++	if (err)
++		dev_set_drvdata(dev, NULL);
++	return err;
++}
++
+ static int linlondp_cluster_probe(struct platform_device *pdev)
+ {
+ #if IS_ENABLED(CONFIG_ACPI)
+@@ -507,6 +610,9 @@ static int linlondp_cluster_probe(struct platform_device *pdev)
+ 	aid = acpi_match_device(linlondp_cluster_acpi_match, &pdev->dev);
+ 	if (aid)
+ 		return linlondp_cluster_probe_acpi(pdev);
++
++	if (device_property_present(&pdev->dev, "cix,linlon-synthetic-cluster"))
++		return linlondp_cluster_probe_synthetic(pdev);
+ #endif
+ 	if (pdev->dev.of_node)
+ 		return linlondp_cluster_probe_of(pdev);
+diff --git a/drivers/gpu/drm/cix/linlon-dp/linlondp_drv.c b/drivers/gpu/drm/cix/linlon-dp/linlondp_drv.c
+index 72884d17c995..d0b7cd1d8718 100644
+--- a/drivers/gpu/drm/cix/linlon-dp/linlondp_drv.c
++++ b/drivers/gpu/drm/cix/linlon-dp/linlondp_drv.c
+@@ -7,10 +7,21 @@
+ #include <linux/module.h>
+ #include <linux/kernel.h>
+ #include <linux/acpi.h>
++/*
++ * ACPI namespace paths for these DPUs are short (\_SB.DPU0 form: four-char
++ * name segments separated by dots). Using PATH_MAX (4096) here would place a
++ * ~20 KB scan context on a 16 KB arm64 kernel stack -- ten times over this
++ * tree's CONFIG_FRAME_WARN (2048), and a VMAP_STACK guard-page panic waiting
++ * to happen. 128 bytes is far beyond any real Sky1 DPU path depth.
++ */
++#define LINLONDP_ACPI_PATH_MAX 128
+ #include <linux/platform_device.h>
++#include <linux/property.h>
+ #include <linux/component.h>
+ #include <linux/pm_runtime.h>
+ #include <linux/aperture.h>
++#include <linux/slab.h>
++#include <linux/string.h>
+ #include <drm/drm_fb_helper.h>
+ #include <drm/drm_module.h>
+ #include <drm/drm_of.h>
+@@ -23,6 +34,22 @@
+ #if IS_ENABLED(CONFIG_ACPI)
+ #include <acpi/acpi_bus.h>
+ 
++/*
++ * Module-scope claim list used by linlondp_acpi_is_cluster_dpu_slave() and
++ * populated by linlondp_create_synthetic_cluster(). When firmware does not
++ * declare a CIXH50C0 cluster but exposes multiple CIXH5010 DPUs, every DPU on
++ * this list is forced onto the slave path so the synthesized cluster is the
++ * only master and only one DRM card is registered.
++ *
++ * The list is bounded by LINLONDP_MAX_CLUSTER_DPUS (linlondp_pipeline.h) and
++ * never grows at runtime; once published in linlondp_mod_init() it is
++ * read-only until the module exits. Defined further down in this file; the
++ * forward references here are deliberate so the slave check (above) can use
++ * it.
++ */
++extern acpi_handle linlondp_synthetic_dpu_handles[LINLONDP_MAX_CLUSTER_DPUS];
++extern unsigned int linlondp_synthetic_dpu_count;
++
+ /*
+  * ACPI cluster (CIXH50C0): each DPU (CIXH5010) must not register its own DRM
+  * card — same as DT "cix,linlon-dpu-slave". Firmware may set _DSD
+@@ -32,10 +59,29 @@
+ static bool linlondp_acpi_is_cluster_dpu_slave(struct device *dev)
+ {
+ 	struct acpi_device *adev, *parent;
++	acpi_handle h;
++	unsigned int i;
+ 
+ 	if (!has_acpi_companion(dev))
+ 		return false;
+ 	adev = ACPI_COMPANION(dev);
++
++	/*
++	 * Claimed-by-synthetic-cluster list: when firmware does not
++	 * declare a CIXH50C0 parent but the module init path has elected
++	 * to synthesize one, every CIXH5010 on the claim list must take
++	 * the slave path so the cluster is the only master. The list is
++	 * populated before the linlondp platform driver can bind any
++	 * CIXH5010 (see linlondp_create_synthetic_cluster), so this
++	 * check is the first line of defence against a stand-alone DRM
++	 * card.
++	 */
++	h = adev->handle;
++	for (i = 0; i < linlondp_synthetic_dpu_count; i++) {
++		if (linlondp_synthetic_dpu_handles[i] == h)
++			return true;
++	}
++
+ 	parent = acpi_dev_parent(adev);
+ 	return parent && acpi_dev_hid_uid_match(parent, "CIXH50C0", NULL);
+ }
+@@ -515,26 +561,227 @@ static struct platform_driver linlondp_platform_driver = {
+ 
+ extern struct platform_driver linlondp_cluster_driver;
+ 
++#if IS_ENABLED(CONFIG_ACPI)
++/*
++ * Synthetic cluster support.
++ *
++ * Some CIX Sky1 boards (e.g. Minisforum MS-R1) expose several CIXH5010
++ * DPU devices in the ACPI namespace but no parent CIXH50C0 cluster
++ * device. Without a cluster every DPU becomes its own master and
++ * creates a separate DRM card; the Wayland compositor only opens one
++ * card, so ports owned by the other cards never light up.
++ *
++ * Three-phase init in linlondp_mod_init():
++ *   1. linlondp_create_synthetic_cluster()  – scan the namespace, build
++ *      the claim list and the ACPI-paths string. No platform device
++ *      yet. Must run BEFORE drm_platform_driver_register() so the
++ *      claim list is visible when the platform bus matches each
++ *      CIXH5010 against the linlondp platform driver and calls
++ *      linlondp_acpi_is_cluster_dpu_slave().
++ *   2. drm_platform_driver_register(... both drivers ...)
++ *   3. linlondp_publish_synthetic_cluster() – register the synthetic
++ *      platform device so the cluster driver binds it. The probe
++ *      returns -EPROBE_DEFER until every claimed DPU has finished its
++ *      slave probe.
++ *
++ * If firmware already declared CIXH50C0 the scan is a no-op and the
++ * existing firmware path is preserved bit-for-bit (Radxa O6N behaviour).
++ */
++#define LINLONDP_SYNTHETIC_CLUSTER_NAME "linlondp-cluster"
++#define LINLONDP_SYNTHETIC_CLUSTER_MARKER "cix,linlon-synthetic-cluster"
++
++acpi_handle linlondp_synthetic_dpu_handles[LINLONDP_MAX_CLUSTER_DPUS];
++unsigned int linlondp_synthetic_dpu_count;
++static struct platform_device *linlondp_synthetic_pdev;
++static char *linlondp_synthetic_paths_str;
++
++struct linlondp_synthetic_scan_ctx {
++	acpi_handle handles[LINLONDP_MAX_CLUSTER_DPUS];
++	char paths[LINLONDP_MAX_CLUSTER_DPUS][LINLONDP_ACPI_PATH_MAX];
++	unsigned int count;
++};
++
++static int linlondp_synthetic_collect_cb(struct device *dev, void *data)
++{
++	struct linlondp_synthetic_scan_ctx *ctx = data;
++	struct acpi_device *adev;
++	struct acpi_buffer buf = {
++		.length = LINLONDP_ACPI_PATH_MAX,
++		.pointer = ctx->paths[ctx->count],
++	};
++
++	if (!dev)
++		return 0;
++	adev = to_acpi_device(dev);
++	if (!adev)
++		return 0;
++	if (!acpi_dev_hid_uid_match(adev, "CIXH5010", NULL))
++		return 0;
++	if (ctx->count >= LINLONDP_MAX_CLUSTER_DPUS)
++		return 0;
++	if (!acpi_get_name(adev->handle, ACPI_FULL_PATHNAME, &buf))
++		ctx->handles[ctx->count++] = adev->handle;
++	return 0;
++}
++
++/*
++ * Phase 1: scan the ACPI namespace, populate the claim list, and stash
++ * the comma-separated ACPI paths string. Does NOT register a platform
++ * device — that is phase 3, after both platform drivers are registered.
++ *
++ * Idempotent: a second call after a successful run is a no-op so the
++ * cleanup path can call this without re-doing work.
++ */
++static void linlondp_create_synthetic_cluster(void)
++{
++	struct linlondp_synthetic_scan_ctx ctx = { .count = 0 };
++	size_t len = 0, off = 0;
++	unsigned int i;
++	int err;
++
++	if (linlondp_synthetic_paths_str)
++		return;
++
++	/*
++	 * Firmware-declared cluster wins. Do not synthesize alongside an
++	 * existing CIXH50C0 — the O6N must keep its single-card behaviour.
++	 */
++	if (acpi_dev_found("CIXH50C0"))
++		return;
++
++	err = acpi_bus_for_each_dev(linlondp_synthetic_collect_cb, &ctx);
++	if (err)
++		pr_warn("linlondp: ACPI scan for CIXH5010 failed: %d\n", err);
++
++	/*
++	 * Single-DPU boards keep the standalone path: nothing to do.
++	 * Without this guard a future single-DPU SKU would still get a
++	 * one-member cluster, which the cluster code tolerates but
++	 * standalone would not.
++	 */
++	if (ctx.count < 2) {
++		pr_info("linlondp: %u CIXH5010 device(s) and no CIXH50C0; leaving DPUs standalone\n",
++			ctx.count);
++		return;
++	}
++
++	/* Join ACPI paths with ',' separators for cix,dpu-acpi-paths. */
++	for (i = 0; i < ctx.count; i++)
++		len += strlen(ctx.paths[i]);
++	len += ctx.count; /* commas + NUL */
++	linlondp_synthetic_paths_str = kzalloc(len, GFP_KERNEL);
++	if (!linlondp_synthetic_paths_str)
++		return;
++	for (i = 0; i < ctx.count; i++) {
++		off += scnprintf(linlondp_synthetic_paths_str + off,
++				 len - off, "%s%s", i ? "," : "", ctx.paths[i]);
++	}
++
++	/*
++	 * Publish the claim list now. The platform drivers have not been
++	 * registered yet, so no DPU can have probed; once they are, each
++	 * DPU's slave check will see this list and route through the
++	 * cluster.
++	 */
++	linlondp_synthetic_dpu_count = ctx.count;
++	for (i = 0; i < ctx.count; i++)
++		linlondp_synthetic_dpu_handles[i] = ctx.handles[i];
++
++	pr_info("linlondp: synthesized cluster plan for %u CIXH5010 device(s) (no firmware CIXH50C0)\n",
++		ctx.count);
++}
++
++/*
++ * Phase 3: register the synthetic platform device. Must be called AFTER
++ * both drm_platform_driver_register() calls succeed. The device's
++ * software_node deep-copies the ACPI-paths string, so
++ * linlondp_synthetic_paths_str can be released by
++ * linlondp_destroy_synthetic_cluster() once the device is live.
++ */
++static void linlondp_publish_synthetic_cluster(void)
++{
++	struct property_entry props[3];
++
++	if (!linlondp_synthetic_paths_str || linlondp_synthetic_pdev)
++		return;
++
++	memset(props, 0, sizeof(props));
++	props[0] = PROPERTY_ENTRY_BOOL(LINLONDP_SYNTHETIC_CLUSTER_MARKER);
++	props[1] = PROPERTY_ENTRY_STRING("cix,dpu-acpi-paths",
++					 linlondp_synthetic_paths_str);
++	linlondp_synthetic_pdev = platform_device_register_full(
++		&(struct platform_device_info){
++			.name = LINLONDP_SYNTHETIC_CLUSTER_NAME,
++			.id = PLATFORM_DEVID_AUTO,
++			.properties = props,
++		});
++	if (IS_ERR(linlondp_synthetic_pdev)) {
++		pr_warn("linlondp: failed to publish synthetic cluster (%ld)\n",
++			PTR_ERR(linlondp_synthetic_pdev));
++		linlondp_synthetic_pdev = NULL;
++	}
++}
++
++static void linlondp_destroy_synthetic_cluster(void)
++{
++	if (linlondp_synthetic_pdev) {
++		platform_device_unregister(linlondp_synthetic_pdev);
++		linlondp_synthetic_pdev = NULL;
++	}
++	linlondp_synthetic_dpu_count = 0;
++	memset(linlondp_synthetic_dpu_handles, 0,
++	       sizeof(linlondp_synthetic_dpu_handles));
++	kfree(linlondp_synthetic_paths_str);
++	linlondp_synthetic_paths_str = NULL;
++}
++#else
++static inline void linlondp_create_synthetic_cluster(void) { }
++static inline void linlondp_publish_synthetic_cluster(void) { }
++static inline void linlondp_destroy_synthetic_cluster(void) { }
++#endif /* CONFIG_ACPI */
++
+ static int __init linlondp_mod_init(void)
+ {
+ 	int err;
+ 
++	/*
++	 * Scan the ACPI namespace for CIXH5010 DPU devices before the
++	 * linlondp platform driver is registered. When the driver
++	 * registers, the platform bus calls really_probe() on every
++	 * CIXH5010, which calls linlondp_acpi_is_cluster_dpu_slave() —
++	 * the claim list must already be populated so each DPU is
++	 * routed to the slave path and not to a stand-alone master.
++	 */
++	linlondp_create_synthetic_cluster();
++
+ 	err = drm_platform_driver_register(&linlondp_platform_driver);
+-	if (err)
++	if (err) {
++		linlondp_destroy_synthetic_cluster();
+ 		return err;
++	}
+ 	err = drm_platform_driver_register(&linlondp_cluster_driver);
+ 	if (err)
+ 		goto err_cluster;
+ 
++	/*
++	 * Now both drivers are registered; publish the synthetic
++	 * platform device so the cluster driver binds it. Probe will
++	 * defer (-EPROBE_DEFER) until every claimed DPU has finished its
++	 * slave probe.
++	 */
++	linlondp_publish_synthetic_cluster();
++
+ 	return 0;
+ 
+ err_cluster:
++	linlondp_destroy_synthetic_cluster();
+ 	platform_driver_unregister(&linlondp_platform_driver);
+ 	return err;
+ }
+ 
+ static void __exit linlondp_mod_exit(void)
+ {
++	linlondp_destroy_synthetic_cluster();
+ 	platform_driver_unregister(&linlondp_cluster_driver);
+ 	platform_driver_unregister(&linlondp_platform_driver);
+ }
