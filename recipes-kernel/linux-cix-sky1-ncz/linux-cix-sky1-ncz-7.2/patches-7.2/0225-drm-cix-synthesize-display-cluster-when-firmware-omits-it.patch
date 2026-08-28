@@ -40,18 +40,102 @@ build a claim list and register a synthetic platform device carrying the
 discovered ACPI paths, so the cluster driver reuses its existing
 cix,dpu-acpi-paths collection path unchanged.
 
+EXCLUDE PIPELINES WHOSE TRANSMITTER CANNOT BIND. A first version of this
+patch claimed every CIXH5010 unconditionally and blanked the display
+completely on MS-R1 -- zero DRM cards where the unpatched kernel had
+four. Root cause, measured on that board:
+
+  /sys/kernel/debug/devices_deferred
+    CIXH502F:02   platform: supplier CIXH5040:00 not ready
+    CIXH5040:00   platform: supplier CIXH5041:00 not ready
+
+CIXH5040 is the eDP panel (drivers/gpu/drm/cix/dptx/cix_edp_panel.c) and
+CONFIG_DRM_CIX_EDP_PANEL is not set: pipeline 02 is the internal-panel
+output on a mini PC that has no internal panel, so its transmitter can
+never bind. linlondp_dpu_add_graph_slaves() adds each pipeline's REMOTE
+node -- the transmitter -- to the cluster master's component match, so a
+single unbindable transmitter makes component_master_add_with_match()
+never complete and drm_dev_register() never run for ANY DPU.
+
+ACPI status does not discriminate: all five CIXH502F on MS-R1 report
+_STA 0xB, including the dead one. Only actual driver binding does, so
+linlondp_add_acpi_slave() gains a skip_unbound flag that drops a remote
+failing device_is_bound(), and the synthetic probe waits on
+driver_deferred_probe_check_state() before making that judgement -- but
+only when at least one transmitter is still unbound, so a healthy board
+takes a fast path with no added delay. If fewer than two DPUs survive
+the filter no cluster is registered at all and the board keeps the
+standalone path, because a board must never end up with zero cards.
+
 Boards whose firmware DOES declare CIXH50C0 are untouched: acpi_dev_found()
 is the first check and returns early, so the O6N path is preserved
-bit-for-bit. DT boards are unaffected. Single-DPU boards keep the
-standalone path (the >=2 guard).
+bit-for-bit, and every skip_unbound=false call site behaves as before.
+DT boards are unaffected. Single-DPU boards keep the standalone path (the
+>=2 guard).
 
 Signed-off-by: Jason Perlow <jperlow@gmail.com>
 ---
 diff --git a/drivers/gpu/drm/cix/linlon-dp/linlondp_cluster.c b/drivers/gpu/drm/cix/linlon-dp/linlondp_cluster.c
-index dcc338c29b62..a5f98812fec2 100644
+index dcc338c29b62..f310affbdc63 100644
 --- a/drivers/gpu/drm/cix/linlon-dp/linlondp_cluster.c
 +++ b/drivers/gpu/drm/cix/linlon-dp/linlondp_cluster.c
-@@ -499,6 +499,109 @@ static int linlondp_cluster_probe_of(struct platform_device *pdev)
+@@ -35,6 +35,7 @@
+ #if IS_ENABLED(CONFIG_ACPI)
+ #include <linux/pm.h>
+ #endif
++#include <linux/property.h>
+ #include <linux/slab.h>
+ #include <linux/string.h>
+ #include <linux/acpi.h>
+@@ -256,7 +257,8 @@ static int linlondp_cluster_acpi_child_cb(struct acpi_device *child, void *data)
+ 	put_device(phys);
+ 
+ 	ctx->cl->mdevs[ctx->idx] = mdev;
+-	err = linlondp_dpu_add_graph_slaves(ctx->cluster_dev, ctx->match, mdev->dev);
++	err = linlondp_dpu_add_graph_slaves(ctx->cluster_dev, ctx->match,
++					    mdev->dev, false);
+ 	if (err) {
+ 		dev_warn(ctx->cluster_dev,
+ 			 "ACPI cluster: skip child %s, add_graph_slaves failed: %d\n",
+@@ -270,7 +272,8 @@ static int linlondp_cluster_acpi_child_cb(struct acpi_device *child, void *data)
+ /* Returns DPU count, -ENOENT if property absent, else error. */
+ static int linlondp_cluster_collect_dpus_acpi_paths(struct device *dev,
+ 						    struct linlondp_cluster *cl,
+-						    struct component_match **match)
++						    struct component_match **match,
++						    bool skip_unbound)
+ {
+ 	const char *buf;
+ 	char *kbuf, *p, *token;
+@@ -343,7 +346,8 @@ static int linlondp_cluster_collect_dpus_acpi_paths(struct device *dev,
+ 		}
+ 		put_device(phys);
+ 
+-		err = linlondp_dpu_add_graph_slaves(dev, match, cl->mdevs[n]->dev);
++		err = linlondp_dpu_add_graph_slaves(dev, match, cl->mdevs[n]->dev,
++						    skip_unbound);
+ 		if (err) {
+ 			dev_warn(dev,
+ 				 "linlon-cluster: skip ACPI path \"%s\", add_graph_slaves failed: %d\n",
+@@ -401,7 +405,7 @@ static int linlondp_cluster_probe_acpi(struct platform_device *pdev)
+ 		 "linlon-cluster: ACPI cluster HID %s (%s) — match CIXH50C0 / cix,dpu-acpi-paths or child CIXH5010\n",
+ 		 hid ? hid : "?", dev_name(dev));
+ 
+-	n = linlondp_cluster_collect_dpus_acpi_paths(dev, cl, &match);
++	n = linlondp_cluster_collect_dpus_acpi_paths(dev, cl, &match, false);
+ 	if (n == -ENOENT)
+ 		n = linlondp_cluster_collect_dpus_acpi_children(cluster_adev, dev,
+ 								cl, &match);
+@@ -479,7 +483,7 @@ static int linlondp_cluster_probe_of(struct platform_device *pdev)
+ 		dev_info(dev, "dpu %d ready: %s\n", i, dev_name(mdev->dev));
+ 
+ 		cl->mdevs[used] = mdev;
+-		err = linlondp_dpu_add_graph_slaves(dev, &match, mdev->dev);
++		err = linlondp_dpu_add_graph_slaves(dev, &match, mdev->dev, false);
+ 		if (err)
+ 			return err;
+ 		used++;
+@@ -499,6 +503,208 @@ static int linlondp_cluster_probe_of(struct platform_device *pdev)
  					       match);
  }
  
@@ -62,6 +146,21 @@ index dcc338c29b62..a5f98812fec2 100644
 + * its fwnode is the software_node registered by the linlondp driver —
 + * so it bypasses linlondp_cluster_probe_acpi() and goes through this
 + * trimmed path instead.
++ *
++ * On the MS-R1 the synthetic path needs to defend against one unbindable
++ * transmitter (CIXH502F:02 -> CIXH5040 eDP panel) which CONFIG_DRM_CIX_EDP_PANEL
++ * never binds. component_master_add_with_match() never completes if any
++ * match entry is unbindable, so without the filter the board boots with
++ * zero DRM cards. The check walks each DPU's pipelines@N children,
++ * resolves each output remote and tests device_is_bound() under the
++ * device lock.
++ *
++ * Fast path: if every transmitter is already bound when we run (the
++ * healthy case on every normal board) we proceed with no deferral and
++ * no measurable delay. Only boards that genuinely have a permanently
++ * dead pipeline incur the deferred-probe wait (capped by
++ * CONFIG_DRIVER_DEFERRED_PROBE_TIMEOUT, 10s here) before the cluster
++ * builds without the bad pipeline.
 + */
 +static int linlondp_cluster_probe_synthetic(struct platform_device *pdev)
 +{
@@ -70,18 +169,10 @@ index dcc338c29b62..a5f98812fec2 100644
 +	struct component_match *match = NULL;
 +	const char *buf;
 +	char *kbuf, *p, *token;
-+	bool have_unprobed = false;
++	bool any_unbound = false;
++	bool any_bound = false;
 +	int n, err;
 +
-+	/*
-+	 * The existing linlondp_cluster_collect_dpus_acpi_paths() helper
-+	 * warns and skips a DPU whose drvdata is NULL (i.e. the DPU's
-+	 * slave probe has not run yet). Silently skipping yields a cluster
-+	 * with fewer DPUs than the firmware actually exposes, plus a
-+	 * stand-alone card for the missed DPU. Walk the paths first and
-+	 * request -EPROBE_DEFER if any DPU is not yet bound, so the
-+	 * platform core re-tries us after the DPU probes land.
-+	 */
 +	if (device_property_read_string(dev, "cix,dpu-acpi-paths", &buf))
 +		return dev_err_probe(dev, -EINVAL,
 +				     "synthetic cluster: no cix,dpu-acpi-paths\n");
@@ -90,12 +181,29 @@ index dcc338c29b62..a5f98812fec2 100644
 +	if (!kbuf)
 +		return -ENOMEM;
 +
++	/*
++	 * Pass 1: walk the DPUs along cix,dpu-acpi-paths. For each DPU,
++	 * walk its pipeline@N children (exactly the structure the slave
++	 * helper invokes fwnode_for_each_child_node on) and resolve both
++	 * remote endpoints with the same fwnode_graph_get_remote_node()
++	 * call the slave helper uses. Any remote whose backing struct
++	 * device is absent OR fails device_is_bound() marks
++	 * any_unbound = true.
++	 *
++	 * device_is_bound() requires the device lock per its contract;
++	 * the lock is taken just for the read so we never hold it across
++	 * the fwnode resolution. The fwnode reference is balanced by the
++	 * matching put: we keep a get while we look at ->dev, then drop
++	 * it before moving on. Every iteration drops the references it
++	 * accumulated.
++	 */
 +	p = kbuf;
 +	while ((token = strsep(&p, ","))) {
-+		const char *path = token;
 +		acpi_handle h;
 +		struct acpi_device *adev;
 +		struct device *phys;
++		struct fwnode_handle *dpu_fwnode;
++		struct fwnode_handle *child;
 +
 +		while (*token == ' ' || *token == '\t')
 +			token++;
@@ -115,38 +223,113 @@ index dcc338c29b62..a5f98812fec2 100644
 +				put_device(phys);
 +			continue;
 +		}
-+
-+		if (!platform_get_drvdata(to_platform_device(phys))) {
-+			dev_dbg(dev,
-+				"synthetic cluster: DPU %s not yet probed, deferring\n",
-+				path);
-+			have_unprobed = true;
-+		}
 +		put_device(phys);
 +
-+		if (have_unprobed)
-+			break;
++		dpu_fwnode = dev_fwnode(phys);
++		if (!dpu_fwnode)
++			continue;
++
++		fwnode_for_each_child_node(dpu_fwnode, child) {
++			const char *tmp_name;
++			struct fwnode_handle *remote;
++			struct device *rdev;
++			bool bound;
++			int ep;
++
++			tmp_name = child->ops->get_name(child);
++			if (!tmp_name || strncmp(tmp_name, "pipeline", 8))
++				continue;
++
++			/*
++			 * Two outputs per pipeline, identical to the
++			 * slave helper's call pattern.
++			 */
++			for (ep = 0; ep < 2; ep++) {
++				remote = fwnode_graph_get_remote_node(child,
++							 LINLONDP_OF_PORT_OUTPUT,
++							 ep);
++				if (!remote)
++					continue;
++				rdev = remote->dev;
++				if (!rdev) {
++					fwnode_handle_put(remote);
++					any_unbound = true;
++					continue;
++				}
++				device_lock(rdev);
++				bound = device_is_bound(rdev);
++				device_unlock(rdev);
++				if (!bound) {
++					dev_info(dev,
++						 "linlondp: transmitter %s not bound yet (deferred)\n",
++						 dev_name(rdev));
++					any_unbound = true;
++				} else {
++					any_bound = true;
++				}
++				fwnode_handle_put(remote);
++			}
++		}
 +	}
 +	kfree(kbuf);
 +
-+	if (have_unprobed)
-+		return -EPROBE_DEFER;
++	/*
++	 * Fast path: every transmitter is already bound. Drop straight
++	 * through to building the cluster. No deferral, no measurable
++	 * delay before DRM appears. This is the path every healthy board
++	 * takes (MS-R1 once we drop CIXH5040:00/CIXH502F:02 from the
++	 * match list, O6N untouched, etc).
++	 */
++	if (any_unbound) {
++		err = driver_deferred_probe_check_state(dev);
++		if (err == -EPROBE_DEFER)
++			return -EPROBE_DEFER;
++		/*
++		 * -ENODEV / -ETIMEDOUT: deferred probe has finished and
++		 * the missing supplier will never appear. Fall through and
++		 * build the cluster WITHOUT the bad pipeline; the collect
++		 * helper below uses skip_unbound=true so the unbound
++		 * transmitter is omitted from the match list.
++		 */
++		dev_info(dev,
++			 "linlondp: deferred probe expired (%d), building cluster without unbound transmitters\n",
++			 err);
++	}
 +
 +	cl = devm_kzalloc(dev, sizeof(*cl), GFP_KERNEL);
 +	if (!cl)
 +		return -ENOMEM;
 +
-+	n = linlondp_cluster_collect_dpus_acpi_paths(dev, cl, &match);
-+	if (n <= 0)
++	n = linlondp_cluster_collect_dpus_acpi_paths(dev, cl, &match, true);
++	if (n < 0)
 +		return dev_err_probe(dev, n == -ENOENT ? -EINVAL : n,
 +				     "synthetic cluster: no DPUs from cix,dpu-acpi-paths\n");
++
++	/*
++	 * If fewer than two DPUs survive the filter the cluster is not
++	 * worth standing up — return -ENODEV so each DPU keeps the
++	 * stand-alone path. "Never zero cards" means a board whose only
++	 * bad pipeline is one of the synthetic-cluster DPUs still gets
++	 * its standalone card for the survivors.
++	 */
++	if (n < 2) {
++		dev_info(dev,
++			 "linlondp: synthetic cluster degenerated to %u DPU(s); staying standalone\n",
++			 n);
++		return -ENODEV;
++	}
++
++	if (any_unbound)
++		dev_info(dev,
++			 "linlondp: synthetic cluster built with %u DPU(s) after excluding unbound transmitters\n",
++			 n);
 +
 +	cl->n_mdevs = n;
 +	dev_set_drvdata(dev, cl);
 +
 +	dev_info(dev,
-+		 "linlon-cluster: synthetic cluster registered %u DPU(s)\n",
-+		 cl->n_mdevs);
++		 "linlon-cluster: synthetic cluster registered %u DPU(s) (fast=%s)\n",
++		 cl->n_mdevs, any_bound && !any_unbound ? "yes" : "no");
 +
 +	/* Match the ACPI probe: keep direct_complete off. */
 +	dev_pm_set_driver_flags(&pdev->dev, DPM_FLAG_NO_DIRECT_COMPLETE);
@@ -161,7 +344,7 @@ index dcc338c29b62..a5f98812fec2 100644
  static int linlondp_cluster_probe(struct platform_device *pdev)
  {
  #if IS_ENABLED(CONFIG_ACPI)
-@@ -507,6 +610,9 @@ static int linlondp_cluster_probe(struct platform_device *pdev)
+@@ -507,6 +713,9 @@ static int linlondp_cluster_probe(struct platform_device *pdev)
  	aid = acpi_match_device(linlondp_cluster_acpi_match, &pdev->dev);
  	if (aid)
  		return linlondp_cluster_probe_acpi(pdev);
@@ -171,8 +354,21 @@ index dcc338c29b62..a5f98812fec2 100644
  #endif
  	if (pdev->dev.of_node)
  		return linlondp_cluster_probe_of(pdev);
+diff --git a/drivers/gpu/drm/cix/linlon-dp/linlondp_dev.h b/drivers/gpu/drm/cix/linlon-dp/linlondp_dev.h
+index 445428c0183a..e2e9633a44a2 100644
+--- a/drivers/gpu/drm/cix/linlon-dp/linlondp_dev.h
++++ b/drivers/gpu/drm/cix/linlon-dp/linlondp_dev.h
+@@ -296,7 +296,7 @@ void linlondp_print_events(struct linlondp_events *evts, struct drm_device *dev,
+ struct component_match;
+ int linlondp_dpu_add_graph_slaves(struct device *master,
+ 				  struct component_match **match,
+-				  struct device *dpu_dev);
++				  struct device *dpu_dev, bool skip_unbound);
+ 
+ int linlondp_dev_resume(struct linlondp_dev *mdev);
+ int linlondp_dev_suspend(struct linlondp_dev *mdev);
 diff --git a/drivers/gpu/drm/cix/linlon-dp/linlondp_drv.c b/drivers/gpu/drm/cix/linlon-dp/linlondp_drv.c
-index 72884d17c995..d0b7cd1d8718 100644
+index 72884d17c995..3b8fe4c27f76 100644
 --- a/drivers/gpu/drm/cix/linlon-dp/linlondp_drv.c
 +++ b/drivers/gpu/drm/cix/linlon-dp/linlondp_drv.c
 @@ -7,10 +7,21 @@
@@ -250,7 +446,113 @@ index 72884d17c995..d0b7cd1d8718 100644
  	parent = acpi_dev_parent(adev);
  	return parent && acpi_dev_hid_uid_match(parent, "CIXH50C0", NULL);
  }
-@@ -515,26 +561,227 @@ static struct platform_driver linlondp_platform_driver = {
+@@ -188,19 +234,54 @@ static void drm_release_fwnode(struct device *dev, void *data)
+ static void linlondp_add_acpi_slave(struct device *master,
+ 				    struct component_match **match,
+ 				    struct fwnode_handle *np, u32 port,
+-				    u32 endpoint)
++				    u32 endpoint, bool skip_unbound)
+ {
+ 	struct fwnode_handle *remote;
++	struct device *remote_dev;
++	bool bound;
+ 
+ 	remote = fwnode_graph_get_remote_node(np, port, endpoint);
++	if (!remote)
++		return;
+ 
+-	if (remote) {
+-		pr_info("%s. remote.name=%s\n", __func__, dev_name(remote->dev));
+-		fwnode_handle_get(remote);
+-		component_match_add_release(master, match, drm_release_fwnode,
+-					    compare_of, remote);
+-		fwnode_handle_put(remote);
++	/*
++	 * skip_unbound: the cluster's component match list must hold ONLY
++	 * devices that will actually bind. An unbindable component makes
++	 * component_master_add_with_match() never complete (see commit
++	 * context: one unbindable CIXH5040 panel sticks the MS-R1's whole
++	 * master). Resolve the fwnode to its backing struct device; fwnode
++	 * references count balances itself once fwnode_handle_put() runs
++	 * below. device_is_bound() requires the device lock; take it just
++	 * for the read.
++	 */
++	remote_dev = remote->dev;
++
++	if (skip_unbound) {
++		if (!remote_dev) {
++			dev_info(master,
++				 "linlondp: skip empty fwnode at port %u ep %u\n",
++				 port, endpoint);
++			fwnode_handle_put(remote);
++			return;
++		}
++		device_lock(remote_dev);
++		bound = device_is_bound(remote_dev);
++		device_unlock(remote_dev);
++		if (!bound) {
++			dev_info(master,
++				 "linlondp: skip unbound transmitter %s (no driver will bind; dropping from cluster match list)\n",
++				 dev_name(remote_dev));
++			fwnode_handle_put(remote);
++			return;
++		}
+ 	}
++
++	pr_info("%s. remote.name=%s\n", __func__,
++		remote_dev ? dev_name(remote_dev) : "(no-dev)");
++	fwnode_handle_get(remote);
++	component_match_add_release(master, match, drm_release_fwnode,
++				    compare_of, remote);
++	fwnode_handle_put(remote);
+ }
+ 
+ static void linlondp_add_slave(struct device *master,
+@@ -218,7 +299,7 @@ static void linlondp_add_slave(struct device *master,
+ 
+ int linlondp_dpu_add_graph_slaves(struct device *master,
+ 				  struct component_match **match,
+-				  struct device *dpu_dev)
++				  struct device *dpu_dev, bool skip_unbound)
+ {
+ 	struct device_node *np = dpu_dev->of_node;
+ 	struct device_node *of_child;
+@@ -233,9 +314,11 @@ int linlondp_dpu_add_graph_slaves(struct device *master,
+ 				continue;
+ 
+ 			linlondp_add_acpi_slave(master, match, acpi_child,
+-						LINLONDP_OF_PORT_OUTPUT, 0);
++						LINLONDP_OF_PORT_OUTPUT, 0,
++						skip_unbound);
+ 			linlondp_add_acpi_slave(master, match, acpi_child,
+-						LINLONDP_OF_PORT_OUTPUT, 1);
++						LINLONDP_OF_PORT_OUTPUT, 1,
++						skip_unbound);
+ 		}
+ 		return 0;
+ 	}
+@@ -312,10 +395,18 @@ static int linlondp_platform_probe(struct platform_device *pdev)
+ 
+ 			/* add connector */
+ 			pr_info("%s enter to add connector.\n", __func__);
++			/*
++			 * Standalone (non-cluster) DPU path: preserve
++			 * byte-for-byte the prior behaviour — no
++			 * skip_unbound filter — so an existing single-card
++			 * board is not regressed.
++			 */
+ 			linlondp_add_acpi_slave(dev, &match, acpi_child,
+-						LINLONDP_OF_PORT_OUTPUT, 0);
++						LINLONDP_OF_PORT_OUTPUT, 0,
++						false);
+ 			linlondp_add_acpi_slave(dev, &match, acpi_child,
+-						LINLONDP_OF_PORT_OUTPUT, 1);
++						LINLONDP_OF_PORT_OUTPUT, 1,
++						false);
+ 
+ 			dev_pm_set_driver_flags(&pdev->dev, DPM_FLAG_NO_DIRECT_COMPLETE);
+ 		}
+@@ -515,26 +606,227 @@ static struct platform_driver linlondp_platform_driver = {
  
  extern struct platform_driver linlondp_cluster_driver;
  
