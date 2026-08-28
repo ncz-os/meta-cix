@@ -1166,3 +1166,84 @@ CONFIG_SUNRPC=y
 # without this QEMU networking falls back to slower userspace virtio-net.
 CONFIG_VHOST_NET=y
 CONFIG_VHOST=m
+
+# ---------------------------------------------------------------------------
+# Desktop/workstation capability set -- added 2026-08-28.
+#
+# WHY: this defconfig was derived from a board-bringup config. It carries what
+# the Sky1 board itself needs and very little of what a general-purpose
+# workstation needs. CONFIG_NFS_FS was the first symptom found (an end user
+# could not mount his NAS); auditing the rest turned up whole categories that
+# were absent, several of which SHIP USERSPACE TOOLING WITH NO KERNEL SUPPORT
+# BEHIND IT -- the package installs, the feature simply cannot work.
+#
+# Everything here is =m where the subsystem allows it, so nothing enlarges the
+# boot path or changes what loads on a board that never uses it.
+#
+# Verify after building with:  zcat /proc/config.gz | grep <SYMBOL>
+# or on an installed system:   grep <SYMBOL> /boot/config-$(uname -r)
+
+# --- VPN / tunnelling ------------------------------------------------------
+# CONFIG_TUN absent meant NO VPN of any kind was possible: OpenVPN, WireGuard,
+# Tailscale, ZeroTier and Docker's userland proxy all require /dev/net/tun.
+# wireguard-tools is in manifests/desktop.pkgs, so we were shipping a
+# WireGuard userspace against a kernel that could not run it.
+CONFIG_TUN=m
+CONFIG_WIREGUARD=m
+CONFIG_PPP=m
+CONFIG_PPP_ASYNC=m
+CONFIG_PPP_DEFLATE=m
+
+# --- USB audio / video -----------------------------------------------------
+# No USB headsets, DACs, microphones or conferencing hardware without
+# SND_USB_AUDIO; no webcams at all without USB_VIDEO_CLASS.
+CONFIG_SND_USB_AUDIO=m
+CONFIG_USB_VIDEO_CLASS=m
+CONFIG_USB_VIDEO_CLASS_INPUT_EVDEV=y
+
+# --- USB serial ------------------------------------------------------------
+# This is a developer-board distribution whose own documentation drives boards
+# over ttyUSB, and the fleet's serial console work uses a CP210x adapter. None
+# of these adapters could enumerate.
+CONFIG_USB_SERIAL=m
+CONFIG_USB_SERIAL_CP210X=m
+CONFIG_USB_SERIAL_FTDI_SIO=m
+CONFIG_USB_SERIAL_CH341=m
+CONFIG_USB_SERIAL_PL2303=m
+CONFIG_USB_SERIAL_GENERIC=y
+
+# --- USB printing ----------------------------------------------------------
+CONFIG_USB_PRINTER=m
+
+# --- Removable-media filesystems -------------------------------------------
+# exFAT is the default for SD cards, camera/phone media and most USB sticks
+# over 32GB. UDF is DVDs. NTFS is deliberately NOT enabled in-kernel: ntfs-3g
+# ships in the desktop set and works through FUSE, which is already =y.
+CONFIG_EXFAT_FS=m
+CONFIG_UDF_FS=m
+CONFIG_F2FS_FS=m
+
+# --- SMB/CIFS network filesystem -------------------------------------------
+# NFS was fixed separately; SMB is the other half of "connect this to a NAS",
+# and is what a Windows or consumer NAS will actually offer.
+CONFIG_CIFS=m
+CONFIG_CIFS_XATTR=y
+CONFIG_CIFS_POSIX=y
+
+# --- Encrypted volumes -----------------------------------------------------
+# Without DM_CRYPT a LUKS disk cannot be opened at all -- neither an encrypted
+# install nor plugging in an encrypted external drive.
+CONFIG_DM_CRYPT=m
+CONFIG_CRYPTO_XTS=m
+
+# --- Bluetooth peripherals -------------------------------------------------
+# CONFIG_BT was already set, but without HIDP a Bluetooth keyboard or mouse
+# cannot be used, and without RFCOMM the serial profile is unavailable. bluez
+# and blueman both ship in the desktop set.
+CONFIG_BT_RFCOMM=m
+CONFIG_BT_RFCOMM_TTY=y
+CONFIG_BT_HIDP=m
+
+# --- Autofs ----------------------------------------------------------------
+# systemd logs "Failed to find module 'autofs4'" on every boot of both boards.
+CONFIG_AUTOFS_FS=m
