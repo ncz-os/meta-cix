@@ -376,6 +376,7 @@ SRC_URI = " \
     file://patches-7.2/0226-drm-cix-populate-dptx-connector-eld.patch \
     file://patches-7.2/0227-drm-cix-make-linlondp-dpu-links-stateless.patch \
     file://patches-7.2/0228-drm-cix-cap-linlondp-cluster-plane-creation.patch \
+    file://patches-7.2/0229-drm-cix-dp-audio-no-live-channel-status-reprogram.patch \
 "
 
 COMPATIBLE_MACHINE = "(cixmini)"
