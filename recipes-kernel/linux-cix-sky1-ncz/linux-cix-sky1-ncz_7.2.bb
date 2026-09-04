@@ -124,12 +124,12 @@ LIC_FILES_CHKSUM = "file://COPYING;md5=6bc538ed5bd9a7fc9398086aedcd7e46"
 inherit kernel
 FILESEXTRAPATHS:prepend := "${THISDIR}/linux-cix-sky1-ncz-7.2:"
 
-LINUX_VERSION = "7.2"
+LINUX_VERSION = "7.2.3"
 KERNEL_LOCALVERSION = "-sky1-ncz"
 PATCHTOOL = "git"
-PV = "7.2+ncz"
+PV = "7.2.3+ncz"
 PR = "r1"
-KBRANCH = "master"
+KBRANCH = "linux-7.2.y"
 KERNEL_PACKAGE_NAME = "kernel-${PN}"
 
 # OE-Core 2026 keeps the kernel source and module-build artifacts in this
@@ -161,10 +161,18 @@ do_shared_workdir:append() {
 #     drivers/gpu/drm/arm (komeda/linlondp) untouched, realtek changes are
 #     rtase-only (not r8169), arm64 work is KVM/vgic. No Sky1 failure mode
 #     fixed -- hygiene only.
-SRCREV_kernel = "8d3ae59288f1e7d58d76558a6ee96d533bc5019f"
+# Bumped 2026-09-04 from v7.2 to the v7.2.3 STABLE point release.
+#   v7.2   = 8d3ae59288f1e7d58d76558a6ee96d533bc5019f
+#   v7.2.3 = 58e7295cfecaddec94629160386412e0f2b1e8fe   <- pinned below
+# Stable tags do NOT exist in the torvalds tree, so SRC_URI moves to the stable
+# tree and KBRANCH from master to linux-7.2.y. That is a build-MECHANICS change
+# (it changes where every future kernel comes from), not an image-content one.
+# Replayed with build/port-series.sh v7.2.3 before bumping: 202 applied,
+# 0 failed of 202 wired, across 158 upstream commits touching 173 files.
+SRCREV_kernel = "58e7295cfecaddec94629160386412e0f2b1e8fe"
 
 SRC_URI = " \
-    git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git;protocol=https;branch=${KBRANCH};name=kernel \
+    git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git;protocol=https;branch=${KBRANCH};name=kernel \
     file://config-7.2-lean-msr1-o6n.defconfig \
     file://patches-7.2/0001-mailbox-add-acpi-support-to-cix-mailbox-driver.patch \
     file://patches-7.2/0002-acpi-Add-a-property-reference-count-interface.patch \
