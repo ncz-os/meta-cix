@@ -11,7 +11,7 @@ sink exists lets hdmi-codec continue into parsing the all-zero ELD
 provided by get_eld. Return ENODEV before hdmi-codec reaches that
 parse or marks the PCM busy. Preserve the connected startup path.
 
-Upstream-Status: Inappropriate [diagnostic experiment]
+Upstream-Status: Pending
 Signed-off-by: Jason Perlow <jperlow@gmail.com>
 
 diff --git a/drivers/gpu/drm/cix/dptx/trilin_dptx_audio.c b/drivers/gpu/drm/cix/dptx/trilin_dptx_audio.c
