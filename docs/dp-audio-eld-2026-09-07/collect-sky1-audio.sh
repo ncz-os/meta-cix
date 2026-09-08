@@ -50,7 +50,7 @@ ps -eLo pid,tid,stat,wchan:40,comm > "$capture_dir/tasks.txt"
 while read -r tid; do
     { echo "TID $tid"; cat "/proc/$tid/comm" "/proc/$tid/stack"; } >> "$capture_dir/blocked-stacks.txt" 2>&1 || true
 done < <(ps -eLo tid=,stat= | awk '$2 ~ /^D/ {print $1}')
-for module in trilin_dpsub linlon_dp snd_soc_sky1_sound_card snd_soc_cdns_i2s_mc snd_soc_hdmi_codec; do
+for module in trilin_dpsub linlon_dp snd_soc_sky1_sound_card snd_soc_cdns_i2s_mc snd_soc_hdmi_codec pwm_bl pwm_sky1; do
     { echo "MODULE $module"; modinfo "$module"; } >> "$capture_dir/modules.txt" 2>&1 || true
     module_file=$(modinfo -n "$module" 2>/dev/null || true)
     if [ -f "$module_file" ]; then
@@ -60,6 +60,10 @@ for module in trilin_dpsub linlon_dp snd_soc_sky1_sound_card snd_soc_cdns_i2s_mc
     module_note=/sys/module/$module/notes/.note.gnu.build-id
     [ ! -r "$module_note" ] || cat "$module_note" > "$capture_dir/loaded-module-notes/$module.build-id"
 done
+{
+    modprobe -n -v pwm_bl || true
+    grep CIXH5041 /lib/modules/"$(uname -r)"/modules.alias || true
+} > "$capture_dir/backlight-autoload.txt" 2>&1
 for f in /boot/config-"$(uname -r)" /proc/config.gz; do
     [ ! -r "$f" ] || cp "$f" "$capture_dir/"
 done
