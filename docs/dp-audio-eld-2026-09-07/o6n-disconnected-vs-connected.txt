@@ -1,0 +1,11 @@
+[sudo] password for mini: [  534.197638] ncz-20e7bc kernel: hdmi-audio-codec hdmi-audio-codec.11.auto: HDMI: Unknown ELD version 0
+Playing raw data '/dev/zero' : Signed 16 bit Little Endian, Rate 48000 Hz, Stereo
+Aborted by signal Terminated...
+[  534.197419] ncz-20e7bc kernel: hdmi-audio-codec hdmi-audio-codec.11.auto: HDMI: Unknown ELD version 0
+[  534.197638] ncz-20e7bc kernel: hdmi-audio-codec hdmi-audio-codec.11.auto: HDMI: Unknown ELD version 0
+[  537.360072] ncz-20e7bc kernel: hdmi-audio-codec hdmi-audio-codec.11.auto: HDMI: Unknown ELD version 0
+Playing raw data '/dev/zero' : Signed 16 bit Little Endian, Rate 48000 Hz, Stereo
+Aborted by signal Terminated...
+[  534.197419] ncz-20e7bc kernel: hdmi-audio-codec hdmi-audio-codec.11.auto: HDMI: Unknown ELD version 0
+[  534.197638] ncz-20e7bc kernel: hdmi-audio-codec hdmi-audio-codec.11.auto: HDMI: Unknown ELD version 0
+[  537.360072] ncz-20e7bc kernel: hdmi-audio-codec hdmi-audio-codec.11.auto: HDMI: Unknown ELD version 0

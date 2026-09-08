@@ -1,0 +1,54 @@
+ncz_sky1_hdmi_0_1
+state: RUNNING
+owner_pid   : 5331
+trigger_time: 490.191293561
+tstamp      : 0.000000000
+delay       : 24000
+avail       : 0
+avail_max   : 18000
+-----
+hw_ptr      : 42000
+appl_ptr    : 66000
+access: RW_INTERLEAVED
+format: S16_LE
+subformat: STD
+channels: 2
+rate: 48000 (48000/1)
+period_size: 6000
+buffer_size: 24000
+monitor_name		VP2488-4K
+connection_type		DisplayPort
+eld_version		[0x2] CEA-861D or below
+edid_version		[0x3] CEA-861-B, C or D
+manufacture_id		0x635a
+product_id		0x4e43
+port_id			0x0
+support_hdcp		0
+support_ai		0
+audio_sync_delay	0
+speakers		[0x1] FL/FR
+sad_count		1
+sad0_coding_type	[0x1] LPCM
+sad0_channels		2
+sad0_rates		[0x6e0] 32000 44100 48000 88200 96000
+sad0_bits		[0xe] 16 20 24
+[  439.093958] ncz-20e7bc kernel: hdmi-audio-codec hdmi-audio-codec.11.auto: HDMI: Unknown ELD version 0
+[  439.095665] ncz-20e7bc kernel: hdmi-audio-codec hdmi-audio-codec.11.auto: HDMI: Unknown ELD version 0
+[  452.608070] ncz-20e7bc kernel: hdmi-audio-codec hdmi-audio-codec.11.auto: HDMI: Unknown ELD version 0
+[  452.608514] ncz-20e7bc kernel: hdmi-audio-codec hdmi-audio-codec.11.auto: HDMI: Unknown ELD version 0
+[  452.608686] ncz-20e7bc kernel: hdmi-audio-codec hdmi-audio-codec.13.auto: HDMI: Unknown ELD version 0
+[  452.624076] ncz-20e7bc kernel: hdmi-audio-codec hdmi-audio-codec.11.auto: HDMI: Unknown ELD version 0
+[  452.631487] ncz-20e7bc kernel: hdmi-audio-codec hdmi-audio-codec.11.auto: HDMI: Unknown ELD version 0
+[  452.631742] ncz-20e7bc kernel: hdmi-audio-codec hdmi-audio-codec.11.auto: HDMI: Unknown ELD version 0
+[  464.216048] ncz-20e7bc kernel: hdmi-audio-codec hdmi-audio-codec.11.auto: HDMI: Unknown ELD version 0
+[  464.218851] ncz-20e7bc kernel: hdmi-audio-codec hdmi-audio-codec.11.auto: HDMI: Unknown ELD version 0
+[  464.219393] ncz-20e7bc kernel: hdmi-audio-codec hdmi-audio-codec.13.auto: HDMI: Unknown ELD version 0
+[  464.244078] ncz-20e7bc kernel: hdmi-audio-codec hdmi-audio-codec.11.auto: HDMI: Unknown ELD version 0
+[  464.247150] ncz-20e7bc kernel: hdmi-audio-codec hdmi-audio-codec.11.auto: HDMI: Unknown ELD version 0
+[  464.247640] ncz-20e7bc kernel: hdmi-audio-codec hdmi-audio-codec.11.auto: HDMI: Unknown ELD version 0
+[  487.258481] ncz-20e7bc kernel: hdmi-audio-codec hdmi-audio-codec.11.auto: HDMI: Unknown ELD version 0
+[  487.259234] ncz-20e7bc kernel: hdmi-audio-codec hdmi-audio-codec.11.auto: HDMI: Unknown ELD version 0
+[  487.259725] ncz-20e7bc kernel: hdmi-audio-codec hdmi-audio-codec.13.auto: HDMI: Unknown ELD version 0
+[  487.284028] ncz-20e7bc kernel: hdmi-audio-codec hdmi-audio-codec.11.auto: HDMI: Unknown ELD version 0
+[  487.290036] ncz-20e7bc kernel: hdmi-audio-codec hdmi-audio-codec.11.auto: HDMI: Unknown ELD version 0
+[  487.290284] ncz-20e7bc kernel: hdmi-audio-codec hdmi-audio-codec.11.auto: HDMI: Unknown ELD version 0
