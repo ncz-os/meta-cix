@@ -58,3 +58,11 @@ This validates the files as evidence of loaded code, not an exact meta-cix commi
 After complete release gates and explicit operator supervision, boot O6N in both Mali and Panthor entries with the rescue entry retained. Check backlight/panel binding, DRM/ASoC registration, connected-port playback and disconnected-port rejection. O6N does not reproduce the five-link dependency because its firmware disables DP02. Confirming O6's actual recovery therefore requires a later authorized maintenance window on O6, or another five-link test target; O6N success alone cannot establish it.
 
 Additional read-only O6N check: installed 7.2.4 pwm_bl has only the platform and OF aliases; modules.alias has no CIXH5041 entry. A dry-run named modprobe resolves its existing module file. This confirms the omission in O6N's shipped binary independently of the branch source. O6's matching check remains requested.
+
+## Build validation
+
+The full kernel build passed (904 tasks, 880 reused), and 0232 passed checkpatch with zero errors/warnings. Existing series/buildpath warnings remain. The actual do_patch source matches the reviewed file byte for byte; the resulting module advertises acpi*:CIXH5041:*.
+
+The isolated r268audio release completed, including Mali, Panthor built against exact staged headers, KVM/ABI gates, packages and manifest validation. Extracted final packages contain both GPU stacks and the fixed PWM driver. Native host-tool preparation, including the helper shipped in the headers package, preserved all 7,410 header/config/symbol hashes. See RELEASE-VALIDATION.md for exact artifacts, checks, build-flow fixes, the existing VPU manifest warning and trial side effects.
+
+O6N's latest read-only preflight returned No route to host. No candidate was installed and no board rebooted. Supervised tests of both GPU entries remain pending, followed by an authorized five-link hardware test to establish O6 recovery.

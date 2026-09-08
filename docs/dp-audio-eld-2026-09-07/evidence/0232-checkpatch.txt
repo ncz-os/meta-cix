@@ -1,0 +1,3 @@
+total: 0 errors, 0 warnings, 165 lines checked
+
+/home/jasonperlow/yocto-work/meta-cix/recipes-kernel/linux-cix-sky1-ncz/linux-cix-sky1-ncz-7.2/patches-7.2/0232-backlight-pwm-restore-sky1-acpi-support.patch has no obvious style problems and is ready for submission.
