@@ -55,6 +55,7 @@ The original pre-refresh working tree had 0223/0226 but lacked 0229, illustratin
 In this source:
 
 - `drm_edid_connector_update()` updates display info and builds ELD.
+- **The legacy path also builds ELD in this kernel.** `drm_connector_update_edid_property()` delegates to `drm_edid_connector_update()` (drm_edid.c:7215), and `drm_add_edid_modes()` calls `update_display_info()` (drm_edid.c:7245), which calls `drm_edid_to_eld()` (drm_edid.c:6857). Thus 0226's claim that the legacy path cannot populate ELD is false for this real source. Its measured lack of improvement does not demonstrate an ordering bug. See `evidence/source-api-excerpts.txt`.
 - `trilin_dp_plugged_status()` is simply `dp->status == connector_status_connected`.
 - HPD work performs detect, returns early for unchanged status, issues DRM hotplug handling, then calls the audio plug callback.
 - The hook-registration callback immediately reports current DP status.
@@ -70,7 +71,7 @@ Branch: `wip/gpt6astra/2026-09-07-dp-audio-eld`, based on the requested wip/ultr
 - **0230**: regenerated diagnostic logs for mode reads, no-EDID failure, ELD update, codec notification, and get_eld raw/returned bytes, with device/connector identity and jiffies. Read bytes under eld_mutex and guard zero-length output. Wired into recipe for a diagnostic build only.
 - **0231**: candidate returning -ENODEV from disconnected audio startup before hdmi-codec parses empty ELD. **Unwired and not hardware validated.** Does not claim to repair audible output or boot ordering. Connected startup stays unchanged; desktop probing/hotplug behavior needs regression testing.
 
-The user's original sketch is retained unchanged. Both generated patches pass git apply --check against copies from successful do_patch. Build/release status is recorded separately in the logs.
+The user's original sketch is retained unchanged. Both generated patches pass git apply --check against copies from successful do_patch and checkpatch.pl with zero errors/warnings. The source mirror resolves v7.2.3 to recipe SRCREV 58e7295cfecaddec94629160386412e0f2b1e8fe. Build/release status is recorded separately in the logs.
 
 ## Provenance and separate ACPI issue
 
