@@ -1,0 +1,9 @@
+d0c00ea3ea45b73ff18c83c695b766f345492d50d82103f7bb061e80b46a6ba3  /home/jasonperlow/ybuild/tmp/work/cixmini-nclawzero-linux/linux-cix-sky1-ncz/7.2.3+ncz/build/drivers/gpu/drm/cix/dptx/trilin-dpsub.ko
+NCZ-ELD: get_eld connector=%s plugged=%d raw=0x%02x returned=0x%02x len=%zu jiffies=%lu
+NCZ-ELD: notify plugged=%d jiffies=%lu
+NCZ-ELD: get_modes enter connector=%s jiffies=%lu
+NCZ-ELD: get_modes no EDID connector=%s jiffies=%lu
+NCZ-ELD: get_modes updated connector=%s eld0=0x%02x sad_count=%u jiffies=%lu
+7.2.3-sky1-ncz
+CONFIG_MODVERSIONS=y
+CONFIG_DRM_TRILIN_DPSUB=m

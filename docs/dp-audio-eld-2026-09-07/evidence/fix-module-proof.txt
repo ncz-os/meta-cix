@@ -1,0 +1,41 @@
+9a9329b499e8fdce1a477082c8978000ce31ba6327f12341dfb4ba2546f274cf  /home/jasonperlow/ybuild/tmp/work/cixmini-nclawzero-linux/linux-cix-sky1-ncz/7.2.3+ncz/build/drivers/gpu/drm/cix/dptx/trilin-dpsub.ko
+
+/home/jasonperlow/ybuild/tmp/work/cixmini-nclawzero-linux/linux-cix-sky1-ncz/7.2.3+ncz/build/drivers/gpu/drm/cix/dptx/trilin-dpsub.ko:     file format elf64-littleaarch64
+
+
+Disassembly of section .text:
+
+0000000000007c58 <dptx_audio_startup>:
+    7c58:	d503201f 	nop
+    7c5c:	d503201f 	nop
+    7c60:	d503233f 	paciasp
+    7c64:	a9be7bfd 	stp	x29, x30, [sp, #-32]!
+    7c68:	aa0103e0 	mov	x0, x1
+    7c6c:	910003fd 	mov	x29, sp
+    7c70:	f9000bf3 	str	x19, [sp, #16]
+    7c74:	aa0103f3 	mov	x19, x1
+    7c78:	94000000 	bl	9d50 <trilin_dp_plugged_status>
+			7c78: R_AARCH64_CALL26	trilin_dp_plugged_status
+    7c7c:	360001c0 	tbz	w0, #0, 7cb4 <dptx_audio_startup+0x5c>
+    7c80:	aa1303e0 	mov	x0, x19
+    7c84:	52800022 	mov	w2, #0x1                   	// #1
+    7c88:	52812001 	mov	w1, #0x900                 	// #2304
+    7c8c:	94000000 	bl	26c8 <trilin_dp_write>
+			7c8c: R_AARCH64_CALL26	trilin_dp_write
+    7c90:	d2824b00 	mov	x0, #0x1258                	// #4696
+    7c94:	8b000273 	add	x19, x19, x0
+    7c98:	52800020 	mov	w0, #0x1                   	// #1
+    7c9c:	3903c260 	strb	w0, [x19, #240]
+    7ca0:	52800000 	mov	w0, #0x0                   	// #0
+    7ca4:	f9400bf3 	ldr	x19, [sp, #16]
+    7ca8:	a8c27bfd 	ldp	x29, x30, [sp], #32
+    7cac:	d50323bf 	autiasp
+    7cb0:	d65f03c0 	ret
+    7cb4:	12800240 	mov	w0, #0xffffffed            	// #-19
+    7cb8:	17fffffb 	b	7ca4 <dptx_audio_startup+0x4c>
+
+Disassembly of section .plt:
+
+Disassembly of section .text.ftrace_trampoline:
+
+Disassembly of section .init.text:

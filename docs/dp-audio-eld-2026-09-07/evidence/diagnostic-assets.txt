@@ -1,0 +1,5 @@
+f76026944aa237736d1e47f3e0f5bd402b9f012b6ea4da6d7f4acecbc8ebf470  /home/jasonperlow/isobuild/cix-installer/assets/kernel/r265eld-7.2.3-sky1-ncz-20260907/Image-cixmini.bin
+906ebe5671228493509d909fe1a94e993260cbf97c68f5e8538a271033ffd5e1  /home/jasonperlow/isobuild/cix-installer/assets/kernel/r265eld-7.2.3-sky1-ncz-20260907/modules-cixmini.tgz
+6e53edd0afdcd24be60942957b9b9e1bb13495db8e53c0dd126bb02d058fd65b  /home/jasonperlow/isobuild/cix-installer/assets/kernel/r265eld-7.2.3-sky1-ncz-20260907/headers-cixmini.tar.zst
+r263-7.2.3-sky1-ncz-20260904
+1386330 drm/cix: enable disconnected-startup fix without diagnostic logging
