@@ -378,6 +378,7 @@ SRC_URI = " \
     file://patches-7.2/0228-drm-cix-cap-linlondp-cluster-plane-creation.patch \
     file://patches-7.2/0229-drm-cix-dp-audio-no-live-channel-status-reprogram.patch \
     file://patches-7.2/0231-drm-cix-reject-disconnected-dp-audio-startup.patch \
+    file://patches-7.2/0232-backlight-pwm-restore-sky1-acpi-support.patch \
 "
 
 COMPATIBLE_MACHINE = "(cixmini)"

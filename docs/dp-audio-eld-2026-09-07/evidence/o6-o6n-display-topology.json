@@ -1,0 +1,156 @@
+[
+  {
+    "board": "o6",
+    "name": "CIXH2011:00",
+    "path": "\\_SB_.PWM0",
+    "status": "15",
+    "drivers": [
+      "/sys/bus/platform/drivers/pwm-sky1"
+    ]
+  },
+  {
+    "board": "o6",
+    "name": "CIXH2011:01",
+    "path": "\\_SB_.PWM1",
+    "status": "0",
+    "drivers": []
+  },
+  {
+    "board": "o6",
+    "name": "CIXH502F:00",
+    "path": "\\_SB_.DP00",
+    "status": "15",
+    "drivers": [
+      "/sys/bus/platform/drivers/trilin-dptx-cix"
+    ]
+  },
+  {
+    "board": "o6",
+    "name": "CIXH502F:01",
+    "path": "\\_SB_.DP01",
+    "status": "15",
+    "drivers": [
+      "/sys/bus/platform/drivers/trilin-dptx-cix"
+    ]
+  },
+  {
+    "board": "o6",
+    "name": "CIXH502F:02",
+    "path": "\\_SB_.DP02",
+    "status": "15",
+    "drivers": [
+      null
+    ]
+  },
+  {
+    "board": "o6",
+    "name": "CIXH502F:03",
+    "path": "\\_SB_.DP03",
+    "status": "15",
+    "drivers": [
+      "/sys/bus/platform/drivers/trilin-dptx-cix"
+    ]
+  },
+  {
+    "board": "o6",
+    "name": "CIXH502F:04",
+    "path": "\\_SB_.DP04",
+    "status": "15",
+    "drivers": [
+      "/sys/bus/platform/drivers/trilin-dptx-cix"
+    ]
+  },
+  {
+    "board": "o6",
+    "name": "CIXH5040:00",
+    "path": "\\_SB_.EDP0",
+    "status": "15",
+    "drivers": [
+      null
+    ]
+  },
+  {
+    "board": "o6",
+    "name": "CIXH5041:00",
+    "path": "\\_SB_.DPBL",
+    "status": "15",
+    "drivers": [
+      null
+    ]
+  },
+  {
+    "board": "o6n",
+    "name": "CIXH2011:00",
+    "path": "\\_SB_.PWM0",
+    "status": "15",
+    "drivers": [
+      "/sys/bus/platform/drivers/pwm-sky1"
+    ]
+  },
+  {
+    "board": "o6n",
+    "name": "CIXH2011:01",
+    "path": "\\_SB_.PWM1",
+    "status": "0",
+    "drivers": []
+  },
+  {
+    "board": "o6n",
+    "name": "CIXH502F:00",
+    "path": "\\_SB_.DP00",
+    "status": "15",
+    "drivers": [
+      "/sys/bus/platform/drivers/trilin-dptx-cix"
+    ]
+  },
+  {
+    "board": "o6n",
+    "name": "CIXH502F:01",
+    "path": "\\_SB_.DP01",
+    "status": "15",
+    "drivers": [
+      "/sys/bus/platform/drivers/trilin-dptx-cix"
+    ]
+  },
+  {
+    "board": "o6n",
+    "name": "CIXH502F:02",
+    "path": "\\_SB_.DP02",
+    "status": "0",
+    "drivers": []
+  },
+  {
+    "board": "o6n",
+    "name": "CIXH502F:03",
+    "path": "\\_SB_.DP03",
+    "status": "0",
+    "drivers": []
+  },
+  {
+    "board": "o6n",
+    "name": "CIXH502F:04",
+    "path": "\\_SB_.DP04",
+    "status": "15",
+    "drivers": [
+      "/sys/bus/platform/drivers/trilin-dptx-cix"
+    ]
+  },
+  {
+    "board": "o6n",
+    "name": "CIXH5040:00",
+    "path": "\\_SB_.EDP0",
+    "status": "15",
+    "drivers": [
+      null
+    ]
+  },
+  {
+    "board": "o6n",
+    "name": "CIXH5041:00",
+    "path": "\\_SB_.DPBL",
+    "status": "15",
+    "drivers": [
+      null
+    ]
+  }
+]
