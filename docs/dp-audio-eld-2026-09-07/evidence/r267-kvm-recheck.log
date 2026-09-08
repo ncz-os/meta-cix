@@ -1,0 +1,17 @@
+=== kvm-kernel-gate ===
+  Image : /home/jasonperlow/isobuild/cix-installer/assets/kernel/r267eld-7.2.3-sky1-ncz-20260907/Image-cixmini.bin (47106560 bytes)
+  Config: /home/jasonperlow/isobuild/cix-installer/assets/kernel/r267eld-7.2.3-sky1-ncz-20260907/config-7.2.3-sky1-ncz
+--- PCI ID collision lint ---
+  ok: CONFIG_USB_CDNS3_PCI_WRAP not set
+  ok: CONFIG_USB_CDNSP_PCI not set
+  ok: CONFIG_USB_CDNS2_UDC not set
+--- required symbols ---
+  ok: CONFIG_DEVTMPFS=y
+  ok: CONFIG_DEVTMPFS_MOUNT=y
+  ok: CONFIG_BLK_DEV_LOOP=y
+  ok: CONFIG_ISO9660_FS=y
+--- boot under qemu ---
+  accel=kvm cpu=host timeout=120s
+  reached root-mount (expected panic, no rootfs supplied)
+GATE: PASS ✅  Image-cixmini.bin
+  boot log: /tmp/kvm-kernel-gate.aZydN6.log

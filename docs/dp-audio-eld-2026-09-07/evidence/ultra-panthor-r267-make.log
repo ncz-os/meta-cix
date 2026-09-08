@@ -1,0 +1,23 @@
+DKMS (dkms-3.4.3) make.log for panthor-cix/7.2.0 for kernel 7.2.3-sky1-ncz (aarch64)
+Mon Sep  7 09:06:48 PM EDT 2026
+
+Building module(s)
+# command: 'make' -C /home/jasonperlow/isobuild/cix-installer/assets/kernel/r267eld-7.2.3-sky1-ncz-20260907/headers-dir/lib/modules/7.2.3-sky1-ncz/build M=/var/lib/dkms/panthor-cix/7.2.0/build modules
+make: Entering directory '/home/jasonperlow/isobuild/cix-installer/assets/kernel/r267eld-7.2.3-sky1-ncz-20260907/headers-dir/lib/modules/7.2.3-sky1-ncz/build'
+make[1]: Entering directory '/var/lib/dkms/panthor-cix/7.2.0/build'
+warning: the compiler differs from the one used to build the kernel
+  The kernel was built by: aarch64-nclawzero-linux-gcc (GCC) 15.3.0
+  You are using:           gcc (GCC) 16.2.1 20260819 (Red Hat 16.2.1-2)
+  CC [M]  panthor_devfreq.o
+/bin/sh: line 1: /home/jasonperlow/isobuild/cix-installer/assets/kernel/r267eld-7.2.3-sky1-ncz-20260907/headers-dir/lib/modules/7.2.3-sky1-ncz/build/scripts/basic/fixdep: No such file or directory
+make[3]: *** [/home/jasonperlow/isobuild/cix-installer/assets/kernel/r267eld-7.2.3-sky1-ncz-20260907/headers-dir/lib/modules/7.2.3-sky1-ncz/build/scripts/Makefile.build:289: panthor_devfreq.o] Error 127
+make[3]: *** Deleting file 'panthor_devfreq.o'
+make[2]: *** [/home/jasonperlow/isobuild/cix-installer/assets/kernel/r267eld-7.2.3-sky1-ncz-20260907/headers-dir/lib/modules/7.2.3-sky1-ncz/build/Makefile:2187: .] Error 2
+make[1]: *** [/home/jasonperlow/isobuild/cix-installer/assets/kernel/r267eld-7.2.3-sky1-ncz-20260907/headers-dir/lib/modules/7.2.3-sky1-ncz/build/Makefile:248: __sub-make] Error 2
+make[1]: Leaving directory '/var/lib/dkms/panthor-cix/7.2.0/build'
+make: *** [Makefile:248: __sub-make] Error 2
+make: Leaving directory '/home/jasonperlow/isobuild/cix-installer/assets/kernel/r267eld-7.2.3-sky1-ncz-20260907/headers-dir/lib/modules/7.2.3-sky1-ncz/build'
+
+# exit code: 2
+# elapsed time: 00:00:01
+----------------------------------------------------------------
