@@ -68,10 +68,22 @@ An early notification before mode probing remains possible, but cannot by itself
 
 Branch: `wip/gpt6astra/2026-09-07-dp-audio-eld`, based on the requested wip/ultra branch.
 
-- **0230**: regenerated diagnostic logs for mode reads, no-EDID failure, ELD update, codec notification, and get_eld raw/returned bytes, with device/connector identity and jiffies. Read bytes under eld_mutex and guard zero-length output. Wired into recipe for a diagnostic build only.
-- **0231**: candidate returning -ENODEV from disconnected audio startup before hdmi-codec parses empty ELD. **Unwired and not hardware validated.** Does not claim to repair audible output or boot ordering. Connected startup stays unchanged; desktop probing/hotplug behavior needs regression testing.
+- **0230**: regenerated diagnostic logs for mode reads, no-EDID failure, ELD update, codec notification, and get_eld raw/returned bytes, with device/connector identity and jiffies. Read bytes under eld_mutex and guard zero-length output. Built as diagnostic r265eld; now unwired in the branch tip.
+- **0231**: candidate returning -ENODEV from disconnected audio startup before hdmi-codec parses empty ELD. **Enabled in the branch tip; not hardware validated.** Does not claim to repair audible output or boot ordering. Connected startup stays unchanged; desktop probing/hotplug behavior needs regression testing.
 
-The user's original sketch is retained unchanged. Both generated patches pass git apply --check against copies from successful do_patch and checkpatch.pl with zero errors/warnings. The source mirror resolves v7.2.3 to recipe SRCREV 58e7295cfecaddec94629160386412e0f2b1e8fe. Build/release status is recorded separately in the logs.
+The user's original sketch is retained unchanged. Both generated patches pass git apply --check against copies from successful do_patch and checkpatch.pl with zero errors/warnings. The source mirror resolves v7.2.3 to recipe SRCREV 58e7295cfecaddec94629160386412e0f2b1e8fe. Diagnostic kernel and modules built successfully. The resulting DP module contains all five NCZ-ELD log formats; its unstripped SHA256 is d0c00ea3ea45b73ff18c83c695b766f345492d50d82103f7bb061e80b46a6ba3. The diagnostic passed the KVM boot gate and kernel/header ABI gate. The full release script stopped before installer packaging with:
+
+```
+FAIL: panthor-cix not registered in dkms -- nothing to rebuild
+```
+
+Diagnostic assets remain at `~/isobuild/cix-installer/assets/kernel/r265eld-7.2.3-sky1-ncz-20260907` on ULTRA. The previous `edge` pointer (`r263-7.2.3-sky1-ncz-20260904`) was restored after that failed pipeline. Diagnostic checksums are in `evidence/diagnostic-assets.txt`.
+
+Commit 1386330 replaces diagnostic 0230 with candidate fix 0231 in SRC_URI. The separate Yocto build of that fix completed successfully: 904 tasks, all succeeded (38 warnings). Candidate r266eld also passed the KVM boot and kernel/header ABI gates through stage-kernel.sh; installer packaging was explicitly not performed because the full release prerequisite remains unresolved. The original edge pointer was restored again after candidate staging.
+
+Candidate assets: `~/isobuild/cix-installer/assets/kernel/r266eld-7.2.3-sky1-ncz-20260907`. Unstripped fixed DP module SHA256: 9a9329b499e8fdce1a477082c8978000ce31ba6327f12341dfb4ba2546f274cf. Its disassembly confirms the disconnected branch returns -19 (ENODEV), and its strings contain no NCZ-ELD diagnostic messages. See `evidence/fix-module-proof.txt`, `evidence/fix-assets.txt`, and `evidence/ultra-fix-stage.log`.
+
+**Neither artifact has been installed or booted on O6N. No audible-output success is claimed.** The branch is published to both the configured origin filesystem mirror and https://gitlab.com/ncz-os/meta-cix.git.
 
 ## Provenance and separate ACPI issue
 

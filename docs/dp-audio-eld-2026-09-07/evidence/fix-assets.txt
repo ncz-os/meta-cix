@@ -1,0 +1,4 @@
+f76026944aa237736d1e47f3e0f5bd402b9f012b6ea4da6d7f4acecbc8ebf470  /home/jasonperlow/isobuild/cix-installer/assets/kernel/r266eld-7.2.3-sky1-ncz-20260907/Image-cixmini.bin
+2107bf9f76d09a2408049dec9a49452f3c2263aa3c42cb7519ddc50e92dbd629  /home/jasonperlow/isobuild/cix-installer/assets/kernel/r266eld-7.2.3-sky1-ncz-20260907/modules-cixmini.tgz
+42f2c98e5a3e4692704c7a28d6d512f5dda26a243a360953784d2515c87a64e6  /home/jasonperlow/isobuild/cix-installer/assets/kernel/r266eld-7.2.3-sky1-ncz-20260907/headers-cixmini.tar.zst
+r263-7.2.3-sky1-ncz-20260904

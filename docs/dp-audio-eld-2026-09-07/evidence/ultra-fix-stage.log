@@ -1,0 +1,51 @@
+KVER=7.2.3-sky1-ncz  dest=/home/jasonperlow/isobuild/cix-installer/assets/kernel/r266eld-7.2.3-sky1-ncz-20260907  previous edge=/home/jasonperlow/isobuild/cix-installer/assets/kernel/r263-7.2.3-sky1-ncz-20260904
+module linlon-dp unchanged
+module trilin-dpsub CHANGED
+[extract] 7.2.3-sky1-ncz (arm64, split build)
+[extract]   source: /home/jasonperlow/ybuild/tmp/work/cixmini-nclawzero-linux/linux-cix-sky1-ncz/7.2.3+ncz/kernel-source
+[extract]   build : /home/jasonperlow/ybuild/tmp/work/cixmini-nclawzero-linux/linux-cix-sky1-ncz/7.2.3+ncz/build
+[extract] staging build-system Makefiles/Kbuild/Kconfig from source
+[extract] overlaying generated headers from the build dir
+[extract] pinned localversion '-sky1-ncz' (base 7.2.3 -> 7.2.3-sky1-ncz)
+[extract] stripped 3 non-portable host tool(s); target will rebuild them
+[extract] OK — 14M (16773 files) → /home/jasonperlow/isobuild/cix-installer/assets/kernel/r266eld-7.2.3-sky1-ncz-20260907/headers-cixmini.tar.zst
+=== staged:
+total 67612
+drwxr-xr-x. 1 jasonperlow jasonperlow      190 Sep  7 20:46 .
+drwxr-xr-x. 1 jasonperlow jasonperlow      358 Sep  7 20:46 ..
+-rw-r--r--. 1 jasonperlow jasonperlow   277984 Sep  7 20:46 config-7.2.3-sky1-ncz
+-rw-r--r--. 1 jasonperlow jasonperlow 13951126 Sep  7 20:46 headers-cixmini.tar.zst
+drwxr-xr-x. 1 jasonperlow jasonperlow        6 Sep  7 20:46 headers-dir
+-rw-r--r--. 1 jasonperlow jasonperlow 47106560 Sep  7 20:46 Image-cixmini.bin
+-rw-r--r--. 1 jasonperlow jasonperlow       14 Sep  7 20:46 KVER
+=== GATE 1: KVM boot + PCI collision lint
+=== kvm-kernel-gate ===
+  Image : /home/jasonperlow/isobuild/cix-installer/assets/kernel/r266eld-7.2.3-sky1-ncz-20260907/Image-cixmini.bin (47106560 bytes)
+  Config: /home/jasonperlow/isobuild/cix-installer/assets/kernel/r266eld-7.2.3-sky1-ncz-20260907/config-7.2.3-sky1-ncz
+--- PCI ID collision lint ---
+  ok: CONFIG_USB_CDNS3_PCI_WRAP not set
+  ok: CONFIG_USB_CDNSP_PCI not set
+  ok: CONFIG_USB_CDNS2_UDC not set
+--- required symbols ---
+  ok: CONFIG_DEVTMPFS=y
+  ok: CONFIG_DEVTMPFS_MOUNT=y
+  ok: CONFIG_BLK_DEV_LOOP=y
+  ok: CONFIG_ISO9660_FS=y
+--- boot under qemu ---
+  accel=kvm cpu=host timeout=120s
+  reached root-mount (expected panic, no rootfs supplied)
+GATE: PASS ✅  Image-cixmini.bin
+  boot log: /tmp/kvm-kernel-gate.wW6wxR.log
+=== GATE 2: dkms ABI
+  image banner  : Linux version 7.2.3-sky1-ncz (oe-user@oe-host) (aarch64-nclawzero-linux-gcc (GCC) 15.3.0, GNU ld (GNU Binutils) 2.46.1) #1 SMP PREEMPT Wed Sep  2 12:33:21 UTC 2026
+  header built by: oe-user@oe-host
+  header compiler: aarch64-nclawzero-linux-gcc (GCC) 15.3.0, GNU ld (GNU Binutils) 2.46.1
+dkms-abi-gate: ok: builder identity matches (oe-user@oe-host)
+dkms-abi-gate: ok: binutils matches (2.46.1)
+dkms-abi-gate: ok: CONFIG_MODVERSIONS=y (mismatched modules will refuse to load)
+dkms-abi-gate: PASS
+=== packaging: SKIPPED (NCZ_SKIP_PACKAGING=1; caller packages)
+drwxr-xr-x. 1 jasonperlow jasonperlow     2814 Sep  7 17:44 ..
+-rw-r--r--. 1 jasonperlow jasonperlow    14996 Sep  4 12:44 cixmini-boot_1.2+r263_arm64.deb
+-rw-r--r--. 1 jasonperlow jasonperlow 13487560 Sep  4 12:44 linux-headers-cixmini_7.2.3-sky1-ncz+r263_arm64.deb
+-rw-r--r--. 1 jasonperlow jasonperlow 20807008 Sep  4 12:44 linux-image-cixmini_7.2.3-sky1-ncz+r263_arm64.deb

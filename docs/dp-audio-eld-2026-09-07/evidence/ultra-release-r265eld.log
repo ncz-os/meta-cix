@@ -1,0 +1,415 @@
+[wip/gpt6astra/2026-09-07-dp-audio-eld 1799af0] drm/cix: instrument ELD lifecycle and prepare disconnected startup fix
+ 3 files changed, 136 insertions(+)
+ create mode 100644 recipes-kernel/linux-cix-sky1-ncz/linux-cix-sky1-ncz-7.2/patches-7.2/0230-drm-cix-trace-dp-audio-eld-lifecycle.patch
+ create mode 100644 recipes-kernel/linux-cix-sky1-ncz/linux-cix-sky1-ncz-7.2/patches-7.2/0231-drm-cix-reject-disconnected-dp-audio-startup.patch
+
+=== 1/7 build kernel
+Loading cache...done.
+Loaded 5227 entries from dependency cache.
+Parsing recipes...done.
+Parsing of 2979 .bb files complete (2978 cached, 1 parsed). 5227 targets, 167 skipped, 0 masked, 0 errors.
+NOTE: Resolving any missing task queue dependencies
+
+Build Configuration:
+BB_VERSION           = "2.18.0"
+BUILD_SYS            = "aarch64-linux"
+NATIVELSBSTRING      = "universal"
+TARGET_SYS           = "aarch64-nclawzero-linux"
+MACHINE              = "cixmini"
+SDKMACHINE           = "aarch64"
+DISTRO               = "nclawzero"
+DISTRO_VERSION       = "2026.04"
+TUNE_FEATURES        = "aarch64 armv8a crc"
+meta                 = "HEAD:c2746a4a165fd99c2d1aafed17533555787f37ce"
+meta-poky            = "HEAD:824795b885b25e074a2880fbcd54e1a6c875d47d"
+meta-oe              
+meta-python          
+meta-networking      = "wrynose:af8b6d6b2f0b11595b0a0d5b82efa3129d52a628"
+meta-cix             = "wip/gpt6astra/2026-09-07-dp-audio-eld:1799af002f76606c4ffd3833a1cc918529c4155d"
+
+Initialising tasks...Sstate summary: Wanted 122 Local 112 Mirrors 0 Missed 10 Current 152 (91% match, 96% complete)
+done.
+Removing 8 stale sstate objects for arch cixmini...done.
+NOTE: Executing Tasks
+NOTE: Running setscene task 229 of 274 (virtual:native:/workdir/yocto6/openembedded-core/meta/recipes-devtools/dpkg/dpkg_1.23.7.bb:do_populate_sysroot_setscene)
+NOTE: Running task 234 of 904 (/workdir/meta-cix/recipes-kernel/linux-cix-sky1-ncz/linux-cix-sky1-ncz_7.2.bb:do_recipe_qa)
+NOTE: recipe linux-cix-sky1-ncz-7.2.3+ncz-r1: task do_recipe_qa: Started
+NOTE: recipe dpkg-native-1.23.7-r0: task do_populate_sysroot_setscene: Started
+NOTE: recipe linux-cix-sky1-ncz-7.2.3+ncz-r1: task do_recipe_qa: Succeeded
+NOTE: Running task 417 of 904 (/workdir/meta-cix/recipes-kernel/linux-cix-sky1-ncz/linux-cix-sky1-ncz_7.2.bb:do_fetch)
+NOTE: recipe dpkg-native-1.23.7-r0: task do_populate_sysroot_setscene: Succeeded
+NOTE: Running setscene task 258 of 274 (virtual:native:/workdir/yocto6/openembedded-core/meta/recipes-core/gettext/gettext_1.0.bb:do_populate_sysroot_setscene)
+NOTE: Running setscene task 259 of 274 (virtual:native:/workdir/yocto6/openembedded-core/meta/recipes-devtools/opkg-utils/opkg-utils_0.7.0.bb:do_populate_sysroot_setscene)
+NOTE: Running setscene task 261 of 274 (virtual:native:/workdir/yocto6/openembedded-core/meta/recipes-support/libmd/libmd_1.1.0.bb:do_populate_sysroot_setscene)
+NOTE: Running setscene task 262 of 274 (virtual:native:/workdir/yocto6/openembedded-core/meta/recipes-devtools/dpkg/dpkg_1.23.7.bb:do_recipe_qa_setscene)
+NOTE: recipe linux-cix-sky1-ncz-7.2.3+ncz-r1: task do_fetch: Started
+NOTE: recipe opkg-utils-native-0.7.0-r0: task do_populate_sysroot_setscene: Started
+NOTE: recipe gettext-native-1.0-r0: task do_populate_sysroot_setscene: Started
+NOTE: recipe libmd-native-1.1.0-r0: task do_populate_sysroot_setscene: Started
+NOTE: recipe dpkg-native-1.23.7-r0: task do_recipe_qa_setscene: Started
+NOTE: recipe opkg-utils-native-0.7.0-r0: task do_populate_sysroot_setscene: Succeeded
+NOTE: Running setscene task 264 of 274 (virtual:native:/workdir/yocto6/openembedded-core/meta/recipes-devtools/opkg-utils/opkg-utils_0.7.0.bb:do_recipe_qa_setscene)
+NOTE: recipe libmd-native-1.1.0-r0: task do_populate_sysroot_setscene: Succeeded
+NOTE: Running setscene task 266 of 274 (virtual:native:/workdir/yocto6/openembedded-core/meta/recipes-support/libmd/libmd_1.1.0.bb:do_recipe_qa_setscene)
+NOTE: recipe dpkg-native-1.23.7-r0: task do_recipe_qa_setscene: Succeeded
+NOTE: recipe opkg-utils-native-0.7.0-r0: task do_recipe_qa_setscene: Started
+NOTE: recipe gettext-native-1.0-r0: task do_populate_sysroot_setscene: Succeeded
+NOTE: Running setscene task 272 of 274 (virtual:native:/workdir/yocto6/openembedded-core/meta/recipes-core/gettext/gettext_1.0.bb:do_recipe_qa_setscene)
+NOTE: recipe libmd-native-1.1.0-r0: task do_recipe_qa_setscene: Started
+NOTE: recipe opkg-utils-native-0.7.0-r0: task do_recipe_qa_setscene: Succeeded
+NOTE: recipe libmd-native-1.1.0-r0: task do_recipe_qa_setscene: Succeeded
+NOTE: recipe gettext-native-1.0-r0: task do_recipe_qa_setscene: Started
+NOTE: recipe gettext-native-1.0-r0: task do_recipe_qa_setscene: Succeeded
+NOTE: recipe linux-cix-sky1-ncz-7.2.3+ncz-r1: task do_fetch: Succeeded
+NOTE: Running task 883 of 904 (/workdir/meta-cix/recipes-kernel/linux-cix-sky1-ncz/linux-cix-sky1-ncz_7.2.bb:do_unpack)
+NOTE: Running task 884 of 904 (/workdir/meta-cix/recipes-kernel/linux-cix-sky1-ncz/linux-cix-sky1-ncz_7.2.bb:do_prepare_recipe_sysroot)
+NOTE: recipe linux-cix-sky1-ncz-7.2.3+ncz-r1: task do_unpack: Started
+NOTE: recipe linux-cix-sky1-ncz-7.2.3+ncz-r1: task do_prepare_recipe_sysroot: Started
+NOTE: recipe linux-cix-sky1-ncz-7.2.3+ncz-r1: task do_prepare_recipe_sysroot: Succeeded
+NOTE: recipe linux-cix-sky1-ncz-7.2.3+ncz-r1: task do_unpack: Succeeded
+NOTE: Running task 885 of 904 (/workdir/meta-cix/recipes-kernel/linux-cix-sky1-ncz/linux-cix-sky1-ncz_7.2.bb:do_symlink_kernsrc)
+NOTE: recipe linux-cix-sky1-ncz-7.2.3+ncz-r1: task do_symlink_kernsrc: Started
+NOTE: recipe linux-cix-sky1-ncz-7.2.3+ncz-r1: task do_symlink_kernsrc: Succeeded
+NOTE: Running task 886 of 904 (/workdir/meta-cix/recipes-kernel/linux-cix-sky1-ncz/linux-cix-sky1-ncz_7.2.bb:do_patch)
+NOTE: recipe linux-cix-sky1-ncz-7.2.3+ncz-r1: task do_patch: Started
+WARNING: linux-cix-sky1-ncz-7.2.3+ncz-r1 do_patch: QA Issue: Missing Upstream-Status in patch
+/workdir/meta-cix/recipes-kernel/linux-cix-sky1-ncz/linux-cix-sky1-ncz-7.2/patches-7.2/0147-clk-cix-sky1-restore-platform-supplier.patch
+Please add according to https://docs.yoctoproject.org/contributor-guide/recipe-style-guide.html#patch-upstream-status . [patch-status]
+WARNING: linux-cix-sky1-ncz-7.2.3+ncz-r1 do_patch: QA Issue: Missing Upstream-Status in patch
+/workdir/meta-cix/recipes-kernel/linux-cix-sky1-ncz/linux-cix-sky1-ncz-7.2/patches-7.2/0148-clk-cix-sky1-reject-partial-clkt-maps.patch
+Please add according to https://docs.yoctoproject.org/contributor-guide/recipe-style-guide.html#patch-upstream-status . [patch-status]
+WARNING: linux-cix-sky1-ncz-7.2.3+ncz-r1 do_patch: QA Issue: Missing Upstream-Status in patch
+/workdir/meta-cix/recipes-kernel/linux-cix-sky1-ncz/linux-cix-sky1-ncz-7.2/patches-7.2/0152-media-cix-amvx-serror-drain-masked-reads.patch
+Please add according to https://docs.yoctoproject.org/contributor-guide/recipe-style-guide.html#patch-upstream-status . [patch-status]
+WARNING: linux-cix-sky1-ncz-7.2.3+ncz-r1 do_patch: QA Issue: Missing Upstream-Status in patch
+/workdir/meta-cix/recipes-kernel/linux-cix-sky1-ncz/linux-cix-sky1-ncz-7.2/patches-7.2/0153-media-cix-amvx-scmi-perf-devfreq.patch
+Please add according to https://docs.yoctoproject.org/contributor-guide/recipe-style-guide.html#patch-upstream-status . [patch-status]
+WARNING: linux-cix-sky1-ncz-7.2.3+ncz-r1 do_patch: QA Issue: Missing Upstream-Status in patch
+/workdir/meta-cix/recipes-kernel/linux-cix-sky1-ncz/linux-cix-sky1-ncz-7.2/patches-7.2/0159-armchina-npu-drop-irqf-oneshot.patch
+Please add according to https://docs.yoctoproject.org/contributor-guide/recipe-style-guide.html#patch-upstream-status . [patch-status]
+WARNING: linux-cix-sky1-ncz-7.2.3+ncz-r1 do_patch: QA Issue: Missing Upstream-Status in patch
+/workdir/meta-cix/recipes-kernel/linux-cix-sky1-ncz/linux-cix-sky1-ncz-7.2/patches-7.2/0160-hwmon-scmi-dont-skip-thermal-zone-on-config-set-fail.patch
+Please add according to https://docs.yoctoproject.org/contributor-guide/recipe-style-guide.html#patch-upstream-status . [patch-status]
+WARNING: linux-cix-sky1-ncz-7.2.3+ncz-r1 do_patch: QA Issue: Missing Upstream-Status in patch
+/workdir/meta-cix/recipes-kernel/linux-cix-sky1-ncz/linux-cix-sky1-ncz-7.2/patches-7.2/0161-drm-cix-edp-panel-acpi-desc-properties.patch
+Please add according to https://docs.yoctoproject.org/contributor-guide/recipe-style-guide.html#patch-upstream-status . [patch-status]
+WARNING: linux-cix-sky1-ncz-7.2.3+ncz-r1 do_patch: QA Issue: Missing Upstream-Status in patch
+/workdir/meta-cix/recipes-kernel/linux-cix-sky1-ncz/linux-cix-sky1-ncz-7.2/patches-7.2/0162-drm-cix-linlondp-defer-on-missing-aclk-instead-of-failing.patch
+Please add according to https://docs.yoctoproject.org/contributor-guide/recipe-style-guide.html#patch-upstream-status . [patch-status]
+WARNING: linux-cix-sky1-ncz-7.2.3+ncz-r1 do_patch: QA Issue: Missing Upstream-Status in patch
+/workdir/meta-cix/recipes-kernel/linux-cix-sky1-ncz/linux-cix-sky1-ncz-7.2/patches-7.2/0163-phy-cix-usb3-defer-on-missing-clocks-fix-ref-clk-check.patch
+Please add according to https://docs.yoctoproject.org/contributor-guide/recipe-style-guide.html#patch-upstream-status . [patch-status]
+WARNING: linux-cix-sky1-ncz-7.2.3+ncz-r1 do_patch: QA Issue: Missing Upstream-Status in patch
+/workdir/meta-cix/recipes-kernel/linux-cix-sky1-ncz/linux-cix-sky1-ncz-7.2/patches-7.2/0164-usb-cdns3-cdnsp-sky1-defer-on-missing-clocks.patch
+Please add according to https://docs.yoctoproject.org/contributor-guide/recipe-style-guide.html#patch-upstream-status . [patch-status]
+WARNING: linux-cix-sky1-ncz-7.2.3+ncz-r1 do_patch: QA Issue: Missing Upstream-Status in patch
+/workdir/meta-cix/recipes-kernel/linux-cix-sky1-ncz/linux-cix-sky1-ncz-7.2/patches-7.2/0165-i2c-cadence-defer-on-missing-clock.patch
+Please add according to https://docs.yoctoproject.org/contributor-guide/recipe-style-guide.html#patch-upstream-status . [patch-status]
+WARNING: linux-cix-sky1-ncz-7.2.3+ncz-r1 do_patch: QA Issue: Missing Upstream-Status in patch
+/workdir/meta-cix/recipes-kernel/linux-cix-sky1-ncz/linux-cix-sky1-ncz-7.2/patches-7.2/0166-clocksource-sky1-defer-on-missing-timer-clocks.patch
+Please add according to https://docs.yoctoproject.org/contributor-guide/recipe-style-guide.html#patch-upstream-status . [patch-status]
+WARNING: linux-cix-sky1-ncz-7.2.3+ncz-r1 do_patch: QA Issue: Missing Upstream-Status in patch
+/workdir/meta-cix/recipes-kernel/linux-cix-sky1-ncz/linux-cix-sky1-ncz-7.2/patches-7.2/0167-soc-cix-acpi-resource-lookup-tighten-badly-specified-guard.patch
+Please add according to https://docs.yoctoproject.org/contributor-guide/recipe-style-guide.html#patch-upstream-status . [patch-status]
+WARNING: linux-cix-sky1-ncz-7.2.3+ncz-r1 do_patch: QA Issue: Missing Upstream-Status in patch
+/workdir/meta-cix/recipes-kernel/linux-cix-sky1-ncz/linux-cix-sky1-ncz-7.2/patches-7.2/0192-usb-cdns3-sky1-keep-the-wrapper-pinned-by-its-children.patch
+Please add according to https://docs.yoctoproject.org/contributor-guide/recipe-style-guide.html#patch-upstream-status . [patch-status]
+WARNING: linux-cix-sky1-ncz-7.2.3+ncz-r1 do_patch: QA Issue: Missing Upstream-Status in patch
+/workdir/meta-cix/recipes-kernel/linux-cix-sky1-ncz/linux-cix-sky1-ncz-7.2/patches-7.2/0193-usb-hub-give-root-hubs-the-same-power-on-good-floor.patch
+Please add according to https://docs.yoctoproject.org/contributor-guide/recipe-style-guide.html#patch-upstream-status . [patch-status]
+WARNING: linux-cix-sky1-ncz-7.2.3+ncz-r1 do_patch: QA Issue: Missing Upstream-Status in patch
+/workdir/meta-cix/recipes-kernel/linux-cix-sky1-ncz/linux-cix-sky1-ncz-7.2/patches-7.2/0200-rpmsg-virtio-ratelimit-no-used-buffer.patch
+Please add according to https://docs.yoctoproject.org/contributor-guide/recipe-style-guide.html#patch-upstream-status . [patch-status]
+WARNING: linux-cix-sky1-ncz-7.2.3+ncz-r1 do_patch: QA Issue: Missing Upstream-Status in patch
+/workdir/meta-cix/recipes-kernel/linux-cix-sky1-ncz/linux-cix-sky1-ncz-7.2/patches-7.2/0201-acpi-table-upgrade-add-disable-and-exclude-options.patch
+Please add according to https://docs.yoctoproject.org/contributor-guide/recipe-style-guide.html#patch-upstream-status . [patch-status]
+WARNING: linux-cix-sky1-ncz-7.2.3+ncz-r1 do_patch: QA Issue: Missing Upstream-Status in patch
+/workdir/meta-cix/recipes-kernel/linux-cix-sky1-ncz/linux-cix-sky1-ncz-7.2/patches-7.2/0202-platform-acpi-resolve-named-irq-resources.patch
+Please add according to https://docs.yoctoproject.org/contributor-guide/recipe-style-guide.html#patch-upstream-status . [patch-status]
+WARNING: linux-cix-sky1-ncz-7.2.3+ncz-r1 do_patch: QA Issue: Missing Upstream-Status in patch
+/workdir/meta-cix/recipes-kernel/linux-cix-sky1-ncz/linux-cix-sky1-ncz-7.2/patches-7.2/0203-power-opp-accept-acpi-only-configurations.patch
+Please add according to https://docs.yoctoproject.org/contributor-guide/recipe-style-guide.html#patch-upstream-status . [patch-status]
+WARNING: linux-cix-sky1-ncz-7.2.3+ncz-r1 do_patch: QA Issue: Missing Upstream-Status in patch
+/workdir/meta-cix/recipes-kernel/linux-cix-sky1-ncz/linux-cix-sky1-ncz-7.2/patches-7.2/0204-topology-has-missing-cpufreq-ref.patch
+Please add according to https://docs.yoctoproject.org/contributor-guide/recipe-style-guide.html#patch-upstream-status . [patch-status]
+WARNING: linux-cix-sky1-ncz-7.2.3+ncz-r1 do_patch: QA Issue: Missing Upstream-Status in patch
+/workdir/meta-cix/recipes-kernel/linux-cix-sky1-ncz/linux-cix-sky1-ncz-7.2/patches-7.2/0205-acpi-processor-clarify-ignore-ppc-module-parameter.patch
+Please add according to https://docs.yoctoproject.org/contributor-guide/recipe-style-guide.html#patch-upstream-status . [patch-status]
+WARNING: linux-cix-sky1-ncz-7.2.3+ncz-r1 do_patch: QA Issue: Missing Upstream-Status in patch
+/workdir/meta-cix/recipes-kernel/linux-cix-sky1-ncz/linux-cix-sky1-ncz-7.2/patches-7.2/0206-pstore-ramoops-parse-firmware-node-properties.patch
+Please add according to https://docs.yoctoproject.org/contributor-guide/recipe-style-guide.html#patch-upstream-status . [patch-status]
+WARNING: linux-cix-sky1-ncz-7.2.3+ncz-r1 do_patch: QA Issue: Missing Upstream-Status in patch
+/workdir/meta-cix/recipes-kernel/linux-cix-sky1-ncz/linux-cix-sky1-ncz-7.2/patches-7.2/0207-drm-cix-demote-internal-tbu-noop-logs.patch
+Please add according to https://docs.yoctoproject.org/contributor-guide/recipe-style-guide.html#patch-upstream-status . [patch-status]
+WARNING: linux-cix-sky1-ncz-7.2.3+ncz-r1 do_patch: QA Issue: Missing Upstream-Status in patch
+/workdir/meta-cix/recipes-kernel/linux-cix-sky1-ncz/linux-cix-sky1-ncz-7.2/patches-7.2/0208-bluetooth-btrtl-return-register-read-error.patch
+Please add according to https://docs.yoctoproject.org/contributor-guide/recipe-style-guide.html#patch-upstream-status . [patch-status]
+WARNING: linux-cix-sky1-ncz-7.2.3+ncz-r1 do_patch: QA Issue: Missing Upstream-Status in patch
+/workdir/meta-cix/recipes-kernel/linux-cix-sky1-ncz/linux-cix-sky1-ncz-7.2/patches-7.2/0209-firmware-arm-scmi-use-rational-perf-frequency-conversion.patch
+Please add according to https://docs.yoctoproject.org/contributor-guide/recipe-style-guide.html#patch-upstream-status . [patch-status]
+WARNING: linux-cix-sky1-ncz-7.2.3+ncz-r1 do_patch: QA Issue: Missing Upstream-Status in patch
+/workdir/meta-cix/recipes-kernel/linux-cix-sky1-ncz/linux-cix-sky1-ncz-7.2/patches-7.2/0210-acpi-thermal-bind-devfreq-cooling-devices-safely.patch
+Please add according to https://docs.yoctoproject.org/contributor-guide/recipe-style-guide.html#patch-upstream-status . [patch-status]
+WARNING: linux-cix-sky1-ncz-7.2.3+ncz-r1 do_patch: QA Issue: Missing Upstream-Status in patch
+/workdir/meta-cix/recipes-kernel/linux-cix-sky1-ncz/linux-cix-sky1-ncz-7.2/patches-7.2/0211-drm-panthor-declare-scmi-perf-softdep.patch
+Please add according to https://docs.yoctoproject.org/contributor-guide/recipe-style-guide.html#patch-upstream-status . [patch-status]
+WARNING: linux-cix-sky1-ncz-7.2.3+ncz-r1 do_patch: QA Issue: Missing Upstream-Status in patch
+/workdir/meta-cix/recipes-kernel/linux-cix-sky1-ncz/linux-cix-sky1-ncz-7.2/patches-7.2/0212-cacheinfo-share-global-firmware-ids-across-levels.patch
+Please add according to https://docs.yoctoproject.org/contributor-guide/recipe-style-guide.html#patch-upstream-status . [patch-status]
+WARNING: linux-cix-sky1-ncz-7.2.3+ncz-r1 do_patch: QA Issue: Missing Upstream-Status in patch
+/workdir/meta-cix/recipes-kernel/linux-cix-sky1-ncz/linux-cix-sky1-ncz-7.2/patches-7.2/0213-hwmon-cix-add-safe-acpi-fan-control.patch
+Please add according to https://docs.yoctoproject.org/contributor-guide/recipe-style-guide.html#patch-upstream-status . [patch-status]
+WARNING: linux-cix-sky1-ncz-7.2.3+ncz-r1 do_patch: QA Issue: Missing Upstream-Status in patch
+/workdir/meta-cix/recipes-kernel/linux-cix-sky1-ncz/linux-cix-sky1-ncz-7.2/patches-7.2/0214-acpi-demote-cix-sky1-ecam-duplicate-reservations.patch
+Please add according to https://docs.yoctoproject.org/contributor-guide/recipe-style-guide.html#patch-upstream-status . [patch-status]
+WARNING: linux-cix-sky1-ncz-7.2.3+ncz-r1 do_patch: QA Issue: Missing Upstream-Status in patch
+/workdir/meta-cix/recipes-kernel/linux-cix-sky1-ncz/linux-cix-sky1-ncz-7.2/patches-7.2/0215-pci-cix-enable-root-port-io-window-assignment.patch
+Please add according to https://docs.yoctoproject.org/contributor-guide/recipe-style-guide.html#patch-upstream-status . [patch-status]
+WARNING: linux-cix-sky1-ncz-7.2.3+ncz-r1 do_patch: QA Issue: Missing Upstream-Status in patch
+/workdir/meta-cix/recipes-kernel/linux-cix-sky1-ncz/linux-cix-sky1-ncz-7.2/patches-7.2/0217-rtw89-disable-hw-rfkill-polling-on-orion-o6.patch
+Please add according to https://docs.yoctoproject.org/contributor-guide/recipe-style-guide.html#patch-upstream-status . [patch-status]
+WARNING: linux-cix-sky1-ncz-7.2.3+ncz-r1 do_patch: QA Issue: Missing Upstream-Status in patch
+/workdir/meta-cix/recipes-kernel/linux-cix-sky1-ncz/linux-cix-sky1-ncz-7.2/patches-7.2/0218-rtw89-check-acpi-dsm-before-evaluating.patch
+Please add according to https://docs.yoctoproject.org/contributor-guide/recipe-style-guide.html#patch-upstream-status . [patch-status]
+WARNING: linux-cix-sky1-ncz-7.2.3+ncz-r1 do_patch: QA Issue: Missing Upstream-Status in patch
+/workdir/meta-cix/recipes-kernel/linux-cix-sky1-ncz/linux-cix-sky1-ncz-7.2/patches-7.2/0220-misc-armchina-npu-use-irq-object-as-dev-id.patch
+Please add according to https://docs.yoctoproject.org/contributor-guide/recipe-style-guide.html#patch-upstream-status . [patch-status]
+WARNING: linux-cix-sky1-ncz-7.2.3+ncz-r1 do_patch: QA Issue: Missing Upstream-Status in patch
+/workdir/meta-cix/recipes-kernel/linux-cix-sky1-ncz/linux-cix-sky1-ncz-7.2/patches-7.2/0223-drm-cix-expose-dp-eld-to-hdmi-codec.patch
+Please add according to https://docs.yoctoproject.org/contributor-guide/recipe-style-guide.html#patch-upstream-status . [patch-status]
+WARNING: linux-cix-sky1-ncz-7.2.3+ncz-r1 do_patch: QA Issue: Missing Upstream-Status in patch
+/workdir/meta-cix/recipes-kernel/linux-cix-sky1-ncz/linux-cix-sky1-ncz-7.2/patches-7.2/0224-sound-soc-cix-harden-sky1-audio-paths.patch
+Please add according to https://docs.yoctoproject.org/contributor-guide/recipe-style-guide.html#patch-upstream-status . [patch-status]
+NOTE: recipe linux-cix-sky1-ncz-7.2.3+ncz-r1: task do_patch: Succeeded
+NOTE: Running task 887 of 904 (/workdir/meta-cix/recipes-kernel/linux-cix-sky1-ncz/linux-cix-sky1-ncz_7.2.bb:do_deploy_source_date_epoch)
+NOTE: Running task 888 of 904 (/workdir/meta-cix/recipes-kernel/linux-cix-sky1-ncz/linux-cix-sky1-ncz_7.2.bb:do_populate_lic)
+NOTE: recipe linux-cix-sky1-ncz-7.2.3+ncz-r1: task do_deploy_source_date_epoch: Started
+NOTE: recipe linux-cix-sky1-ncz-7.2.3+ncz-r1: task do_populate_lic: Started
+NOTE: recipe linux-cix-sky1-ncz-7.2.3+ncz-r1: task do_populate_lic: Succeeded
+NOTE: recipe linux-cix-sky1-ncz-7.2.3+ncz-r1: task do_deploy_source_date_epoch: Succeeded
+NOTE: Running task 889 of 904 (/workdir/meta-cix/recipes-kernel/linux-cix-sky1-ncz/linux-cix-sky1-ncz_7.2.bb:do_configure)
+NOTE: recipe linux-cix-sky1-ncz-7.2.3+ncz-r1: task do_configure: Started
+NOTE: recipe linux-cix-sky1-ncz-7.2.3+ncz-r1: task do_configure: Succeeded
+NOTE: Running task 890 of 904 (/workdir/meta-cix/recipes-kernel/linux-cix-sky1-ncz/linux-cix-sky1-ncz_7.2.bb:do_compile)
+NOTE: recipe linux-cix-sky1-ncz-7.2.3+ncz-r1: task do_compile: Started
+NOTE: recipe linux-cix-sky1-ncz-7.2.3+ncz-r1: task do_compile: Succeeded
+NOTE: Running task 891 of 904 (/workdir/meta-cix/recipes-kernel/linux-cix-sky1-ncz/linux-cix-sky1-ncz_7.2.bb:do_shared_workdir)
+NOTE: Running task 892 of 904 (/workdir/meta-cix/recipes-kernel/linux-cix-sky1-ncz/linux-cix-sky1-ncz_7.2.bb:do_kernel_link_images)
+NOTE: Running task 893 of 904 (/workdir/meta-cix/recipes-kernel/linux-cix-sky1-ncz/linux-cix-sky1-ncz_7.2.bb:do_transform_kernel)
+NOTE: recipe linux-cix-sky1-ncz-7.2.3+ncz-r1: task do_shared_workdir: Started
+NOTE: recipe linux-cix-sky1-ncz-7.2.3+ncz-r1: task do_kernel_link_images: Started
+NOTE: recipe linux-cix-sky1-ncz-7.2.3+ncz-r1: task do_transform_kernel: Started
+NOTE: recipe linux-cix-sky1-ncz-7.2.3+ncz-r1: task do_kernel_link_images: Succeeded
+NOTE: recipe linux-cix-sky1-ncz-7.2.3+ncz-r1: task do_transform_kernel: Succeeded
+NOTE: recipe linux-cix-sky1-ncz-7.2.3+ncz-r1: task do_shared_workdir: Succeeded
+NOTE: Running task 894 of 904 (/workdir/meta-cix/recipes-kernel/linux-cix-sky1-ncz/linux-cix-sky1-ncz_7.2.bb:do_compile_kernelmodules)
+NOTE: recipe linux-cix-sky1-ncz-7.2.3+ncz-r1: task do_compile_kernelmodules: Started
+NOTE: recipe linux-cix-sky1-ncz-7.2.3+ncz-r1: task do_compile_kernelmodules: Succeeded
+NOTE: Running task 895 of 904 (/workdir/meta-cix/recipes-kernel/linux-cix-sky1-ncz/linux-cix-sky1-ncz_7.2.bb:do_strip)
+NOTE: recipe linux-cix-sky1-ncz-7.2.3+ncz-r1: task do_strip: Started
+NOTE: recipe linux-cix-sky1-ncz-7.2.3+ncz-r1: task do_strip: Succeeded
+NOTE: Running task 896 of 904 (/workdir/meta-cix/recipes-kernel/linux-cix-sky1-ncz/linux-cix-sky1-ncz_7.2.bb:do_sizecheck)
+NOTE: recipe linux-cix-sky1-ncz-7.2.3+ncz-r1: task do_sizecheck: Started
+NOTE: recipe linux-cix-sky1-ncz-7.2.3+ncz-r1: task do_sizecheck: Succeeded
+NOTE: Running task 897 of 904 (/workdir/meta-cix/recipes-kernel/linux-cix-sky1-ncz/linux-cix-sky1-ncz_7.2.bb:do_install)
+NOTE: recipe linux-cix-sky1-ncz-7.2.3+ncz-r1: task do_install: Started
+NOTE: recipe linux-cix-sky1-ncz-7.2.3+ncz-r1: task do_install: Succeeded
+NOTE: Running task 898 of 904 (/workdir/meta-cix/recipes-kernel/linux-cix-sky1-ncz/linux-cix-sky1-ncz_7.2.bb:do_package)
+NOTE: Running task 899 of 904 (/workdir/meta-cix/recipes-kernel/linux-cix-sky1-ncz/linux-cix-sky1-ncz_7.2.bb:do_populate_sysroot)
+NOTE: recipe linux-cix-sky1-ncz-7.2.3+ncz-r1: task do_package: Started
+NOTE: recipe linux-cix-sky1-ncz-7.2.3+ncz-r1: task do_populate_sysroot: Started
+NOTE: recipe linux-cix-sky1-ncz-7.2.3+ncz-r1: task do_populate_sysroot: Succeeded
+NOTE: recipe linux-cix-sky1-ncz-7.2.3+ncz-r1: task do_package: Succeeded
+NOTE: Running task 900 of 904 (/workdir/meta-cix/recipes-kernel/linux-cix-sky1-ncz/linux-cix-sky1-ncz_7.2.bb:do_packagedata)
+NOTE: recipe linux-cix-sky1-ncz-7.2.3+ncz-r1: task do_packagedata: Started
+NOTE: recipe linux-cix-sky1-ncz-7.2.3+ncz-r1: task do_packagedata: Succeeded
+NOTE: Running task 901 of 904 (/workdir/meta-cix/recipes-kernel/linux-cix-sky1-ncz/linux-cix-sky1-ncz_7.2.bb:do_deploy)
+NOTE: Running task 902 of 904 (/workdir/meta-cix/recipes-kernel/linux-cix-sky1-ncz/linux-cix-sky1-ncz_7.2.bb:do_package_write_deb)
+NOTE: Running task 903 of 904 (/workdir/meta-cix/recipes-kernel/linux-cix-sky1-ncz/linux-cix-sky1-ncz_7.2.bb:do_package_qa)
+NOTE: recipe linux-cix-sky1-ncz-7.2.3+ncz-r1: task do_deploy: Started
+NOTE: recipe linux-cix-sky1-ncz-7.2.3+ncz-r1: task do_package_write_deb: Started
+NOTE: recipe linux-cix-sky1-ncz-7.2.3+ncz-r1: task do_package_qa: Started
+NOTE: recipe linux-cix-sky1-ncz-7.2.3+ncz-r1: task do_deploy: Succeeded
+WARNING: linux-cix-sky1-ncz-7.2.3+ncz-r1 do_package_qa: QA Issue: File /boot/vmlinux-7.2.3-sky1-ncz in package kernel-linux-cix-sky1-ncz-vmlinux contains reference to TMPDIR [buildpaths]
+WARNING: linux-cix-sky1-ncz-7.2.3+ncz-r1 do_package_qa: QA Issue: File /boot/Image-7.2.3-sky1-ncz in package kernel-linux-cix-sky1-ncz-image-image contains reference to TMPDIR [buildpaths]
+NOTE: recipe linux-cix-sky1-ncz-7.2.3+ncz-r1: task do_package_qa: Succeeded
+NOTE: recipe linux-cix-sky1-ncz-7.2.3+ncz-r1: task do_package_write_deb: Succeeded
+NOTE: Running noexec task 904 of 904 (/workdir/meta-cix/recipes-kernel/linux-cix-sky1-ncz/linux-cix-sky1-ncz_7.2.bb:do_build)
+NOTE: Tasks Summary: Attempted 904 tasks of which 880 didn't need to be rerun and all succeeded.
+
+Summary: There were 38 WARNING messages.
+  KVER = 7.2.3-sky1-ncz
+  from = /home/jasonperlow/ybuild/tmp/work/cixmini-nclawzero-linux/linux-cix-sky1-ncz/7.2.3+ncz
+
+=== 2/7 build cix-gpu-kmd (mali) against 7.2.3-sky1-ncz
+Loading cache...done.
+Loaded 5227 entries from dependency cache.
+NOTE: Resolving any missing task queue dependencies
+
+Build Configuration:
+BB_VERSION           = "2.18.0"
+BUILD_SYS            = "aarch64-linux"
+NATIVELSBSTRING      = "universal"
+TARGET_SYS           = "aarch64-nclawzero-linux"
+MACHINE              = "cixmini"
+SDKMACHINE           = "aarch64"
+DISTRO               = "nclawzero"
+DISTRO_VERSION       = "2026.04"
+TUNE_FEATURES        = "aarch64 armv8a crc"
+meta                 = "HEAD:c2746a4a165fd99c2d1aafed17533555787f37ce"
+meta-poky            = "HEAD:824795b885b25e074a2880fbcd54e1a6c875d47d"
+meta-oe              
+meta-python          
+meta-networking      = "wrynose:af8b6d6b2f0b11595b0a0d5b82efa3129d52a628"
+meta-cix             = "wip/gpt6astra/2026-09-07-dp-audio-eld:63b5db9cf55eb5dfd3d25e5096bffd71d216c218"
+
+Initialising tasks...Sstate summary: Wanted 0 Local 0 Mirrors 0 Missed 0 Current 0 (0% match, 0% complete)
+done.
+NOTE: No setscene tasks
+NOTE: Executing Tasks
+NOTE: Running task 1 of 2 (/workdir/meta-cix/recipes-kernel/cix-modules/cix-gpu-kmd_1.0.bb:do_clean)
+NOTE: recipe cix-gpu-kmd-1.0+cix-r0: task do_clean: Started
+NOTE: recipe cix-gpu-kmd-1.0+cix-r0: task do_clean: Succeeded
+NOTE: Running task 2 of 2 (/workdir/meta-cix/recipes-kernel/cix-modules/cix-gpu-kmd_1.0.bb:do_cleansstate)
+NOTE: recipe cix-gpu-kmd-1.0+cix-r0: task do_cleansstate: Started
+NOTE: recipe cix-gpu-kmd-1.0+cix-r0: task do_cleansstate: Succeeded
+NOTE: Tasks Summary: Attempted 2 tasks of which 0 didn't need to be rerun and all succeeded.
+Loading cache...done.
+Loaded 5227 entries from dependency cache.
+NOTE: Resolving any missing task queue dependencies
+
+Build Configuration:
+BB_VERSION           = "2.18.0"
+BUILD_SYS            = "aarch64-linux"
+NATIVELSBSTRING      = "universal"
+TARGET_SYS           = "aarch64-nclawzero-linux"
+MACHINE              = "cixmini"
+SDKMACHINE           = "aarch64"
+DISTRO               = "nclawzero"
+DISTRO_VERSION       = "2026.04"
+TUNE_FEATURES        = "aarch64 armv8a crc"
+meta                 = "HEAD:c2746a4a165fd99c2d1aafed17533555787f37ce"
+meta-poky            = "HEAD:824795b885b25e074a2880fbcd54e1a6c875d47d"
+meta-oe              
+meta-python          
+meta-networking      = "wrynose:af8b6d6b2f0b11595b0a0d5b82efa3129d52a628"
+meta-cix             = "wip/gpt6astra/2026-09-07-dp-audio-eld:63b5db9cf55eb5dfd3d25e5096bffd71d216c218"
+
+Initialising tasks...Sstate summary: Wanted 132 Local 124 Mirrors 0 Missed 8 Current 182 (93% match, 97% complete)
+done.
+NOTE: Executing Tasks
+NOTE: Running task 902 of 1012 (/workdir/meta-cix/recipes-kernel/cix-modules/cix-gpu-kmd_1.0.bb:do_recipe_qa)
+NOTE: Running task 933 of 1012 (/workdir/yocto6/openembedded-core/meta/recipes-kernel/make-mod-scripts/make-mod-scripts_1.0.bb:do_configure)
+NOTE: recipe cix-gpu-kmd-1.0+cix-r0: task do_recipe_qa: Started
+NOTE: recipe make-mod-scripts-1.0-r0: task do_configure: Started
+NOTE: recipe cix-gpu-kmd-1.0+cix-r0: task do_recipe_qa: Succeeded
+NOTE: Running task 997 of 1012 (/workdir/meta-cix/recipes-kernel/cix-modules/cix-gpu-kmd_1.0.bb:do_fetch)
+NOTE: recipe cix-gpu-kmd-1.0+cix-r0: task do_fetch: Started
+NOTE: recipe cix-gpu-kmd-1.0+cix-r0: task do_fetch: Succeeded
+NOTE: Running task 998 of 1012 (/workdir/meta-cix/recipes-kernel/cix-modules/cix-gpu-kmd_1.0.bb:do_unpack)
+NOTE: Running task 999 of 1012 (/workdir/meta-cix/recipes-kernel/cix-modules/cix-gpu-kmd_1.0.bb:do_prepare_recipe_sysroot)
+NOTE: recipe cix-gpu-kmd-1.0+cix-r0: task do_unpack: Started
+NOTE: recipe cix-gpu-kmd-1.0+cix-r0: task do_prepare_recipe_sysroot: Started
+NOTE: recipe cix-gpu-kmd-1.0+cix-r0: task do_prepare_recipe_sysroot: Succeeded
+NOTE: recipe cix-gpu-kmd-1.0+cix-r0: task do_unpack: Succeeded
+NOTE: Running task 1000 of 1012 (/workdir/meta-cix/recipes-kernel/cix-modules/cix-gpu-kmd_1.0.bb:do_patch)
+NOTE: recipe cix-gpu-kmd-1.0+cix-r0: task do_patch: Started
+NOTE: recipe cix-gpu-kmd-1.0+cix-r0: task do_patch: Succeeded
+NOTE: Running task 1001 of 1012 (/workdir/meta-cix/recipes-kernel/cix-modules/cix-gpu-kmd_1.0.bb:do_deploy_source_date_epoch)
+NOTE: Running task 1002 of 1012 (/workdir/meta-cix/recipes-kernel/cix-modules/cix-gpu-kmd_1.0.bb:do_populate_lic)
+NOTE: recipe cix-gpu-kmd-1.0+cix-r0: task do_deploy_source_date_epoch: Started
+NOTE: recipe cix-gpu-kmd-1.0+cix-r0: task do_populate_lic: Started
+NOTE: recipe cix-gpu-kmd-1.0+cix-r0: task do_populate_lic: Succeeded
+NOTE: recipe cix-gpu-kmd-1.0+cix-r0: task do_deploy_source_date_epoch: Succeeded
+NOTE: recipe make-mod-scripts-1.0-r0: task do_configure: Succeeded
+NOTE: Running task 1003 of 1012 (/workdir/yocto6/openembedded-core/meta/recipes-kernel/make-mod-scripts/make-mod-scripts_1.0.bb:do_compile)
+NOTE: recipe make-mod-scripts-1.0-r0: task do_compile: Started
+NOTE: recipe make-mod-scripts-1.0-r0: task do_compile: Succeeded
+NOTE: Running task 1004 of 1012 (/workdir/meta-cix/recipes-kernel/cix-modules/cix-gpu-kmd_1.0.bb:do_configure)
+NOTE: recipe cix-gpu-kmd-1.0+cix-r0: task do_configure: Started
+NOTE: recipe cix-gpu-kmd-1.0+cix-r0: task do_configure: Succeeded
+NOTE: Running task 1005 of 1012 (/workdir/meta-cix/recipes-kernel/cix-modules/cix-gpu-kmd_1.0.bb:do_compile)
+NOTE: recipe cix-gpu-kmd-1.0+cix-r0: task do_compile: Started
+NOTE: recipe cix-gpu-kmd-1.0+cix-r0: task do_compile: Succeeded
+NOTE: Running task 1006 of 1012 (/workdir/meta-cix/recipes-kernel/cix-modules/cix-gpu-kmd_1.0.bb:do_install)
+NOTE: recipe cix-gpu-kmd-1.0+cix-r0: task do_install: Started
+NOTE: recipe cix-gpu-kmd-1.0+cix-r0: task do_install: Succeeded
+NOTE: Running task 1007 of 1012 (/workdir/meta-cix/recipes-kernel/cix-modules/cix-gpu-kmd_1.0.bb:do_package)
+NOTE: Running task 1008 of 1012 (/workdir/meta-cix/recipes-kernel/cix-modules/cix-gpu-kmd_1.0.bb:do_populate_sysroot)
+NOTE: recipe cix-gpu-kmd-1.0+cix-r0: task do_package: Started
+NOTE: recipe cix-gpu-kmd-1.0+cix-r0: task do_populate_sysroot: Started
+NOTE: recipe cix-gpu-kmd-1.0+cix-r0: task do_populate_sysroot: Succeeded
+NOTE: recipe cix-gpu-kmd-1.0+cix-r0: task do_package: Succeeded
+NOTE: Running task 1009 of 1012 (/workdir/meta-cix/recipes-kernel/cix-modules/cix-gpu-kmd_1.0.bb:do_packagedata)
+NOTE: recipe cix-gpu-kmd-1.0+cix-r0: task do_packagedata: Started
+NOTE: recipe cix-gpu-kmd-1.0+cix-r0: task do_packagedata: Succeeded
+NOTE: Running task 1010 of 1012 (/workdir/meta-cix/recipes-kernel/cix-modules/cix-gpu-kmd_1.0.bb:do_package_write_deb)
+NOTE: Running task 1011 of 1012 (/workdir/meta-cix/recipes-kernel/cix-modules/cix-gpu-kmd_1.0.bb:do_package_qa)
+NOTE: recipe cix-gpu-kmd-1.0+cix-r0: task do_package_write_deb: Started
+NOTE: recipe cix-gpu-kmd-1.0+cix-r0: task do_package_qa: Started
+WARNING: cix-gpu-kmd-1.0+cix-r0 do_package_qa: QA Issue: File /usr/lib/modules/7.2.3-sky1-ncz/extra/cix/mali_kbase.ko in package kernel-module-mali-kbase-7.2.3-sky1-ncz contains reference to TMPDIR [buildpaths]
+NOTE: recipe cix-gpu-kmd-1.0+cix-r0: task do_package_qa: Succeeded
+NOTE: recipe cix-gpu-kmd-1.0+cix-r0: task do_package_write_deb: Succeeded
+NOTE: Running noexec task 1012 of 1012 (/workdir/meta-cix/recipes-kernel/cix-modules/cix-gpu-kmd_1.0.bb:do_build)
+NOTE: Tasks Summary: Attempted 1012 tasks of which 994 didn't need to be rerun and all succeeded.
+
+Summary: There was 1 WARNING message.
+
+=== 3/7 stage mali overlay + verify vermagic
+  staged 3 modules into /home/jasonperlow/isobuild/cix-installer/assets/kernel/mali/7.2.3-sky1-ncz, all vermagic=7.2.3-sky1-ncz
+
+=== 4/7 stage kernel assets and run boot/ABI gates
+KVER=7.2.3-sky1-ncz  dest=/home/jasonperlow/isobuild/cix-installer/assets/kernel/r265eld-7.2.3-sky1-ncz-20260907  previous edge=/home/jasonperlow/isobuild/cix-installer/assets/kernel/r263-7.2.3-sky1-ncz-20260904
+module linlon-dp unchanged
+module trilin-dpsub CHANGED
+[extract] 7.2.3-sky1-ncz (arm64, split build)
+[extract]   source: /home/jasonperlow/ybuild/tmp/work/cixmini-nclawzero-linux/linux-cix-sky1-ncz/7.2.3+ncz/kernel-source
+[extract]   build : /home/jasonperlow/ybuild/tmp/work/cixmini-nclawzero-linux/linux-cix-sky1-ncz/7.2.3+ncz/build
+[extract] staging build-system Makefiles/Kbuild/Kconfig from source
+[extract] overlaying generated headers from the build dir
+[extract] pinned localversion '-sky1-ncz' (base 7.2.3 -> 7.2.3-sky1-ncz)
+[extract] stripped 3 non-portable host tool(s); target will rebuild them
+[extract] OK — 14M (16773 files) → /home/jasonperlow/isobuild/cix-installer/assets/kernel/r265eld-7.2.3-sky1-ncz-20260907/headers-cixmini.tar.zst
+=== staged:
+total 67608
+drwxr-xr-x. 1 jasonperlow jasonperlow      190 Sep  7 20:37 .
+drwxr-xr-x. 1 jasonperlow jasonperlow      296 Sep  7 20:37 ..
+-rw-r--r--. 1 jasonperlow jasonperlow   277984 Sep  7 20:37 config-7.2.3-sky1-ncz
+-rw-r--r--. 1 jasonperlow jasonperlow 13950922 Sep  7 20:37 headers-cixmini.tar.zst
+drwxr-xr-x. 1 jasonperlow jasonperlow        6 Sep  7 20:37 headers-dir
+-rw-r--r--. 1 jasonperlow jasonperlow 47106560 Sep  7 20:37 Image-cixmini.bin
+-rw-r--r--. 1 jasonperlow jasonperlow       14 Sep  7 20:37 KVER
+=== GATE 1: KVM boot + PCI collision lint
+=== kvm-kernel-gate ===
+  Image : /home/jasonperlow/isobuild/cix-installer/assets/kernel/r265eld-7.2.3-sky1-ncz-20260907/Image-cixmini.bin (47106560 bytes)
+  Config: /home/jasonperlow/isobuild/cix-installer/assets/kernel/r265eld-7.2.3-sky1-ncz-20260907/config-7.2.3-sky1-ncz
+--- PCI ID collision lint ---
+  ok: CONFIG_USB_CDNS3_PCI_WRAP not set
+  ok: CONFIG_USB_CDNSP_PCI not set
+  ok: CONFIG_USB_CDNS2_UDC not set
+--- required symbols ---
+  ok: CONFIG_DEVTMPFS=y
+  ok: CONFIG_DEVTMPFS_MOUNT=y
+  ok: CONFIG_BLK_DEV_LOOP=y
+  ok: CONFIG_ISO9660_FS=y
+--- boot under qemu ---
+  accel=kvm cpu=host timeout=120s
+  reached root-mount (expected panic, no rootfs supplied)
+GATE: PASS ✅  Image-cixmini.bin
+  boot log: /tmp/kvm-kernel-gate.pzPWAf.log
+=== GATE 2: dkms ABI
+  image banner  : Linux version 7.2.3-sky1-ncz (oe-user@oe-host) (aarch64-nclawzero-linux-gcc (GCC) 15.3.0, GNU ld (GNU Binutils) 2.46.1) #1 SMP PREEMPT Wed Sep  2 12:33:21 UTC 2026
+  header built by: oe-user@oe-host
+  header compiler: aarch64-nclawzero-linux-gcc (GCC) 15.3.0, GNU ld (GNU Binutils) 2.46.1
+dkms-abi-gate: ok: builder identity matches (oe-user@oe-host)
+dkms-abi-gate: ok: binutils matches (2.46.1)
+dkms-abi-gate: ok: CONFIG_MODVERSIONS=y (mismatched modules will refuse to load)
+dkms-abi-gate: PASS
+=== packaging: SKIPPED (NCZ_SKIP_PACKAGING=1; caller packages)
+drwxr-xr-x. 1 jasonperlow jasonperlow     2814 Sep  7 17:44 ..
+-rw-r--r--. 1 jasonperlow jasonperlow    14996 Sep  4 12:44 cixmini-boot_1.2+r263_arm64.deb
+-rw-r--r--. 1 jasonperlow jasonperlow 13487560 Sep  4 12:44 linux-headers-cixmini_7.2.3-sky1-ncz+r263_arm64.deb
+-rw-r--r--. 1 jasonperlow jasonperlow 20807008 Sep  4 12:44 linux-image-cixmini_7.2.3-sky1-ncz+r263_arm64.deb
+
+=== 4b/7 rebuild panthor-cix DKMS module against staged headers for 7.2.3-sky1-ncz
+FAIL: panthor-cix not registered in dkms -- nothing to rebuild
