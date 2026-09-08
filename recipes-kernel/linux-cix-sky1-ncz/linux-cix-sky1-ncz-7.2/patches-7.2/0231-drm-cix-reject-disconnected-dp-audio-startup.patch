@@ -1,0 +1,30 @@
+From: Jason Perlow <jperlow@gmail.com>
+Subject: [PATCH] drm/cix: reject audio startup on disconnected DP ports
+
+Candidate fix for disconnected-port probing, NOT a claim of audible
+audio repair. Hardware validation of this change is still pending.
+
+On O6N, hw:0,0 is disconnected and opening it reproducibly emits
+Unknown ELD version 0. Connected hw:0,1 has valid ELD, runs stereo
+48 kHz playback, and emits no warning. Returning success when no
+sink exists lets hdmi-codec continue into parsing the all-zero ELD
+provided by get_eld. Return ENODEV before hdmi-codec reaches that
+parse or marks the PCM busy. Preserve the connected startup path.
+
+Upstream-Status: Inappropriate [diagnostic experiment]
+Signed-off-by: Jason Perlow <jperlow@gmail.com>
+
+diff --git a/drivers/gpu/drm/cix/dptx/trilin_dptx_audio.c b/drivers/gpu/drm/cix/dptx/trilin_dptx_audio.c
+--- a/drivers/gpu/drm/cix/dptx/trilin_dptx_audio.c
++++ b/drivers/gpu/drm/cix/dptx/trilin_dptx_audio.c
+@@ -118,8 +118,9 @@
+ 	struct trilin_dp *dp = (struct trilin_dp *)data;
+ 	struct dptx_audio *dp_audio = &dp->dp_audio;
+ 
++	/* No sink: do not enable playback or parse an intentionally empty ELD. */
+ 	if (!trilin_dp_plugged_status(dp))
+-		return 0;
++		return -ENODEV;
+ 
+ 	trilin_dp_write(dp, TRILIN_DPTX_SEC0_AUDIO_ENABLE, 1);
+ 
