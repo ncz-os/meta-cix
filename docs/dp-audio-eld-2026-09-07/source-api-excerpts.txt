@@ -1,0 +1,170 @@
+ * drm_edid_connector_update - Update connector information from EDID
+ * @connector: Connector
+ * @drm_edid: EDID
+ *
+ * Update the connector display info, ELD, HDR metadata, relevant properties,
+ * etc. from the passed in EDID.
+ *
+ * If EDID is NULL, reset the information.
+ *
+ * Must be called before calling drm_edid_connector_add_modes().
+ *
+ * Return: 0 on success, negative error on errors.
+ */
+int drm_edid_connector_update(struct drm_connector *connector,
+			      const struct drm_edid *drm_edid)
+{
+	update_display_info(connector, drm_edid);
+
+	_drm_update_tile_info(connector, drm_edid);
+
+	return _drm_edid_connector_property_update(connector, drm_edid);
+}
+EXPORT_SYMBOL(drm_edid_connector_update);
+
+
+/**
+ * drm_connector_update_edid_property - update the edid property of a connector
+ * @connector: drm connector
+ * @edid: new value of the edid property
+ *
+ * This function creates a new blob modeset object and assigns its id to the
+ * connector's edid property.
+ * Since we also parse tile information from EDID's displayID block, we also
+ * set the connector's tile property here. See drm_connector_set_tile_property()
+ * for more details.
+ *
+ * This function is deprecated. Use drm_edid_connector_update() instead.
+ *
+ * Returns:
+ * Zero on success, negative errno on failure.
+ */
+int drm_connector_update_edid_property(struct drm_connector *connector,
+				       const struct edid *edid)
+{
+	struct drm_edid drm_edid;
+
+	return drm_edid_connector_update(connector, drm_edid_legacy_init(&drm_edid, edid));
+}
+EXPORT_SYMBOL(drm_connector_update_edid_property);
+
+/**
+ * drm_add_edid_modes - add modes from EDID data, if available
+ * @connector: connector we're probing
+ * @edid: EDID data
+ *
+ * Add the specified modes to the connector's mode list. Also fills out the
+ * &drm_display_info structure and ELD in @connector with any information which
+ * can be derived from the edid.
+ *
+ * This function is deprecated. Use drm_edid_connector_add_modes() instead.
+ *
+ * Return: The number of modes added or 0 if we couldn't find any.
+ */
+int drm_add_edid_modes(struct drm_connector *connector, struct edid *edid)
+{
+	struct drm_edid _drm_edid;
+	const struct drm_edid *drm_edid;
+
+	if (edid && !drm_edid_is_valid(edid)) {
+		drm_warn(connector->dev, "[CONNECTOR:%d:%s] EDID invalid.\n",
+			 connector->base.id, connector->name);
+		edid = NULL;
+	}
+
+	drm_edid = drm_edid_legacy_init(&_drm_edid, edid);
+
+	update_display_info(connector, drm_edid);
+
+	return _drm_edid_connector_add_modes(connector, drm_edid);
+}
+EXPORT_SYMBOL(drm_add_edid_modes);
+	return 0;
+}
+
+static int hdmi_codec_startup(struct snd_pcm_substream *substream,
+			      struct snd_soc_dai *dai)
+{
+	struct hdmi_codec_priv *hcp = snd_soc_dai_get_drvdata(dai);
+	bool tx = substream->stream == SNDRV_PCM_STREAM_PLAYBACK;
+	bool has_capture = !hcp->hcd.no_i2s_capture;
+	bool has_playback = !hcp->hcd.no_i2s_playback;
+	int ret = 0;
+
+	if (!((has_playback && tx) || (has_capture && !tx)))
+		return 0;
+
+	mutex_lock(&hcp->lock);
+	if (hcp->busy) {
+		dev_err(dai->dev, "Only one simultaneous stream supported!\n");
+		mutex_unlock(&hcp->lock);
+		return -EINVAL;
+	}
+
+	if (hcp->hcd.ops->audio_startup) {
+		ret = hcp->hcd.ops->audio_startup(dai->dev->parent, hcp->hcd.data);
+		if (ret)
+			goto err;
+	}
+
+	if (tx && hcp->hcd.ops->get_eld) {
+		ret = hcp->hcd.ops->get_eld(dai->dev->parent, hcp->hcd.data,
+					    hcp->eld, sizeof(hcp->eld));
+		if (ret)
+			goto err;
+
+		snd_parse_eld(dai->dev, &hcp->eld_parsed,
+			      hcp->eld, sizeof(hcp->eld));
+
+		ret = snd_pcm_hw_constraint_eld(substream->runtime, hcp->eld);
+		if (ret)
+			goto err;
+
+		/* Select chmap supported */
+		hdmi_codec_eld_chmap(hcp);
+	}
+
+	hcp->busy = true;
+
+static void plugged_cb(struct device *dev, bool plugged)
+{
+	struct hdmi_codec_priv *hcp = dev_get_drvdata(dev);
+	int ret;
+
+	if (plugged) {
+		if (hcp->hcd.ops->get_eld) {
+			hcp->hcd.ops->get_eld(dev->parent, hcp->hcd.data,
+					    hcp->eld, sizeof(hcp->eld));
+			ret = snd_parse_eld(dev, &hcp->eld_parsed,
+					    hcp->eld, sizeof(hcp->eld));
+			if (ret < 0)
+				dev_dbg(dev, "Failed to parse ELD: %d\n", ret);
+			else
+				snd_show_eld(dev, &hcp->eld_parsed);
+		}
+		hdmi_codec_jack_report(hcp, SND_JACK_AVOUT);
+	} else {
+		hdmi_codec_jack_report(hcp, 0);
+		memset(hcp->eld, 0, sizeof(hcp->eld));
+	}
+}
+
+static int hdmi_codec_set_jack(struct snd_soc_component *component,
+			       struct snd_soc_jack *jack,
+			       void *data)
+		drm_connector_set_vrr_capable_property(connector, vrr_capable);
+	}
+	drm_dp_set_subconnector_property(connector, real_status, dp->dpcd,
+					 dp->downstream_ports);
+	return dp->status;
+end:
+	mutex_unlock(&dp->session_lock);
+	dp->status = connector_status_disconnected;
+	return dp->status;
+}
+
+bool trilin_dp_plugged_status(struct trilin_dp *dp)
+{
+	return (dp->status == connector_status_connected);
+}
+
