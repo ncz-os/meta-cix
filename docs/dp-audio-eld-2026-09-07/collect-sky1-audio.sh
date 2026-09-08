@@ -22,6 +22,23 @@ dmesg > "$capture_dir/dmesg.txt" 2>&1 || true
 journalctl -b -k -o short-monotonic --no-pager > "$capture_dir/kernel-journal.txt" 2>&1 || true
 cat /sys/kernel/debug/devices_deferred > "$capture_dir/devices_deferred.txt" 2>&1 || true
 {
+    for f in /sys/kernel/debug/device_component/* /sys/kernel/debug/dri/*/state /sys/kernel/debug/dri/*/name; do
+        [ -f "$f" ] || continue
+        echo "FILE $f"
+        timeout -k 1 5 cat "$f" || true
+    done
+} > "$capture_dir/drm-components.txt" 2>&1
+{
+    for d in /sys/class/drm/card*; do
+        [ -e "$d" ] || continue
+        echo "NODE $d $(readlink -f "$d")"
+        readlink -f "$d/device" || true
+        for attr in status enabled modes; do
+            [ ! -f "$d/$attr" ] || { echo "$attr"; cat "$d/$attr"; }
+        done
+    done
+} > "$capture_dir/drm-connectors.txt" 2>&1
+{
     cat /proc/asound/cards /proc/asound/pcm 2>/dev/null || true
     command -v aplay >/dev/null && aplay -l || true
     for f in /sys/kernel/debug/asoc/{cards,components,dais}; do

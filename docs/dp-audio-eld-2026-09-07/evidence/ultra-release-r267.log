@@ -1,0 +1,205 @@
+
+=== 1/7 build kernel
+Loading cache...done.
+Loaded 5227 entries from dependency cache.
+NOTE: Resolving any missing task queue dependencies
+
+Build Configuration:
+BB_VERSION           = "2.18.0"
+BUILD_SYS            = "aarch64-linux"
+NATIVELSBSTRING      = "universal"
+TARGET_SYS           = "aarch64-nclawzero-linux"
+MACHINE              = "cixmini"
+SDKMACHINE           = "aarch64"
+DISTRO               = "nclawzero"
+DISTRO_VERSION       = "2026.04"
+TUNE_FEATURES        = "aarch64 armv8a crc"
+meta                 = "HEAD:c2746a4a165fd99c2d1aafed17533555787f37ce"
+meta-poky            = "HEAD:824795b885b25e074a2880fbcd54e1a6c875d47d"
+meta-oe              
+meta-python          
+meta-networking      = "wrynose:af8b6d6b2f0b11595b0a0d5b82efa3129d52a628"
+meta-cix             = "wip/gpt6astra/2026-09-07-dp-audio-eld:0e877334a09d1c864911221c7bc4aec8182d2506"
+
+Initialising tasks...Sstate summary: Wanted 104 Local 104 Mirrors 0 Missed 0 Current 170 (100% match, 100% complete)
+done.
+NOTE: Executing Tasks
+NOTE: Tasks Summary: Attempted 904 tasks of which 904 didn't need to be rerun and all succeeded.
+  KVER = 7.2.3-sky1-ncz
+  from = /home/jasonperlow/ybuild/tmp/work/cixmini-nclawzero-linux/linux-cix-sky1-ncz/7.2.3+ncz
+
+=== 2/7 build cix-gpu-kmd (mali) against 7.2.3-sky1-ncz
+Loading cache...done.
+Loaded 5227 entries from dependency cache.
+NOTE: Resolving any missing task queue dependencies
+
+Build Configuration:
+BB_VERSION           = "2.18.0"
+BUILD_SYS            = "aarch64-linux"
+NATIVELSBSTRING      = "universal"
+TARGET_SYS           = "aarch64-nclawzero-linux"
+MACHINE              = "cixmini"
+SDKMACHINE           = "aarch64"
+DISTRO               = "nclawzero"
+DISTRO_VERSION       = "2026.04"
+TUNE_FEATURES        = "aarch64 armv8a crc"
+meta                 = "HEAD:c2746a4a165fd99c2d1aafed17533555787f37ce"
+meta-poky            = "HEAD:824795b885b25e074a2880fbcd54e1a6c875d47d"
+meta-oe              
+meta-python          
+meta-networking      = "wrynose:af8b6d6b2f0b11595b0a0d5b82efa3129d52a628"
+meta-cix             = "wip/gpt6astra/2026-09-07-dp-audio-eld:0e877334a09d1c864911221c7bc4aec8182d2506"
+
+Initialising tasks...Sstate summary: Wanted 0 Local 0 Mirrors 0 Missed 0 Current 0 (0% match, 0% complete)
+done.
+NOTE: No setscene tasks
+NOTE: Executing Tasks
+NOTE: Running task 1 of 2 (/workdir/meta-cix/recipes-kernel/cix-modules/cix-gpu-kmd_1.0.bb:do_clean)
+NOTE: recipe cix-gpu-kmd-1.0+cix-r0: task do_clean: Started
+NOTE: recipe cix-gpu-kmd-1.0+cix-r0: task do_clean: Succeeded
+NOTE: Running task 2 of 2 (/workdir/meta-cix/recipes-kernel/cix-modules/cix-gpu-kmd_1.0.bb:do_cleansstate)
+NOTE: recipe cix-gpu-kmd-1.0+cix-r0: task do_cleansstate: Started
+NOTE: recipe cix-gpu-kmd-1.0+cix-r0: task do_cleansstate: Succeeded
+NOTE: Tasks Summary: Attempted 2 tasks of which 0 didn't need to be rerun and all succeeded.
+Loading cache...done.
+Loaded 5227 entries from dependency cache.
+NOTE: Resolving any missing task queue dependencies
+
+Build Configuration:
+BB_VERSION           = "2.18.0"
+BUILD_SYS            = "aarch64-linux"
+NATIVELSBSTRING      = "universal"
+TARGET_SYS           = "aarch64-nclawzero-linux"
+MACHINE              = "cixmini"
+SDKMACHINE           = "aarch64"
+DISTRO               = "nclawzero"
+DISTRO_VERSION       = "2026.04"
+TUNE_FEATURES        = "aarch64 armv8a crc"
+meta                 = "HEAD:c2746a4a165fd99c2d1aafed17533555787f37ce"
+meta-poky            = "HEAD:824795b885b25e074a2880fbcd54e1a6c875d47d"
+meta-oe              
+meta-python          
+meta-networking      = "wrynose:af8b6d6b2f0b11595b0a0d5b82efa3129d52a628"
+meta-cix             = "wip/gpt6astra/2026-09-07-dp-audio-eld:0e877334a09d1c864911221c7bc4aec8182d2506"
+
+Initialising tasks...Sstate summary: Wanted 132 Local 124 Mirrors 0 Missed 8 Current 182 (93% match, 97% complete)
+done.
+NOTE: Executing Tasks
+NOTE: Running task 902 of 1012 (/workdir/meta-cix/recipes-kernel/cix-modules/cix-gpu-kmd_1.0.bb:do_recipe_qa)
+NOTE: recipe cix-gpu-kmd-1.0+cix-r0: task do_recipe_qa: Started
+NOTE: recipe cix-gpu-kmd-1.0+cix-r0: task do_recipe_qa: Succeeded
+NOTE: Running task 998 of 1012 (/workdir/meta-cix/recipes-kernel/cix-modules/cix-gpu-kmd_1.0.bb:do_fetch)
+NOTE: recipe cix-gpu-kmd-1.0+cix-r0: task do_fetch: Started
+NOTE: recipe cix-gpu-kmd-1.0+cix-r0: task do_fetch: Succeeded
+NOTE: Running task 999 of 1012 (/workdir/meta-cix/recipes-kernel/cix-modules/cix-gpu-kmd_1.0.bb:do_unpack)
+NOTE: Running task 1000 of 1012 (/workdir/meta-cix/recipes-kernel/cix-modules/cix-gpu-kmd_1.0.bb:do_prepare_recipe_sysroot)
+NOTE: recipe cix-gpu-kmd-1.0+cix-r0: task do_unpack: Started
+NOTE: recipe cix-gpu-kmd-1.0+cix-r0: task do_prepare_recipe_sysroot: Started
+NOTE: recipe cix-gpu-kmd-1.0+cix-r0: task do_prepare_recipe_sysroot: Succeeded
+NOTE: recipe cix-gpu-kmd-1.0+cix-r0: task do_unpack: Succeeded
+NOTE: Running task 1001 of 1012 (/workdir/meta-cix/recipes-kernel/cix-modules/cix-gpu-kmd_1.0.bb:do_patch)
+NOTE: recipe cix-gpu-kmd-1.0+cix-r0: task do_patch: Started
+NOTE: recipe cix-gpu-kmd-1.0+cix-r0: task do_patch: Succeeded
+NOTE: Running task 1002 of 1012 (/workdir/meta-cix/recipes-kernel/cix-modules/cix-gpu-kmd_1.0.bb:do_deploy_source_date_epoch)
+NOTE: Running task 1003 of 1012 (/workdir/meta-cix/recipes-kernel/cix-modules/cix-gpu-kmd_1.0.bb:do_populate_lic)
+NOTE: recipe cix-gpu-kmd-1.0+cix-r0: task do_deploy_source_date_epoch: Started
+NOTE: recipe cix-gpu-kmd-1.0+cix-r0: task do_populate_lic: Started
+NOTE: recipe cix-gpu-kmd-1.0+cix-r0: task do_populate_lic: Succeeded
+NOTE: recipe cix-gpu-kmd-1.0+cix-r0: task do_deploy_source_date_epoch: Succeeded
+NOTE: Running task 1004 of 1012 (/workdir/meta-cix/recipes-kernel/cix-modules/cix-gpu-kmd_1.0.bb:do_configure)
+NOTE: recipe cix-gpu-kmd-1.0+cix-r0: task do_configure: Started
+NOTE: recipe cix-gpu-kmd-1.0+cix-r0: task do_configure: Succeeded
+NOTE: Running task 1005 of 1012 (/workdir/meta-cix/recipes-kernel/cix-modules/cix-gpu-kmd_1.0.bb:do_compile)
+NOTE: recipe cix-gpu-kmd-1.0+cix-r0: task do_compile: Started
+NOTE: recipe cix-gpu-kmd-1.0+cix-r0: task do_compile: Succeeded
+NOTE: Running task 1006 of 1012 (/workdir/meta-cix/recipes-kernel/cix-modules/cix-gpu-kmd_1.0.bb:do_install)
+NOTE: recipe cix-gpu-kmd-1.0+cix-r0: task do_install: Started
+NOTE: recipe cix-gpu-kmd-1.0+cix-r0: task do_install: Succeeded
+NOTE: Running task 1007 of 1012 (/workdir/meta-cix/recipes-kernel/cix-modules/cix-gpu-kmd_1.0.bb:do_package)
+NOTE: Running task 1008 of 1012 (/workdir/meta-cix/recipes-kernel/cix-modules/cix-gpu-kmd_1.0.bb:do_populate_sysroot)
+NOTE: recipe cix-gpu-kmd-1.0+cix-r0: task do_package: Started
+NOTE: recipe cix-gpu-kmd-1.0+cix-r0: task do_populate_sysroot: Started
+NOTE: recipe cix-gpu-kmd-1.0+cix-r0: task do_populate_sysroot: Succeeded
+NOTE: recipe cix-gpu-kmd-1.0+cix-r0: task do_package: Succeeded
+NOTE: Running task 1009 of 1012 (/workdir/meta-cix/recipes-kernel/cix-modules/cix-gpu-kmd_1.0.bb:do_packagedata)
+NOTE: recipe cix-gpu-kmd-1.0+cix-r0: task do_packagedata: Started
+NOTE: recipe cix-gpu-kmd-1.0+cix-r0: task do_packagedata: Succeeded
+NOTE: Running task 1010 of 1012 (/workdir/meta-cix/recipes-kernel/cix-modules/cix-gpu-kmd_1.0.bb:do_package_write_deb)
+NOTE: Running task 1011 of 1012 (/workdir/meta-cix/recipes-kernel/cix-modules/cix-gpu-kmd_1.0.bb:do_package_qa)
+NOTE: recipe cix-gpu-kmd-1.0+cix-r0: task do_package_write_deb: Started
+NOTE: recipe cix-gpu-kmd-1.0+cix-r0: task do_package_qa: Started
+WARNING: cix-gpu-kmd-1.0+cix-r0 do_package_qa: QA Issue: File /usr/lib/modules/7.2.3-sky1-ncz/extra/cix/mali_kbase.ko in package kernel-module-mali-kbase-7.2.3-sky1-ncz contains reference to TMPDIR [buildpaths]
+NOTE: recipe cix-gpu-kmd-1.0+cix-r0: task do_package_qa: Succeeded
+NOTE: recipe cix-gpu-kmd-1.0+cix-r0: task do_package_write_deb: Succeeded
+NOTE: Running noexec task 1012 of 1012 (/workdir/meta-cix/recipes-kernel/cix-modules/cix-gpu-kmd_1.0.bb:do_build)
+NOTE: Tasks Summary: Attempted 1012 tasks of which 996 didn't need to be rerun and all succeeded.
+
+Summary: There was 1 WARNING message.
+
+=== 3/7 stage mali overlay + verify vermagic
+  staged 3 modules into /home/jasonperlow/isobuild/cix-installer/assets/kernel/mali/7.2.3-sky1-ncz, all vermagic=7.2.3-sky1-ncz
+
+=== 4/7 stage kernel assets and run boot/ABI gates
+KVER=7.2.3-sky1-ncz  dest=/home/jasonperlow/isobuild/cix-installer/assets/kernel/r267eld-7.2.3-sky1-ncz-20260907  previous edge=/home/jasonperlow/isobuild/cix-installer/assets/kernel/r264-7.2.4-sky1-ncz-20260907
+module linlon-dp CHANGED
+module trilin-dpsub CHANGED
+[extract] 7.2.3-sky1-ncz (arm64, split build)
+[extract]   source: /home/jasonperlow/ybuild/tmp/work/cixmini-nclawzero-linux/linux-cix-sky1-ncz/7.2.3+ncz/kernel-source
+[extract]   build : /home/jasonperlow/ybuild/tmp/work/cixmini-nclawzero-linux/linux-cix-sky1-ncz/7.2.3+ncz/build
+[extract] staging build-system Makefiles/Kbuild/Kconfig from source
+[extract] overlaying generated headers from the build dir
+[extract] pinned localversion '-sky1-ncz' (base 7.2.3 -> 7.2.3-sky1-ncz)
+[extract] stripped 3 non-portable host tool(s); target will rebuild them
+[extract] OK — 14M (16773 files) → /home/jasonperlow/isobuild/cix-installer/assets/kernel/r267eld-7.2.3-sky1-ncz-20260907/headers-cixmini.tar.zst
+=== staged:
+total 67608
+drwxr-xr-x. 1 jasonperlow jasonperlow      190 Sep  7 21:06 .
+drwxr-xr-x. 1 jasonperlow jasonperlow      476 Sep  7 21:06 ..
+-rw-r--r--. 1 jasonperlow jasonperlow   277984 Sep  7 21:06 config-7.2.3-sky1-ncz
+-rw-r--r--. 1 jasonperlow jasonperlow 13950633 Sep  7 21:06 headers-cixmini.tar.zst
+drwxr-xr-x. 1 jasonperlow jasonperlow        6 Sep  7 21:06 headers-dir
+-rw-r--r--. 1 jasonperlow jasonperlow 47106560 Sep  7 21:06 Image-cixmini.bin
+-rw-r--r--. 1 jasonperlow jasonperlow       14 Sep  7 21:06 KVER
+=== GATE 1: KVM boot + PCI collision lint
+=== kvm-kernel-gate ===
+  Image : /home/jasonperlow/isobuild/cix-installer/assets/kernel/r267eld-7.2.3-sky1-ncz-20260907/Image-cixmini.bin (47106560 bytes)
+  Config: /home/jasonperlow/isobuild/cix-installer/assets/kernel/r267eld-7.2.3-sky1-ncz-20260907/config-7.2.3-sky1-ncz
+--- PCI ID collision lint ---
+  ok: CONFIG_USB_CDNS3_PCI_WRAP not set
+  ok: CONFIG_USB_CDNSP_PCI not set
+  ok: CONFIG_USB_CDNS2_UDC not set
+--- required symbols ---
+  ok: CONFIG_DEVTMPFS=y
+  ok: CONFIG_DEVTMPFS_MOUNT=y
+  ok: CONFIG_BLK_DEV_LOOP=y
+  ok: CONFIG_ISO9660_FS=y
+--- boot under qemu ---
+  accel=kvm cpu=host timeout=120s
+  reached root-mount (expected panic, no rootfs supplied)
+GATE: PASS ✅  Image-cixmini.bin
+  boot log: /tmp/kvm-kernel-gate.RsrWzC.log
+=== GATE 2: dkms ABI
+  image banner  : Linux version 7.2.3-sky1-ncz (oe-user@oe-host) (aarch64-nclawzero-linux-gcc (GCC) 15.3.0, GNU ld (GNU Binutils) 2.46.1) #1 SMP PREEMPT Wed Sep  2 12:33:21 UTC 2026
+  header built by: oe-user@oe-host
+  header compiler: aarch64-nclawzero-linux-gcc (GCC) 15.3.0, GNU ld (GNU Binutils) 2.46.1
+dkms-abi-gate: ok: builder identity matches (oe-user@oe-host)
+dkms-abi-gate: ok: binutils matches (2.46.1)
+dkms-abi-gate: ok: CONFIG_MODVERSIONS=y (mismatched modules will refuse to load)
+dkms-abi-gate: PASS
+=== packaging: SKIPPED (NCZ_SKIP_PACKAGING=1; caller packages)
+drwxr-xr-x. 1 jasonperlow jasonperlow     2814 Sep  7 17:44 ..
+-rw-r--r--. 1 jasonperlow jasonperlow    14996 Sep  4 12:44 cixmini-boot_1.2+r263_arm64.deb
+-rw-r--r--. 1 jasonperlow jasonperlow 13487560 Sep  4 12:44 linux-headers-cixmini_7.2.3-sky1-ncz+r263_arm64.deb
+-rw-r--r--. 1 jasonperlow jasonperlow 20807008 Sep  4 12:44 linux-image-cixmini_7.2.3-sky1-ncz+r263_arm64.deb
+
+=== 4b/7 rebuild panthor-cix DKMS module against staged headers for 7.2.3-sky1-ncz
+Deprecated feature: CLEAN (/var/lib/dkms/panthor-cix/7.2.0/source/dkms.conf)
+The kernel is built without module signing facility, modules won't be signed
+
+Building module(s)...(bad exit status: 2)
+Failed command:
+'make' -C /home/jasonperlow/isobuild/cix-installer/assets/kernel/r267eld-7.2.3-sky1-ncz-20260907/headers-dir/lib/modules/7.2.3-sky1-ncz/build M=/var/lib/dkms/panthor-cix/7.2.0/build modules
+
+Error! Bad return status for module build on kernel: 7.2.3-sky1-ncz (aarch64)
+Consult /var/lib/dkms/panthor-cix/7.2.0/build/make.log for more information.
+FAIL: panthor-cix dkms build failed against /home/jasonperlow/isobuild/cix-installer/assets/kernel/r267eld-7.2.3-sky1-ncz-20260907/headers-dir/lib/modules/7.2.3-sky1-ncz/build
