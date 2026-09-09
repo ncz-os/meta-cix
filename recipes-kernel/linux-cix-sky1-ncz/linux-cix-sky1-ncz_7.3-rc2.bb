@@ -30,6 +30,9 @@
 # CONFIG_MODVERSIONS=y, boot on O6N only/human-supervised) all still apply
 # before this track is ever considered for shipping.
 
+LICENSE = "GPL-2.0-only"
+LIC_FILES_CHKSUM = "file://COPYING;md5=6bc538ed5bd9a7fc9398086aedcd7e46"
+
 inherit kernel
 FILESEXTRAPATHS:prepend := "${THISDIR}/linux-cix-sky1-ncz-7.3-rc2:"
 
@@ -51,10 +54,18 @@ do_shared_workdir:append() {
 
 # kernel-73rc2-port HEAD, verified identical across local working tree,
 # gitlab.com/ncz-os/linux-cix.git and the ARGONAS bare mirror on 2026-09-09.
-SRCREV_kernel = "03ba72644afe28a78d1b2635ba15bc1bdb80681e"
+SRCREV_kernel = "3c0c23241c8da45f9d12035205e4acae737100ff"
 
+# NOTE: fetches from a LOCAL bare mirror under this build container's workdir mount
+# (the ncz-yocto-y6 podman sandbox has no SSH keys, so it cannot reach the
+# ARGONAS ssh:// remote directly). The canonical, pushed copy of this exact
+# commit is gitlab.com/ncz-os/linux-cix.git + the ARGONAS bare mirror at
+# /mnt/datapool/git/ncz-os/linux-cix.git, branch kernel-73rc2-port,
+# verified identical 2026-09-09. Re-clone the local mirror
+# (~/yocto-work/kernel-mirrors/linux-cix-kernel-73rc2-port.git) from one
+# of those canonical remotes if it goes stale.
 SRC_URI = " \
-    git://jasonperlow@192.168.207.101/mnt/datapool/git/ncz-os/linux-cix.git;protocol=ssh;branch=${KBRANCH};name=kernel \
+    git:///workdir/kernel-mirrors/linux-cix-kernel-73rc2-port.git;protocol=file;branch=${KBRANCH};name=kernel \
     file://config-7.3-rc2.defconfig \
 "
 
