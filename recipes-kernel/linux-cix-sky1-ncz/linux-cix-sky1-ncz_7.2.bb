@@ -124,10 +124,10 @@ LIC_FILES_CHKSUM = "file://COPYING;md5=6bc538ed5bd9a7fc9398086aedcd7e46"
 inherit kernel
 FILESEXTRAPATHS:prepend := "${THISDIR}/linux-cix-sky1-ncz-7.2:"
 
-LINUX_VERSION = "7.2.4"
+LINUX_VERSION = "7.2.5"
 KERNEL_LOCALVERSION = "-sky1-ncz"
 PATCHTOOL = "git"
-PV = "7.2.4+ncz"
+PV = "7.2.5+ncz"
 PR = "r1"
 KBRANCH = "linux-7.2.y"
 KERNEL_PACKAGE_NAME = "kernel-${PN}"
@@ -163,13 +163,26 @@ do_shared_workdir:append() {
 #     fixed -- hygiene only.
 # Bumped 2026-09-08 from v7.2.3 to the v7.2.4 STABLE point release.
 #   v7.2   = 8d3ae59288f1e7d58d76558a6ee96d533bc5019f
-#   v7.2.4 = 5015d0d945b3d3f2b038d2667880d5762f7d9437   <- pinned below
+#   v7.2.4 = 5015d0d945b3d3f2b038d2667880d5762f7d9437
 # Stable tags do NOT exist in the torvalds tree, so SRC_URI moves to the stable
 # tree and KBRANCH from master to linux-7.2.y. That is a build-MECHANICS change
 # (it changes where every future kernel comes from), not an image-content one.
 # Replayed with build/port-series.sh v7.2.4 before bumping: 205 applied,
 # 0 failed of 205 wired.
-SRCREV_kernel = "5015d0d945b3d3f2b038d2667880d5762f7d9437"
+#
+# Bumped 2026-09-11 from v7.2.4 to the v7.2.5 STABLE point release.
+#   v7.2.4 = 5015d0d945b3d3f2b038d2667880d5762f7d9437
+#   v7.2.5 = a300e35c0a4b4a38fb53742ea6e2a203c98ee523   <- pinned below
+# Replayed with build/port-series.sh v7.2.5: 203 applied, 2 failed of 205.
+# Both failures (0114, 0221) were pure context-drift from an unrelated
+# upstream commit between 7.2.4 and 7.2.5 (2571029a92ee, "usb: cdnsp: fix
+# wakeup from S3 after controller context loss") deleting a blank line at
+# the exact insertion point of each patch -- zero semantic overlap (verified
+# by reading the upstream diff: it touches unrelated register-context-loss
+# handling added further down in the same file). Re-resolved via git am -3,
+# regenerated both patches in place from the resolved worktree so a future
+# clean re-application doesn't need this same manual step repeated.
+SRCREV_kernel = "a300e35c0a4b4a38fb53742ea6e2a203c98ee523"
 
 SRC_URI = " \
     git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git;protocol=https;branch=${KBRANCH};name=kernel \

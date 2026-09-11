@@ -1,4 +1,4 @@
-From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From 84f7cd2bf0e7cbcbe168930b8dfca983a86698fe Mon Sep 17 00:00:00 2001
 From: Jason Perlow <jperlow@gmail.com>
 Date: Fri, 21 Aug 2026 00:00:00 +0000
 Subject: [PATCH] usb: cdns3: sky1: defer child probe until wrapper is ready
@@ -38,7 +38,7 @@ Upstream-Status: Pending
  3 files changed, 31 insertions(+)
 
 diff --git a/drivers/usb/cdns3/cdnsp-plat.c b/drivers/usb/cdns3/cdnsp-plat.c
-index b58cc37..81de2cb 100644
+index b58cc37cf097..81de2cbc6855 100644
 --- a/drivers/usb/cdns3/cdnsp-plat.c
 +++ b/drivers/usb/cdns3/cdnsp-plat.c
 @@ -24,6 +24,7 @@
@@ -92,10 +92,10 @@ index b58cc37..81de2cb 100644
  	if (!cdns)
  		return -ENOMEM;
 diff --git a/drivers/usb/cdns3/cdnsp-sky1.c b/drivers/usb/cdns3/cdnsp-sky1.c
-index 46094b0..0400779 100644
+index ea2d032ec4e2..52ae6d3c68e9 100644
 --- a/drivers/usb/cdns3/cdnsp-sky1.c
 +++ b/drivers/usb/cdns3/cdnsp-sky1.c
-@@ -825,6 +825,7 @@ static int cdnsp_sky1_probe(struct platform_device *pdev)
+@@ -820,6 +820,7 @@ static int cdnsp_sky1_probe(struct platform_device *pdev)
  		}
  	}
  
@@ -104,7 +104,7 @@ index 46094b0..0400779 100644
  err_pm:
  	pm_runtime_disable(dev);
 diff --git a/drivers/usb/cdns3/cdnsp-sky1.h b/drivers/usb/cdns3/cdnsp-sky1.h
-index 82563bd..7cf6ac3 100644
+index 82563bd1000b..7cf6ac3648c2 100644
 --- a/drivers/usb/cdns3/cdnsp-sky1.h
 +++ b/drivers/usb/cdns3/cdnsp-sky1.h
 @@ -116,6 +116,7 @@ struct cdnsp_sky1 {
@@ -116,4 +116,5 @@ index 82563bd..7cf6ac3 100644
  	struct gpio_desc *oc_gpio;
  };
 -- 
-2.51.0
+2.55.0
+
