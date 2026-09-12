@@ -96,7 +96,7 @@ do_shared_workdir:append() {
 #
 # SRCREV_kernel is now the tip of kernel-73rc2-port (ef818e8dc33d) so
 # the build picks up all six forward-port fixes together.
-SRCREV_kernel = "a50d3f1838cacbf2859135c5432b7920b38c9470"
+SRCREV_kernel = "fd368a82ce449af6c9c28a5ba6eee9d8696799a2"
 
 # NOTE: fetches from a LOCAL bare mirror under this build container's workdir mount
 # (the ncz-yocto-y6 podman sandbox has no SSH keys, so it cannot reach the
