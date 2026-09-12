@@ -74,9 +74,16 @@ do_shared_workdir:append() {
 #                    linux/unaligned.h
 #   0c37f837d3a7 cix: ddr-lp: fix platform_driver .remove signature
 #                   (int -> void)
-# SRCREV_kernel is now the tip of kernel-73rc2-port (0c37f837d3a7) so the
-# build picks up all three forward-port fixes together.
-SRCREV_kernel = "0c37f837d3a787ad3892b6ac87b8d17585542dcc"
+# 2026-09-11 (2nd bitbake attempt): compile failed on a 4th platform_driver
+# .remove() int->void mismatch, cix_aec_remove() in cix-acpi-ec.c (same class
+# as cix_ddrlp_remove -- see kernel-build-checklist.md). Audited all 5
+# CIX .remove= assignments in the port tree against the 7.2.5 reference;
+# only this one and cix_ddrlp_remove needed the fix. Fixed in commit
+# 1aa3075a23ea.
+#
+# SRCREV_kernel is now the tip of kernel-73rc2-port (1aa3075a23ea) so the
+# build picks up all four forward-port fixes together.
+SRCREV_kernel = "1aa3075a23ea560a171d8bc76ef22d39ec7bb9c5"
 
 # NOTE: fetches from a LOCAL bare mirror under this build container's workdir mount
 # (the ncz-yocto-y6 podman sandbox has no SSH keys, so it cannot reach the
