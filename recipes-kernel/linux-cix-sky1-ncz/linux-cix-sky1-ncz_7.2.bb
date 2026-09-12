@@ -130,11 +130,79 @@ PATCHTOOL = "git"
 PV = "7.2.5+ncz"
 PR = "r1"
 KBRANCH = "linux-7.2.y"
-KERNEL_PACKAGE_NAME = "kernel-${PN}"
+# Internal KERNEL_PACKAGE_NAME: chose `linux-cix-sky1-ncz-kernel` as a
+# non-PN, namespaced internal prefix. Two reasons:
+#
+#   (1) Lets the PKG:* overrides below produce the exact, final-name
+#       consumer-facing packages that cix-installer depends on:
+#         linux-image-cixmini     (was kernel-linux-cix-sky1-ncz-image-7.2.5-sky1-ncz)
+#         linux-headers-cixmini   (was kernel-linux-cix-sky1-ncz-dev-7.2.5-sky1-ncz)
+#       cix-installer (~/cix-installer-r266-iso) globs the LITERAL filenames
+#       `linux-image-cixmini_*.deb` / `linux-headers-cixmini_*.deb` in
+#       post-install/10-our-kernel.sh (lines 90-91); the apt Depends line
+#       in build/build-kernel-debs.sh:576 is also
+#       `Depends: cixmini-boot (>= $ver), linux-headers-cixmini (= $ver), ...`;
+#       assets/kernel-manifest.json, build/build-iso-di.sh:2310
+#       (NCZ_PRUNE_KEEP), etc. all reference the `cixmini` flavor. Producing
+#       any other name here would silently break 10-our-kernel.sh's
+#       local_deb() helper (ed37550 was hardening exactly that failure mode).
+#
+#   (2) Keeps the dynamic per-driver module and firmware sub-packages under
+#       a namespaced prefix (`linux-cix-sky1-ncz-kernel-module-*`, `-firmware-*`)
+#       that does not collide with anything Debian forky/arm64 ships today.
+#       A bare `linux` KERNEL_PACKAGE_NAME would have produced
+#       `linux-module-*` / `linux-firmware-*`, which collides with Debian's
+#       entire kernel family in the vendor-mirror pool. The cix-installer
+#       offline-mirror step (build/build-forky-mirror.sh) and dpkg on the
+#       target system resolve packages against the local vendor mirror, not
+#       the live Debian archive, so a same-name collision would in practice
+#       be harmless; but the `linux-cix-sky1-ncz-` prefix removes the
+#       question entirely.
+#
+# IMPORTANT: KERNEL_PACKAGE_NAME MUST NOT equal PN. The original
+# `KERNEL_PACKAGE_NAME = "kernel-${PN}"` worked only because it differs
+# from PN (`kernel-${PN}` vs `${PN}`). If KERNEL_PACKAGE_NAME == PN,
+# OE-core's bug 11905 fires: bitbake's key-expansion dedup makes
+# `FILES:${KERNEL_PACKAGE_NAME}-dev` and `FILES:${PN}-dev` collide on the
+# same key, the latter (base class's default `${includedir} ${libdir}/*.la`)
+# silently wins, and the kernel's System.map/Module.symvers/config end up
+# "installed but not shipped" -- the build fails with `installed-vs-shipped`
+# QA, just like a normal do_package QA error. The kernel.bbclass __anonymous
+# function emits a "bug 11905" warning, but the symptom is real and fatal.
+# Using `linux-cix-sky1-ncz-kernel` (= `linux-cix-sky1-ncz` + `-kernel`)
+# keeps it distinct from PN while still being short and clearly the Yocto
+# recipe's kernel package namespace.
+KERNEL_PACKAGE_NAME = "linux-cix-sky1-ncz-kernel"
+
+# Override the two consumer-facing package names. base-class defaults are:
+#   PKG:${KERNEL_PACKAGE_NAME}-image = "${KERNEL_PACKAGE_NAME}-image-${@legitimize_package_name(d.getVar('KERNEL_VERSION'))}"
+#   PKG:${KERNEL_PACKAGE_NAME}-dev   is NOT overridden by the base class --
+#                                    it stays `${KERNEL_PACKAGE_NAME}-dev`.
+# Replace both with the literal names cix-installer matches on. The
+# per-imagetype auto-package
+# (`${KERNEL_PACKAGE_NAME}-image-image-<ver>`) still RDEPENDS into the
+# renamed `linux-image-cixmini` via the base class's automatic wiring, so
+# the kernel image binary and dtb still end up in the right package.
+PKG:${KERNEL_PACKAGE_NAME}-image = "linux-image-cixmini"
+PKG:${KERNEL_PACKAGE_NAME}-dev   = "linux-headers-cixmini"
+
+# No RPROVIDES compat shim needed: nothing inside this Yocto build tree
+# DEPENDS/RDEPENDS on the old `kernel-${PN}-image` / `kernel-${PN}-dev`
+# names. Verified -- all out-of-tree module recipes (cix-gpu-kmd,
+# cix-npu-kmd, cix-vpu-kmd via cix-modules.inc) use virtual/kernel +
+# ${STAGING_KERNEL_DIR}, not a package name. The base class already sets
+# RPROVIDES:${KERNEL_PACKAGE_NAME}-image += "${KERNEL_PACKAGE_NAME}-image"
+# for the new internal name, so any future DEPENDS on the new internal
+# name resolves via the standard package-class alias.
 
 # OE-Core 2026 keeps the kernel source and module-build artifacts in this
 # recipe work directory. module.bbclass publishes those locations to
 # external-module recipes through work-shared/${MACHINE}.
+# NOTE: KERNEL_PACKAGE_NAME-abiversion / -localversion symlink names
+# change with the rename, but the underlying files are accessed by their
+# bare names (kernel-abiversion, kernel-localversion) from STAGING_KERNEL_BUILDDIR
+# via oe.utils.read_file (linux-kernel-base.bbclass, module-base.bbclass).
+# The symlinks are just visibility inside work-shared/; nothing consumes them.
 do_shared_workdir:append() {
     shared_kernel_dir="${TMPDIR}/work-shared/${MACHINE}"
     install -d "$shared_kernel_dir"
