@@ -192,7 +192,7 @@ do_shared_workdir:append() {
 # CIXH6070) stays in permanent -EPROBE_DEFER. linlondp-cluster
 # (CIXH50C0) finds no slave mdev, "ACPI cluster: no DPUs", no /dev/dri.
 # See commit a49de0beac8c for the full commit message.
-SRCREV_kernel = "46da7ad27ed59892d5030000230514881be96bed"
+SRCREV_kernel = "b58f477c30f67fb1891eae442e2e36dace5826cd"
 
 # NOTE: fetches from a LOCAL bare mirror under this build container's workdir mount
 # (the ncz-yocto-y6 podman sandbox has no SSH keys, so it cannot reach the
@@ -223,3 +223,4 @@ KERNEL_IMAGETYPE = "Image"
 KERNEL_DEVICETREE = " \
     cix/sky1-orion-o6.dtb \
 "
+# SRCREV_kernel is now the tip of kernel-73rc2-port (b58f477c30f6) so the audss ACPI match-table fix (CIXH6061 audio bind) is included -- 12th forward-port bug.
