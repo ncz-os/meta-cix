@@ -182,7 +182,17 @@ do_shared_workdir:append() {
 # See commit 32e112b6d7aa for the full commit message.
 # SRCREV_kernel is now the tip of kernel-73rc2-port (32e112b6d7aa) so
 # the build picks up all ten forward-port fixes together.
-SRCREV_kernel = "32e112b6d7aa94d4e87bb4281fccbee16cab8d4a"
+# Bumped to a49de0beac8c: 11th (final) forward-port fix, the CIX clock
+# driver rewrite that adds the CIXHA010 ACPI clock provider driver
+# (clk-sky1-acpi.c, acpi_clk.c, acpi_scmi_clk.c, cix-clk-debug.c,
+# clk.c, acpi_clk.h, clk.h, sky1-clk.h, acpi_clk-scmi.h -- the
+# post-0065 state of patches-7.2/0065). Without this, CIXHA010 stays
+# unbound and every device with _DEP on it (CIXH5010 DPU, CIXH502F,
+# CIXH2030..9, CIXH1002, CIXH1003, CIXH200B, CIXH2011, CIXH3010,
+# CIXH6070) stays in permanent -EPROBE_DEFER. linlondp-cluster
+# (CIXH50C0) finds no slave mdev, "ACPI cluster: no DPUs", no /dev/dri.
+# See commit a49de0beac8c for the full commit message.
+SRCREV_kernel = "a49de0beac8c2c54da78ffb5ad66d10f1cd2e880"
 
 # NOTE: fetches from a LOCAL bare mirror under this build container's workdir mount
 # (the ncz-yocto-y6 podman sandbox has no SSH keys, so it cannot reach the
