@@ -140,7 +140,23 @@ do_shared_workdir:append() {
 # See commit 78a45c61229d for the full commit message.
 # SRCREV_kernel is now the tip of kernel-73rc2-port (78a45c61229d) so
 # the build picks up all eight forward-port fixes together.
-SRCREV_kernel = "78a45c61229d7eaded9ffdfd2b1ad564ef53e0df"
+# 2026-09-11 (6th bitbake attempt): vmlinux compiled clean (no more
+# cdns_pcie_hpa_host_restore link error), do_compile_kernelmodules
+# then failed on a single cix_edp_panel.c call to
+# of_drm_get_panel_orientation() -- the symbol was renamed upstream
+# to drm_of_get_panel_orientation() in 7.3 (declaration moved from
+# include/drm/drm_panel.h to include/drm/drm_of.h:52, signature
+# unchanged). Both 7.2.5 reference and 7.3-rc2 cix_edp_panel.c still
+# use the old name, but only the 7.3-rc2 build fails because the old
+# symbol no longer exists in this tree. Grep of all 7.2 patches shows
+# no patch touches the symbol name -- this is a NEW upstream API
+# rename the 7.3-rc2 forward-port didn't pick up, not a dropped hunk
+# of an existing patch. Renamed the call site + added <drm/drm_of.h>
+# include. vmlinux now builds clean and modules have begun compiling.
+# See commit aec39fe3c662.
+# SRCREV_kernel is now the tip of kernel-73rc2-port (aec39fe3c662) so
+# the build picks up all nine forward-port fixes together.
+SRCREV_kernel = "aec39fe3c66278a0e6d2ba9a5d9545ac2d8e9ba8"
 
 # NOTE: fetches from a LOCAL bare mirror under this build container's workdir mount
 # (the ncz-yocto-y6 podman sandbox has no SSH keys, so it cannot reach the
