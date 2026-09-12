@@ -96,7 +96,25 @@ do_shared_workdir:append() {
 #
 # SRCREV_kernel is now the tip of kernel-73rc2-port (ef818e8dc33d) so
 # the build picks up all six forward-port fixes together.
-SRCREV_kernel = "fd368a82ce449af6c9c28a5ba6eee9d8696799a2"
+# 2026-09-11 (4th bitbake attempt): compile failed on a missing header
+# linux/cix/cix_scmi_em.h. The cix_scmi_em.c file in the port was the
+# pre-0074 single-arg cix_scmi_register_em(struct device *dev) version
+# from patch 0069 (last commit touching it: 63f4b57c286f), and the header
+# file itself was never carried into this tree at all -- both 0074
+# (which CREATED include/linux/cix/cix_scmi_em.h) and 0172 (which evolved
+# both to the 2-arg cix_scmi_register_em(dev, perf_dev) signature using
+# scmi_perf_domain_power_scale()/est_power()) never landed on this
+# forward-port. This is the same missing-patch-never-carried-into-7.3
+# sub-pattern the loop instructions explicitly call out for missing-header
+# failures (see ef818e8dc33d commit message). Copied both files
+# byte-for-byte from the 7.2.5 reference tree (.../7.2.5+ncz/kernel-
+# source/) -- the post-copy diff against the reference is zero. No API
+# drift detected: include/linux/scmi_perf_domain.h exists in 7.3-rc2
+# with the required helper signatures, and CONFIG_CIX_SCMI_ENERGY_MODEL
+# is defined in drivers/thermal/cix/Kconfig.
+# SRCREV_kernel is now the tip of kernel-73rc2-port (ebb3f4e1874e) so
+# the build picks up all seven forward-port fixes together.
+SRCREV_kernel = "ebb3f4e1874ea9d59aa9b31bbb53b3b89ba0a1fe"
 
 # NOTE: fetches from a LOCAL bare mirror under this build container's workdir mount
 # (the ncz-yocto-y6 podman sandbox has no SSH keys, so it cannot reach the
