@@ -22,6 +22,13 @@
 # real v7.3-rc2 diff and landed as 11 real forward-port commits on top of
 # the dry-run base, ending at kernel-73rc2-port HEAD 03ba72644afe.
 #
+# 2026-09-11: First real bitbake compile found additional forward-port
+# gaps that were not reachable by dry-run patch replay:
+# - PCI: cadence: add Sky1 IP Local Management Registers base block
+#   (commit 4f84181bfab4) -- CIX-added offset macros used by Sky1 I_*
+#   helpers in pci-sky1-cix.c, simply missing from this branch.
+# Bumped SRCREV_kernel to current HEAD 4f84181bfab4.
+#
 # NOT YET DONE as of this recipe's authoring: a real bitbake compile of this
 # tree. Patches applying/replaying cleanly is not proof the kernel builds or
 # boots (see ~/.claude/rules/kernel-build-checklist.md) -- that is exactly
@@ -52,18 +59,34 @@ do_shared_workdir:append() {
     ln -sfn "${KERNEL_PACKAGE_NAME}-localversion" "${WORKDIR}/kernel-build-artifacts/kernel-localversion"
 }
 
-# kernel-73rc2-port HEAD, verified identical across local working tree,
-# gitlab.com/ncz-os/linux-cix.git and the ARGONAS bare mirror on 2026-09-09.
-SRCREV_kernel = "3c0c23241c8da45f9d12035205e4acae737100ff"
+# kernel-73rc2-port HEAD. Brief prior to this commit claimed the PCI commit
+# had SHA 4f84181bfab456e9b8dbabb47fbb02f6c7f48d6c, but that hash does NOT
+# exist in the repo -- the actual stored object has SHA
+# 4f84181bfab41cd1253d09f444d0544f2eb5022f (verified via zlib decompress
+# of the loose object on disk: real SHA1 of the stored commit content is
+# the 1cd1253d... one, not 56e9b8...). Bitbake's git fetcher happily reports
+# the bare 40-char string back on rev-parse even when the object is absent,
+# so the bogus hash made the recipe LOOK valid while the actual fetch
+# failed with 'Unable to find revision ... even from upstream'.
+#
+# After PCI was fixed, two more real bugs landed on top of it:
+#   f924ac6d2942 cix: acpi: dsdt_override: switch asm/unaligned.h to
+#                    linux/unaligned.h
+#   0c37f837d3a7 cix: ddr-lp: fix platform_driver .remove signature
+#                   (int -> void)
+# SRCREV_kernel is now the tip of kernel-73rc2-port (0c37f837d3a7) so the
+# build picks up all three forward-port fixes together.
+SRCREV_kernel = "0c37f837d3a787ad3892b6ac87b8d17585542dcc"
 
 # NOTE: fetches from a LOCAL bare mirror under this build container's workdir mount
 # (the ncz-yocto-y6 podman sandbox has no SSH keys, so it cannot reach the
-# ARGONAS ssh:// remote directly). The canonical, pushed copy of this exact
-# commit is gitlab.com/ncz-os/linux-cix.git + the ARGONAS bare mirror at
-# /mnt/datapool/git/ncz-os/linux-cix.git, branch kernel-73rc2-port,
-# verified identical 2026-09-09. Re-clone the local mirror
-# (~/yocto-work/kernel-mirrors/linux-cix-kernel-73rc2-port.git) from one
-# of those canonical remotes if it goes stale.
+# ARGONAS ssh:// remote directly). The canonical pushed copies are
+# gitlab.com/ncz-os/linux-cix.git + the ARGONAS bare mirror at
+# /mnt/datapool/git/ncz-os/linux-cix.git, branch kernel-73rc2-port.
+# Local mirror at ~/yocto-work/kernel-mirrors/linux-cix-kernel-73rc2-port.git
+# was rebuilt cleanly from ~/linux-72 on 2026-09-11 after the previous copy
+# turned out to have a corrupt (non-existent) SHA for the PCI commit; rebuild
+# with `git clone --bare ~/linux-72` if it goes stale again.
 SRC_URI = " \
     git:///workdir/kernel-mirrors/linux-cix-kernel-73rc2-port.git;protocol=file;branch=${KBRANCH};name=kernel \
     file://config-7.3-rc2.defconfig \
