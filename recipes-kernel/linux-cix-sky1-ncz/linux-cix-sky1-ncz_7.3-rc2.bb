@@ -156,7 +156,33 @@ do_shared_workdir:append() {
 # See commit aec39fe3c662.
 # SRCREV_kernel is now the tip of kernel-73rc2-port (aec39fe3c662) so
 # the build picks up all nine forward-port fixes together.
-SRCREV_kernel = "aec39fe3c66278a0e6d2ba9a5d9545ac2d8e9ba8"
+# 2026-09-12 (7th bitbake attempt): real-metal boot-test on O6N
+# (192.168.207.3) of the aec39fe3c662 kernel exposed a 10th bug this
+# session, in a new sub-class: a forward-port that re-ported ONE
+# hunk of a multi-hunk 7.2 patch but forgot its sibling. SCMI
+# channel setup failed at protocol 0x10 BASE with
+# "arm-scmi arm-scmi.1.auto: failed to setup channel for
+# protocol:0x10", cascading into NPU devfreq init failure
+# (aipu), linlondp-cluster DPU probe failure (no /dev/dri), and
+# no mali_kbase probe for CIXH5000 GPU -- ALL three regress at
+# once because every firmware-driven subsystem on this SoC goes
+# through SCMI, and SCMI's mailbox transport can't talk to the
+# SCP without a working cix-mailbox controller registered under
+# ACPI. Root cause: the v7.3-rc2 forward-port of patches-7.2/0001
+# (commit a0ea259f3d27) re-ported the ACPI branch in
+# cix_mbox_probe() correctly but forgot to add the matching
+# struct acpi_device_id cix_mbox_acpi_match[] = { { "CIXHA001",
+# 0 }, ... } table + MODULE_DEVICE_TABLE(acpi, ...) +
+# .acpi_match_table = ACPI_PTR(...) on the platform_driver.
+# Without those, the driver never binds to CIXHA001 ACPI devices
+# (the CIX sky1 mailbox controllers), and SCMI's
+# mbox_request_channel(cl, 0) during scmi_chan_setup() loops on
+# -EPROBE_DEFER until it gives up. Fix: ported the missing hunks
+# verbatim from patches-7.2/0001.
+# See commit 32e112b6d7aa for the full commit message.
+# SRCREV_kernel is now the tip of kernel-73rc2-port (32e112b6d7aa) so
+# the build picks up all ten forward-port fixes together.
+SRCREV_kernel = "32e112b6d7aa94d4e87bb4281fccbee16cab8d4a"
 
 # NOTE: fetches from a LOCAL bare mirror under this build container's workdir mount
 # (the ncz-yocto-y6 podman sandbox has no SSH keys, so it cannot reach the
