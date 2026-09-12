@@ -114,7 +114,33 @@ do_shared_workdir:append() {
 # is defined in drivers/thermal/cix/Kconfig.
 # SRCREV_kernel is now the tip of kernel-73rc2-port (ebb3f4e1874e) so
 # the build picks up all seven forward-port fixes together.
-SRCREV_kernel = "ebb3f4e1874ea9d59aa9b31bbb53b3b89ba0a1fe"
+# 2026-09-11 (5th bitbake attempt): compile passed do_compile but FAILED
+# at the final vmlinux link stage -- cdns_pcie_host_restore undefined.
+# Root cause: pci-sky1-cix.c's sky1_pcie_resume_noirq() calls
+# cdns_pcie_host_restore(rc) (extern + 2 call sites), but no such
+# function exists anywhere in this tree (grep confirms: zero
+# definitions, only the extern decl + the call sites in pci-sky1-cix.c).
+# The 7.2.5 reference uses cdns_pcie_hpa_host_restore() (note the _hpa
+# infix), defined in pcie-cadence-host-hpa.c:471 and prototyped in
+# pcie-cadence.h:486. The 7.3-rc2 port renamed it to the wrong shorter
+# name during the forward-port without adding a corresponding
+# definition -- same missing-patch-carried-forward sub-pattern as the
+# cix_scmi_em fix (ebb3f4e1874e) and the cix-plat SMMU guards
+# (ef818e8dc33d). 7.2 series patch
+# 0027-pci-cadence-sky1-cix-fix-sky1-cix-vendor-pcie-driver.patch
+# contains the cdns_pcie_hpa_host_restore() definition but the
+# corresponding hunk was never ported.
+# Fix: restored the _hpa infix at the 2 call sites in pci-sky1-cix.c,
+# added the missing function definition to pcie-cadence-host-hpa.c
+# (copied from 7.2.5 line 471, with one trivial substitution:
+# cdns_pcie_link_up -> cdns_pcie_hpa_link_up to match the HPA link-up
+# callback name in this tree), added the prototype + static inline
+# fallback to pcie-cadence.h (mirroring 7.2.5 lines 486 and 507-510),
+# removed the now-redundant local extern decl from pci-sky1-cix.c.
+# See commit 78a45c61229d for the full commit message.
+# SRCREV_kernel is now the tip of kernel-73rc2-port (78a45c61229d) so
+# the build picks up all eight forward-port fixes together.
+SRCREV_kernel = "78a45c61229d7eaded9ffdfd2b1ad564ef53e0df"
 
 # NOTE: fetches from a LOCAL bare mirror under this build container's workdir mount
 # (the ncz-yocto-y6 podman sandbox has no SSH keys, so it cannot reach the
