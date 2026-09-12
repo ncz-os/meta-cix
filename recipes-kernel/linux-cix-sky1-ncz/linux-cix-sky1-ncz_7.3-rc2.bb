@@ -83,7 +83,20 @@ do_shared_workdir:append() {
 #
 # SRCREV_kernel is now the tip of kernel-73rc2-port (1aa3075a23ea) so the
 # build picks up all four forward-port fixes together.
-SRCREV_kernel = "1aa3075a23ea560a171d8bc76ef22d39ec7bb9c5"
+# 2026-09-11 (3rd bitbake attempt): compile failed on 2 more bugs:
+# 1) cix_aec_gpio_set() in cix-acpi-ec-gpio.c was void, but this gpiolib
+#    still has gpio_chip.set as int-returning (matches 7.2.5 reference,
+#    which is int) -- reverted to int, return 0.
+# 2) cix-plat.cs whole CONFIG_CIX_SMMU_ATTACH_NOTIFIER block was missing
+#    its ifdef guards -- a dropped hunk of 7.2 series patch 0074 (the
+#    same patch that supplied the cix_ddrlp_remove fix; only that sibling
+#    hunk landed). Restored the guards verbatim from patch 0074; the
+#    option is unset in the built .config so the block now compiles out,
+#    matching 7.2.5s working behavior byte-for-byte.
+#
+# SRCREV_kernel is now the tip of kernel-73rc2-port (ef818e8dc33d) so
+# the build picks up all six forward-port fixes together.
+SRCREV_kernel = "ef818e8dc33dc01a58891f75517325bd9c6820b3"
 
 # NOTE: fetches from a LOCAL bare mirror under this build container's workdir mount
 # (the ncz-yocto-y6 podman sandbox has no SSH keys, so it cannot reach the
