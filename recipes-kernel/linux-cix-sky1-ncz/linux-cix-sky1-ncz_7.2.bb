@@ -135,15 +135,18 @@ KBRANCH = "linux-7.2.y"
 #
 #   (1) Lets the PKG:* overrides below produce the exact, final-name
 #       consumer-facing packages that cix-installer depends on:
-#         linux-image-cixmini     (was kernel-linux-cix-sky1-ncz-image-7.2.5-sky1-ncz)
-#         linux-headers-cixmini   (was kernel-linux-cix-sky1-ncz-dev-7.2.5-sky1-ncz)
+#         linux-image-cix-sky1-ncz     (was kernel-linux-cix-sky1-ncz-image-7.2.5-sky1-ncz)
+#         linux-headers-cix-sky1-ncz   (was kernel-linux-cix-sky1-ncz-dev-7.2.5-sky1-ncz)
 #       cix-installer (~/cix-installer-r266-iso) globs the LITERAL filenames
-#       `linux-image-cixmini_*.deb` / `linux-headers-cixmini_*.deb` in
+#       `linux-image-cix-sky1-ncz_*.deb` / `linux-headers-cix-sky1-ncz_*.deb` in
 #       post-install/10-our-kernel.sh (lines 90-91); the apt Depends line
 #       in build/build-kernel-debs.sh:576 is also
-#       `Depends: cixmini-boot (>= $ver), linux-headers-cixmini (= $ver), ...`;
+#       `Depends: cixmini-boot (>= $ver), linux-headers-cix-sky1-ncz (= $ver), ...`;
 #       assets/kernel-manifest.json, build/build-iso-di.sh:2310
-#       (NCZ_PRUNE_KEEP), etc. all reference the `cixmini` flavor. Producing
+#       (NCZ_PRUNE_KEEP), etc. all reference the `cix-sky1-ncz` flavor
+#       (cix-installer's own consumer side was renamed to match in the same
+#       operator-directed pass this recipe was -- "cixmini" is the MS-R1
+#       board nickname, not the correct kernel/SoC flavor name). Producing
 #       any other name here would silently break 10-our-kernel.sh's
 #       local_deb() helper (ed37550 was hardening exactly that failure mode).
 #
@@ -181,10 +184,10 @@ KERNEL_PACKAGE_NAME = "linux-cix-sky1-ncz-kernel"
 # Replace both with the literal names cix-installer matches on. The
 # per-imagetype auto-package
 # (`${KERNEL_PACKAGE_NAME}-image-image-<ver>`) still RDEPENDS into the
-# renamed `linux-image-cixmini` via the base class's automatic wiring, so
+# renamed `linux-image-cix-sky1-ncz` via the base class's automatic wiring, so
 # the kernel image binary and dtb still end up in the right package.
-PKG:${KERNEL_PACKAGE_NAME}-image = "linux-image-cixmini"
-PKG:${KERNEL_PACKAGE_NAME}-dev   = "linux-headers-cixmini"
+PKG:${KERNEL_PACKAGE_NAME}-image = "linux-image-cix-sky1-ncz"
+PKG:${KERNEL_PACKAGE_NAME}-dev   = "linux-headers-cix-sky1-ncz"
 
 # No RPROVIDES compat shim needed: nothing inside this Yocto build tree
 # DEPENDS/RDEPENDS on the old `kernel-${PN}-image` / `kernel-${PN}-dev`
