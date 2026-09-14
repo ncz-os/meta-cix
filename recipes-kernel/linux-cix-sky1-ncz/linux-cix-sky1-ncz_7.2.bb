@@ -124,7 +124,7 @@ LIC_FILES_CHKSUM = "file://COPYING;md5=6bc538ed5bd9a7fc9398086aedcd7e46"
 inherit kernel
 FILESEXTRAPATHS:prepend := "${THISDIR}/linux-cix-sky1-ncz-7.2:"
 
-LINUX_VERSION = "7.2.5"
+LINUX_VERSION = "7.2.6"
 KERNEL_LOCALVERSION = "-sky1-ncz"
 PATCHTOOL = "git"
 PV = "7.2.5+ncz"
@@ -253,7 +253,7 @@ do_shared_workdir:append() {
 # handling added further down in the same file). Re-resolved via git am -3,
 # regenerated both patches in place from the resolved worktree so a future
 # clean re-application doesn't need this same manual step repeated.
-SRCREV_kernel = "a300e35c0a4b4a38fb53742ea6e2a203c98ee523"
+SRCREV_kernel = "500df175a7f9e6bc1a9c328590ca5150f84f9ff0"
 
 SRC_URI = " \
     git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git;protocol=https;branch=${KBRANCH};name=kernel \
