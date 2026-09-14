@@ -127,7 +127,7 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/linux-cix-sky1-ncz-7.2:"
 LINUX_VERSION = "7.2.6"
 KERNEL_LOCALVERSION = "-sky1-ncz"
 PATCHTOOL = "git"
-PV = "7.2.5+ncz"
+PV = "7.2.6+ncz"
 PR = "r1"
 KBRANCH = "linux-7.2.y"
 # Internal KERNEL_PACKAGE_NAME: chose `linux-cix-sky1-ncz-kernel` as a
@@ -253,6 +253,29 @@ do_shared_workdir:append() {
 # handling added further down in the same file). Re-resolved via git am -3,
 # regenerated both patches in place from the resolved worktree so a future
 # clean re-application doesn't need this same manual step repeated.
+# Bumped 2026-09-14 from v7.2.5 to the v7.2.6 STABLE point release.
+#   v7.2.5 = a300e35c0a4b4a38fb53742ea6e2a203c98ee523
+#   v7.2.6 = 500df175a7f9e6bc1a9c328590ca5150f84f9ff0   <- pinned below
+# Replayed with build/port-series.sh v7.2.6: 199 applied, 6 failed of 205
+# on the first pass; all 6 resolved with real evidence (not blind
+# reapplication) and re-verified clean (205/205) after regeneration:
+#   0028, 0076, 0107 -- pure line-offset drift, regenerated with corrected
+#     context, functionally identical.
+#   0181 -- depended on 0028 creating fwnode_regulator.c; a dependency-
+#     ordering artifact of independent per-patch checking, not a real
+#     conflict once replayed in sequence.
+#   0075/0085 (arm_scmi ACPI support + its mailbox dependent) -- two real
+#     upstream-drift conflicts. bus.c: upstream v7.2.6 independently ADDED
+#     of_node_get(np) refcounting at the device_set_node() call this patch
+#     also touches; translated to fwnode_handle_get(np), consistent with
+#     how this same patch converts of_node_get/put elsewhere. driver.c:
+#     upstream v7.2.6 REMOVED the of_node_get/of_node_put refcounting this
+#     patch originally converted at all 3 scmi_chan_setup/destroy call
+#     sites (confirmed via direct pristine-tree inspection, not assumed);
+#     dropped those 3 hunks rather than reintroduce a pattern upstream
+#     deliberately removed, kept only the necessary of_node->fwnode rename
+#     the same hunk also carried. zoder (MiniMax-M3) adversarial review,
+#     verdict SAFE.
 SRCREV_kernel = "500df175a7f9e6bc1a9c328590ca5150f84f9ff0"
 
 SRC_URI = " \
