@@ -1,0 +1,105 @@
+From: Jason Perlow <jperlow@gmail.com>
+Subject: [PATCH] drm/cix: trace DP audio ELD lifecycle
+
+Diagnostic only, generated from the real Yocto do_patch tree at layer
+6eac8a7. Log mode reads, ELD updates, codec notifications, and ELD reads
+with connector/device identity. Capture bytes under eld_mutex and guard
+the zero-length buffer case. No plug or ELD behavior changes.
+
+O6N 7.2.4+r264 already has valid ELD on connected PCM 1. Opening
+disconnected PCM 0 reproduces the version-zero warning; opening PCM 1
+does not. hdmi-codec rereads ELD at every playback startup, so the
+one-shot permanent-cache hypothesis is not supported. Boot/hotplug
+ordering remains to be measured with this diagnostic.
+
+Upstream-Status: Inappropriate [diagnostic experiment]
+Signed-off-by: Jason Perlow <jperlow@gmail.com>
+
+diff --git a/drivers/gpu/drm/cix/dptx/trilin_dptx_audio.c b/drivers/gpu/drm/cix/dptx/trilin_dptx_audio.c
+--- a/drivers/gpu/drm/cix/dptx/trilin_dptx_audio.c
++++ b/drivers/gpu/drm/cix/dptx/trilin_dptx_audio.c
+@@ -1,6 +1,7 @@
+ // SPDX-License-Identifier: GPL-2.0
+ /* Copyright 2024 Cix Technology Group Co., Ltd. */
+ #include <linux/kernel.h>
++#include <linux/jiffies.h>
+ #include <linux/hdmi.h>
+ #include "trilin_dptx_reg.h"
+ #include "trilin_dptx.h"
+@@ -9,8 +10,12 @@
+ /* dp audio */
+ void dptx_audio_handle_plugged_change(struct dptx_audio *dp_audio, bool plugged)
+ {
+-	if (dp_audio->codec_dev && dp_audio->plugged_cb)
++	if (dp_audio->codec_dev && dp_audio->plugged_cb) {
++		dev_info(dp_audio->codec_dev,
++			 "NCZ-ELD: notify plugged=%d jiffies=%lu\n",
++			 plugged, jiffies);
+ 		dp_audio->plugged_cb(dp_audio->codec_dev, plugged);
++	}
+ }
+ 
+ static void dptx_audio_setup(struct trilin_dp *dp, int source, int freq,
+@@ -102,12 +107,18 @@
+ {
+ 	struct trilin_dp *dp = data;
+ 	struct drm_connector *connector = &dp->connector.base;
++	bool plugged;
+ 
+ 	mutex_lock(&connector->eld_mutex);
+-	if (trilin_dp_plugged_status(dp))
++	plugged = trilin_dp_plugged_status(dp);
++	if (plugged)
+ 		memcpy(buf, connector->eld, min(sizeof(connector->eld), len));
+ 	else
+ 		memset(buf, 0, len);
++	dev_info(dp->dev,
++		 "NCZ-ELD: get_eld connector=%s plugged=%d raw=0x%02x returned=0x%02x len=%zu jiffies=%lu\n",
++		 connector->name, plugged, connector->eld[0],
++		 len ? buf[0] : 0, len, jiffies);
+ 	mutex_unlock(&connector->eld_mutex);
+ 
+ 	return 0;
+diff --git a/drivers/gpu/drm/cix/dptx/trilin_drm.c b/drivers/gpu/drm/cix/dptx/trilin_drm.c
+--- a/drivers/gpu/drm/cix/dptx/trilin_drm.c
++++ b/drivers/gpu/drm/cix/dptx/trilin_drm.c
+@@ -1,6 +1,7 @@
+ // SPDX-License-Identifier: GPL-2.0
+ // Copyright 2024 Cix Technology Group Co., Ltd.
+ 
++#include <linux/jiffies.h>
+ #include <drm/drm_atomic_helper.h>
+ #include <drm/drm_crtc.h>
+ #include <drm/drm_device.h>
+@@ -347,6 +348,8 @@
+ 	DP_DEBUG("enter\n");
+ 
+ 	if (dp->platform_id != CIX_PLATFORM_EMU) {
++		dev_info(dp->dev, "NCZ-ELD: get_modes enter connector=%s jiffies=%lu\n",
++			 connector->name, jiffies);
+ 		drm_edid = drm_edid_read(connector);
+ 		if (!drm_edid) { /* try once again */
+ 			for (int count = 0; count < GET_EDID_RETRY_MAX;
+@@ -359,6 +362,8 @@
+ 		}
+ 
+ 		if (!drm_edid) {
++			dev_info(dp->dev, "NCZ-ELD: get_modes no EDID connector=%s jiffies=%lu\n",
++				 connector->name, jiffies);
+ 			mode = drm_dp_downstream_mode(connector->dev, dp->dpcd,
+ 						      dp->downstream_ports);
+ 			if (mode) {
+@@ -381,6 +386,13 @@
+ 			drm_edid_free(drm_edid);
+ 			return ret;
+ 		}
++
++		mutex_lock(&connector->eld_mutex);
++		dev_info(dp->dev,
++			 "NCZ-ELD: get_modes updated connector=%s eld0=0x%02x sad_count=%u jiffies=%lu\n",
++			 connector->name, connector->eld[0],
++			 (unsigned int)(connector->eld[5] >> 4), jiffies);
++		mutex_unlock(&connector->eld_mutex);
+ 
+ 		ret = drm_edid_connector_add_modes(connector);
+ 		drm_edid_free(drm_edid);

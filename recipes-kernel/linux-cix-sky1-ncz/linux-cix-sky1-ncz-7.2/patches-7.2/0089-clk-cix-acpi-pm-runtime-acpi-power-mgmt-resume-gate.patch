@@ -22,6 +22,8 @@ driver runtime_resume callbacks touching unready syscon MMIO. Gate ALL
 __pm_runtime_resume calls behind a cix_system_ready flag set at
 late_initcall (after all CIX drivers have had a chance to probe),
 short-circuiting to RPM_ACTIVE until then.
+
+Upstream-Status: Inappropriate [oe-specific]
 ---
  drivers/base/power/runtime.c | 54 ++++++++++++++++++++++++++++++++++++
  drivers/clk/cix/acpi_clk.c   | 16 +++++++++++

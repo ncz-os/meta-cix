@@ -14,7 +14,15 @@ DESCRIPTION = "Out-of-tree kernel module for the Cix Sky1 VPU (video codec accel
 PV = "1.0+cix"
 SRCREV = "66180b68ba259c230613bb7dd1634ce4b5ad3716"
 
+# Patch dir is not on the default FILESPATH because PV is "1.0+cix";
+# bitbake fails with "Unable to get checksum for SRC_URI entry" without this.
+FILESEXTRAPATHS:prepend := "${THISDIR}/cix-vpu-kmd-1.0:"
+
 SRC_URI = " \
+    file://0001-mvx-include-vmalloc.patch \
+    file://0002-mvx-strlcpy-to-strscpy.patch \
+    file://0003-mvx-log-dentry-hlist.patch \
+    file://0004-mvx-quote-module-import-ns.patch \
     git://github.com/minisforum-cix-p1-repo/cix_opensource__vpu_driver.git;protocol=https;branch=a0fb5/5cf6e/cix_p1_mg_dev;name=vpukmd \
 "
 SRCREV_FORMAT = "vpukmd"

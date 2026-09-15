@@ -12,6 +12,8 @@ unmatched -> runtime-PM usage_count underflow -> preempt_count underflow
 in rpm_suspend (pm_runtime_work) -> in_hardirq() set -> cdns_i2c ioremap
 BUG_ON at 1.5s (crash without DEBUG_PREEMPT masking). Upstream v8 has no
 .prepare op; remove it to match.
+
+Upstream-Status: Inappropriate [oe-specific]
 ---
  drivers/clk/cix/clk-sky1-audss.c | 20 --------------------
  1 file changed, 20 deletions(-)

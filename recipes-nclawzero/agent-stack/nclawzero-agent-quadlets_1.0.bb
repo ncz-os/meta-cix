@@ -36,19 +36,19 @@ SRC_URI = " \
     file://agent-env.sample \
 "
 
-S = "${WORKDIR}"
+S = "${UNPACKDIR}"
 
 # Quadlets land in /etc/containers/systemd/. agent-env.sample lands at
 # /etc/nclawzero/agent-env.sample (operators copy and populate).
 do_install() {
     install -d ${D}${sysconfdir}/containers/systemd
-    install -m 0644 ${WORKDIR}/zeroclaw.container        ${D}${sysconfdir}/containers/systemd/zeroclaw.container
-    install -m 0644 ${WORKDIR}/openclaw.container        ${D}${sysconfdir}/containers/systemd/openclaw.container
-    install -m 0644 ${WORKDIR}/hermes.container          ${D}${sysconfdir}/containers/systemd/hermes.container
-    install -m 0644 ${WORKDIR}/hermes-isolated.network   ${D}${sysconfdir}/containers/systemd/hermes-isolated.network
+    install -m 0644 ${UNPACKDIR}/zeroclaw.container        ${D}${sysconfdir}/containers/systemd/zeroclaw.container
+    install -m 0644 ${UNPACKDIR}/openclaw.container        ${D}${sysconfdir}/containers/systemd/openclaw.container
+    install -m 0644 ${UNPACKDIR}/hermes.container          ${D}${sysconfdir}/containers/systemd/hermes.container
+    install -m 0644 ${UNPACKDIR}/hermes-isolated.network   ${D}${sysconfdir}/containers/systemd/hermes-isolated.network
 
     install -d ${D}${sysconfdir}/nclawzero
-    install -m 0640 ${WORKDIR}/agent-env.sample ${D}${sysconfdir}/nclawzero/agent-env.sample
+    install -m 0640 ${UNPACKDIR}/agent-env.sample ${D}${sysconfdir}/nclawzero/agent-env.sample
     # Empty agent-env created at correct mode/ownership; operators
     # populate post-deploy via fleet-secrets workflow.
     install -m 0640 /dev/null ${D}${sysconfdir}/nclawzero/agent-env

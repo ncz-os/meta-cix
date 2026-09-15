@@ -3,24 +3,36 @@
 #
 # Linux kernel for Cix Sky1 / CP8180 -- NCZ 7.2 track.
 #
-# Base: torvalds mainline v7.2-rc1 (no linux-7.2.y stable branch yet, so
-#       KBRANCH=master + SRCREV pinned to the v7.2-rc1 tag commit).
+# Base: torvalds mainline v7.2 release tag
+#       (KBRANCH=master + SRCREV pinned to the v7.2 tag COMMIT).
+#       (Bumped 2026-08-22 from v7.2-rc7 -> v7.2 release. The rc7 pin
+#       shipped as KERNELRELEASE 7.2.0-rc7-sky1-ncz; this recipe must stay
+#       pinned to the intended release tag so metadata and artifact agree.)
+#       (Rebased 2026-08-02 from v7.2-rc5 -> v7.2-rc6: all 170 CIX commits
+#       replayed with ZERO conflicts and range-diff 170/170 "=".)
+#       (Forward-ported 2026-07-26 from v7.2-rc4 -> v7.2-rc5: the rc4->rc5
+#       diff touched 595 files and none of them overlap this patch series'
+#       footprint, so 169 of 170 patches applied byte-identical; the one
+#       exception, 0184, had a pre-existing malformed hunk in
+#       drivers/thermal/cpufreq_cooling.c -- unrelated to the rc5 rebase,
+#       fixed in place. See CORRESPONDING-SOURCE.md for the rc5 pristine
+#       base self-mirror.)
 # Patches: patches-7.2 = cixtech 2026q2 vendor driver set
 #   (github.com/cixtech/cix_opensource__linux @ cix_k6.6.89_2026q2)
-#   forward-ported from k6.6.89 onto v7.2-rc1, PLUS the NCZ core ACPI
+#   forward-ported from k6.6.89 onto v7.2-rc4, PLUS the NCZ core ACPI
 #   glue patches (from patches-7.1) that still apply.
-#   Upstream v7.2-rc1 already carries: sky1-orion-o6 DTS, cix-mailbox,
+#   Upstream v7.2-rc4 (and rc5, unchanged in this area) already carries: sky1-orion-o6 DTS, cix-mailbox,
 #   pci-sky1 (Cadence HPA, OF), pinctrl-sky1, reset-sky1, HDA cix-ipbloq
 #   -- those are used as-is with NCZ ACPI deltas on top.
 #   USB host role initialization is completed by patch 0112, which connects
 #   the imported USBSSP platform driver to the v7.2 unified cdns3 role core.
-# Config: config-7.2.defconfig = 7.1 NCZ config + olddefconfig on v7.2-rc1
+# Config: config-7.2.defconfig = 7.1 NCZ config + olddefconfig on v7.2-rc4
 #   + CIX 2026q2 symbols + CONFIG_BTRFS_FS=y (built-in; btrfs root without
 #   initrd module).
 # NPU (Zhouyi V3/V3_1, CIX Sky1 CRE0-2): ADDED via patches 0119-0125.
 #   The Entrpi v7.1 sky1-next armchina-npu driver (46 files, ~12K lines)
 #   was carried over from the 7.1 squashed tree and forward-ported onto
-#   v7.2-rc1: pm_runtime_put() now void (7.0.x), platform_driver::remove
+#   v7.2-rc4: pm_runtime_put() now void (7.0.x), platform_driver::remove
 #   now void (7.1), NULL pd_core[] guards (BIOS v1.0 CRE0-2 missing _HID),
 #   ACPI _STA quirks for CIXH4000/NPU0 children, force-D0 on missing
 #   pd_core, and the tightening of the hidden Sky1 SCMI/NPU child device
@@ -32,7 +44,7 @@
 # VPU (Linlon AMLogic-derived codec, ACPI HID CIXH3010): ADDED via
 #   patches 0126-0129. The Entrpi v7.1 sky1-next Linlon VPU driver
 #   (63 files, ~39K lines, Kconfig symbol VIDEO_LINLON) was carried
-#   over from the 7.1 squashed tree and forward-ported onto v7.2-rc1:
+#   over from the 7.1 squashed tree and forward-ported onto v7.2-rc4:
 #   add the missing "select VIDEOBUF2_DMA_SG" / "select VIDEOBUF2_MEMOPS"
 #   in Kconfig (so the dep chain resolves when no other driver enables
 #   videobuf2-dma-sg), and add explicit "#include <linux/string.h>" +
@@ -61,7 +73,7 @@
 # AUDSS clk+reset: kept as cixtech 2026q2 self-contained drivers
 #   (clk-sky1-audss.c, reset-sky1-audss.c; compat "cix,sky1-audss-reset",
 #   ACPI HID CIXH6062). The upstream "Add Cix Sky1 AUDSS clock and reset
-#   support" series (Zabel reviewing ~2026-06-30) is NOT in v7.2-rc1 and
+#   support" series (Zabel reviewing ~2026-06-30) is NOT in v7.2-rc4 and
 #   is DT-oriented; adopting an in-review series would be worse than the
 #   vendor driver, and only the vendor form carries the ACPI HID cixmini
 #   needs. The audss determine_rate migration (old hand-patch 9001) is
@@ -75,9 +87,36 @@
 #   (clk-sky1-acpi, patch 0096) can provide the 207 consumer clocks;
 #   without it every apb/pclk consumer (PCIe/USB PHYs, pwm, uart) is
 #   clockless and NVMe never appears (patches 0093-0098 chain).
+# linlon-dp (linlondp + trilin-dptx): the 26q2 driver set is carried as
+#   0008 (base) + 0067 (the 26q2 feature merge: cluster, single-master DRM,
+#   pipeline binding/source_id consolidation, ACPI CIXH50C0 cluster +
+#   CIXH5010 DPU slave detection, cluster PM, IOMMU-on-demand, etc.). The
+#   0067 swap rebuilds linlondp_kms/linlondp_drv/linlondp_cluster and the
+#   dptx/* files on top of 0008 (the v7.2 driver surface). The v7.2 API
+#   drift is fixed by 0081 (private-obj init -> .atomic_create_state,
+#   drm_atomic_state -> drm_atomic_commit, fbdev_generic -> drm_client_setup,
+#   drm_panel_prepare/enable return void, MST add/remove payload split,
+#   const display_mode, drm_format_info const, panel->init devm alloc,
+#   edp panel return-void, from_timer -> timer_container_of,
+#   drm_atomic_commit_put, color format enums -> BIT(...)). Patch 0131
+#   (this series) is the v7.2 port of cix k6.6.89 1009 (WERROR fixups
+#   only — static-marking file-local helpers, __maybe_unused on debug
+#   locals, missing-include fixes); the drm_atomic.c %llx->%x revert
+#   hunk from 1009 is dropped (already in the right state on v7.2-rc4).
+#   Single-master DRM enumeration requires 26q2 firmware exposing the
+#   cluster (ACPI _HID CIXH50C0 parent of CIXH5010 DPU children). With
+#   older firmware the four DPU devices appear as siblings and each
+#   registers its own DRM card (the "Cannot find any crtc or sizes"
+#   path); that fallback is graceful — no kernel crash, just a less
+#   usable user-mode display. Metal validation pending: QEMU-virt has no
+#   Sky1 display hardware, so this kernel+recipe change can only be
+#   proven to boot + compile cleanly here; the single-card vs multi-card
+#   behaviour has to be checked on a real CIX SKY1 board with 26q2
+#   firmware. Do not enable CONFIG_DRM_CIX_COMPONENT_BIND_BYPASSED —
+#   it forces the multi-card path and defeats the 26q2 single-master code.
 
-SUMMARY = "NCZ Linux kernel for Cix Sky1 / CP8180 (v7.2-rc1 + CIX 2026q2 patch set)"
-DESCRIPTION = "NCZ kernel: mainline Linux v7.2-rc1 plus the cixtech 2026q2 Sky1 driver set forward-ported by NCZ. Not a CIX/vendor release."
+SUMMARY = "NCZ Linux kernel for Cix Sky1 / CP8180 (v7.2 + CIX 2026q2 patch set)"
+DESCRIPTION = "NCZ kernel: mainline Linux v7.2 release plus the cixtech 2026q2 Sky1 driver set forward-ported by NCZ. Not a CIX/vendor release."
 SECTION = "kernel"
 LICENSE = "GPL-2.0-only"
 LIC_FILES_CHKSUM = "file://COPYING;md5=6bc538ed5bd9a7fc9398086aedcd7e46"
@@ -85,19 +124,163 @@ LIC_FILES_CHKSUM = "file://COPYING;md5=6bc538ed5bd9a7fc9398086aedcd7e46"
 inherit kernel
 FILESEXTRAPATHS:prepend := "${THISDIR}/linux-cix-sky1-ncz-7.2:"
 
-LINUX_VERSION = "7.2-rc1"
-KERNEL_LOCALVERSION = "-ncz"
+LINUX_VERSION = "7.2.6"
+KERNEL_LOCALVERSION = "-sky1-ncz"
 PATCHTOOL = "git"
-PV = "7.2+ncz"
-KBRANCH = "master"
-KERNEL_PACKAGE_NAME = "kernel-${PN}"
+PV = "7.2.6+ncz"
+PR = "r1"
+KBRANCH = "linux-7.2.y"
+# Internal KERNEL_PACKAGE_NAME: chose `linux-cix-sky1-ncz-kernel` as a
+# non-PN, namespaced internal prefix. Two reasons:
+#
+#   (1) Lets the PKG:* overrides below produce the exact, final-name
+#       consumer-facing packages that cix-installer depends on:
+#         linux-image-cix-sky1-ncz     (was kernel-linux-cix-sky1-ncz-image-7.2.5-sky1-ncz)
+#         linux-headers-cix-sky1-ncz   (was kernel-linux-cix-sky1-ncz-dev-7.2.5-sky1-ncz)
+#       cix-installer (~/cix-installer-r266-iso) globs the LITERAL filenames
+#       `linux-image-cix-sky1-ncz_*.deb` / `linux-headers-cix-sky1-ncz_*.deb` in
+#       post-install/10-our-kernel.sh (lines 90-91); the apt Depends line
+#       in build/build-kernel-debs.sh:576 is also
+#       `Depends: cixmini-boot (>= $ver), linux-headers-cix-sky1-ncz (= $ver), ...`;
+#       assets/kernel-manifest.json, build/build-iso-di.sh:2310
+#       (NCZ_PRUNE_KEEP), etc. all reference the `cix-sky1-ncz` flavor
+#       (cix-installer's own consumer side was renamed to match in the same
+#       operator-directed pass this recipe was -- "cixmini" is the MS-R1
+#       board nickname, not the correct kernel/SoC flavor name). Producing
+#       any other name here would silently break 10-our-kernel.sh's
+#       local_deb() helper (ed37550 was hardening exactly that failure mode).
+#
+#   (2) Keeps the dynamic per-driver module and firmware sub-packages under
+#       a namespaced prefix (`linux-cix-sky1-ncz-kernel-module-*`, `-firmware-*`)
+#       that does not collide with anything Debian forky/arm64 ships today.
+#       A bare `linux` KERNEL_PACKAGE_NAME would have produced
+#       `linux-module-*` / `linux-firmware-*`, which collides with Debian's
+#       entire kernel family in the vendor-mirror pool. The cix-installer
+#       offline-mirror step (build/build-forky-mirror.sh) and dpkg on the
+#       target system resolve packages against the local vendor mirror, not
+#       the live Debian archive, so a same-name collision would in practice
+#       be harmless; but the `linux-cix-sky1-ncz-` prefix removes the
+#       question entirely.
+#
+# IMPORTANT: KERNEL_PACKAGE_NAME MUST NOT equal PN. The original
+# `KERNEL_PACKAGE_NAME = "kernel-${PN}"` worked only because it differs
+# from PN (`kernel-${PN}` vs `${PN}`). If KERNEL_PACKAGE_NAME == PN,
+# OE-core's bug 11905 fires: bitbake's key-expansion dedup makes
+# `FILES:${KERNEL_PACKAGE_NAME}-dev` and `FILES:${PN}-dev` collide on the
+# same key, the latter (base class's default `${includedir} ${libdir}/*.la`)
+# silently wins, and the kernel's System.map/Module.symvers/config end up
+# "installed but not shipped" -- the build fails with `installed-vs-shipped`
+# QA, just like a normal do_package QA error. The kernel.bbclass __anonymous
+# function emits a "bug 11905" warning, but the symptom is real and fatal.
+# Using `linux-cix-sky1-ncz-kernel` (= `linux-cix-sky1-ncz` + `-kernel`)
+# keeps it distinct from PN while still being short and clearly the Yocto
+# recipe's kernel package namespace.
+KERNEL_PACKAGE_NAME = "linux-cix-sky1-ncz-kernel"
 
-# v7.2-rc1 tag commit (torvalds mainline, on master)
-SRCREV_kernel = "dc59e4fea9d83f03bad6bddf3fa2e52491777482"
+# Override the two consumer-facing package names. base-class defaults are:
+#   PKG:${KERNEL_PACKAGE_NAME}-image = "${KERNEL_PACKAGE_NAME}-image-${@legitimize_package_name(d.getVar('KERNEL_VERSION'))}"
+#   PKG:${KERNEL_PACKAGE_NAME}-dev   is NOT overridden by the base class --
+#                                    it stays `${KERNEL_PACKAGE_NAME}-dev`.
+# Replace both with the literal names cix-installer matches on. The
+# per-imagetype auto-package
+# (`${KERNEL_PACKAGE_NAME}-image-image-<ver>`) still RDEPENDS into the
+# renamed `linux-image-cix-sky1-ncz` via the base class's automatic wiring, so
+# the kernel image binary and dtb still end up in the right package.
+PKG:${KERNEL_PACKAGE_NAME}-image = "linux-image-cix-sky1-ncz"
+PKG:${KERNEL_PACKAGE_NAME}-dev   = "linux-headers-cix-sky1-ncz"
+
+# No RPROVIDES compat shim needed: nothing inside this Yocto build tree
+# DEPENDS/RDEPENDS on the old `kernel-${PN}-image` / `kernel-${PN}-dev`
+# names. Verified -- all out-of-tree module recipes (cix-gpu-kmd,
+# cix-npu-kmd, cix-vpu-kmd via cix-modules.inc) use virtual/kernel +
+# ${STAGING_KERNEL_DIR}, not a package name. The base class already sets
+# RPROVIDES:${KERNEL_PACKAGE_NAME}-image += "${KERNEL_PACKAGE_NAME}-image"
+# for the new internal name, so any future DEPENDS on the new internal
+# name resolves via the standard package-class alias.
+
+# OE-Core 2026 keeps the kernel source and module-build artifacts in this
+# recipe work directory. module.bbclass publishes those locations to
+# external-module recipes through work-shared/${MACHINE}.
+# NOTE: KERNEL_PACKAGE_NAME-abiversion / -localversion symlink names
+# change with the rename, but the underlying files are accessed by their
+# bare names (kernel-abiversion, kernel-localversion) from STAGING_KERNEL_BUILDDIR
+# via oe.utils.read_file (linux-kernel-base.bbclass, module-base.bbclass).
+# The symlinks are just visibility inside work-shared/; nothing consumes them.
+do_shared_workdir:append() {
+    shared_kernel_dir="${TMPDIR}/work-shared/${MACHINE}"
+    install -d "$shared_kernel_dir"
+    ln -sfn "${S}" "$shared_kernel_dir/kernel-source"
+    ln -sfn "${WORKDIR}/kernel-build-artifacts" "$shared_kernel_dir/kernel-build-artifacts"
+    ln -sfn "${KERNEL_PACKAGE_NAME}-abiversion" "${WORKDIR}/kernel-build-artifacts/kernel-abiversion"
+    ln -sfn "${KERNEL_PACKAGE_NAME}-localversion" "${WORKDIR}/kernel-build-artifacts/kernel-localversion"
+}
+
+# v7.2 release tag COMMIT (torvalds mainline, on master). SRCREV must be the
+# commit, not the annotated tag object -- same convention as rc4/rc5/rc6/rc7.
+# Verified on 2026-08-22:
+#   v7.2-rc5 = f5098b6bae761e346ebcd9da7f95622c04733cff
+#   v7.2-rc6 = 075b74841bd0065a3bda3440873c747938e69b68
+#   v7.2-rc7 = db2ddb87143519e20a95aa36c60b36107b736a58
+#   v7.2     = 8d3ae59288f1e7d58d76558a6ee96d533bc5019f   <- pinned below
+# Bumped 2026-08-22 from v7.2-rc7 after replaying all 197 wired patches onto
+# the release tag with build/port-series.sh v7.2: 197 applied, 0 failed.
+# Cycle history, kept because it records what each rebase actually touched:
+#   rc5 -> rc6 (2026-08-02): all 170 CIX commits replayed, range-diff 170/170
+#     "=" -- none altered, dropped or added. rc6 is an ordinary bugfix cycle
+#     for our purposes (615 commits, 530 files): drm/panthor gained 2 firmware
+#     validation hardening commits (b921b8613790, a3caaa068092),
+#     drivers/gpu/drm/arm (komeda/linlondp) untouched, realtek changes are
+#     rtase-only (not r8169), arm64 work is KVM/vgic. No Sky1 failure mode
+#     fixed -- hygiene only.
+# Bumped 2026-09-08 from v7.2.3 to the v7.2.4 STABLE point release.
+#   v7.2   = 8d3ae59288f1e7d58d76558a6ee96d533bc5019f
+#   v7.2.4 = 5015d0d945b3d3f2b038d2667880d5762f7d9437
+# Stable tags do NOT exist in the torvalds tree, so SRC_URI moves to the stable
+# tree and KBRANCH from master to linux-7.2.y. That is a build-MECHANICS change
+# (it changes where every future kernel comes from), not an image-content one.
+# Replayed with build/port-series.sh v7.2.4 before bumping: 205 applied,
+# 0 failed of 205 wired.
+#
+# Bumped 2026-09-11 from v7.2.4 to the v7.2.5 STABLE point release.
+#   v7.2.4 = 5015d0d945b3d3f2b038d2667880d5762f7d9437
+#   v7.2.5 = a300e35c0a4b4a38fb53742ea6e2a203c98ee523   <- pinned below
+# Replayed with build/port-series.sh v7.2.5: 203 applied, 2 failed of 205.
+# Both failures (0114, 0221) were pure context-drift from an unrelated
+# upstream commit between 7.2.4 and 7.2.5 (2571029a92ee, "usb: cdnsp: fix
+# wakeup from S3 after controller context loss") deleting a blank line at
+# the exact insertion point of each patch -- zero semantic overlap (verified
+# by reading the upstream diff: it touches unrelated register-context-loss
+# handling added further down in the same file). Re-resolved via git am -3,
+# regenerated both patches in place from the resolved worktree so a future
+# clean re-application doesn't need this same manual step repeated.
+# Bumped 2026-09-14 from v7.2.5 to the v7.2.6 STABLE point release.
+#   v7.2.5 = a300e35c0a4b4a38fb53742ea6e2a203c98ee523
+#   v7.2.6 = 500df175a7f9e6bc1a9c328590ca5150f84f9ff0   <- pinned below
+# Replayed with build/port-series.sh v7.2.6: 199 applied, 6 failed of 205
+# on the first pass; all 6 resolved with real evidence (not blind
+# reapplication) and re-verified clean (205/205) after regeneration:
+#   0028, 0076, 0107 -- pure line-offset drift, regenerated with corrected
+#     context, functionally identical.
+#   0181 -- depended on 0028 creating fwnode_regulator.c; a dependency-
+#     ordering artifact of independent per-patch checking, not a real
+#     conflict once replayed in sequence.
+#   0075/0085 (arm_scmi ACPI support + its mailbox dependent) -- two real
+#     upstream-drift conflicts. bus.c: upstream v7.2.6 independently ADDED
+#     of_node_get(np) refcounting at the device_set_node() call this patch
+#     also touches; translated to fwnode_handle_get(np), consistent with
+#     how this same patch converts of_node_get/put elsewhere. driver.c:
+#     upstream v7.2.6 REMOVED the of_node_get/of_node_put refcounting this
+#     patch originally converted at all 3 scmi_chan_setup/destroy call
+#     sites (confirmed via direct pristine-tree inspection, not assumed);
+#     dropped those 3 hunks rather than reintroduce a pattern upstream
+#     deliberately removed, kept only the necessary of_node->fwnode rename
+#     the same hunk also carried. zoder (MiniMax-M3) adversarial review,
+#     verdict SAFE.
+SRCREV_kernel = "500df175a7f9e6bc1a9c328590ca5150f84f9ff0"
 
 SRC_URI = " \
-    git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git;protocol=https;branch=${KBRANCH};name=kernel \
-    file://config-7.2.defconfig \
+    git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git;protocol=https;branch=${KBRANCH};name=kernel \
+    file://config-7.2-lean-msr1-o6n.defconfig \
     file://patches-7.2/0001-mailbox-add-acpi-support-to-cix-mailbox-driver.patch \
     file://patches-7.2/0002-acpi-Add-a-property-reference-count-interface.patch \
     file://patches-7.2/0003-clk-clk-scmi-register-clkdev-for-acpi.patch \
@@ -147,7 +330,6 @@ SRC_URI = " \
     file://patches-7.2/0047-dptx-check-null-pointer-in-trilin_dp_panel_hw_cfg.patch \
     file://patches-7.2/0048-firmware-arm_scmi-mailbox-set-max_rx_timeout_ms-to-3.patch \
     file://patches-7.2/0049-optee-check-system_state-when-probing-at-shutdown.patch \
-    file://patches-7.2/0050-ACPI-thermal-bind-devfreq-cooling-devices-via-devfre.patch \
     file://patches-7.2/0051-thermal-ipa-enhance-ipa.patch \
     file://patches-7.2/0052-add-cix_dst-driver.patch \
     file://patches-7.2/0053-linlondp-fix-build-of-debugfs.patch \
@@ -194,6 +376,11 @@ SRC_URI = " \
     file://patches-7.2/0094-drm-panthor-sky1-acpi-defer-probe-gpu-clock-not-ready.patch \
     file://patches-7.2/0095-phy-cix-defer-probe-acpi-clkdev-clocks-not-registered.patch \
     file://patches-7.2/0096-clk-cix-sky1-clkt-clkdev-bridge-bios10.patch \
+    file://patches-7.2/0138-clk-cix-sky1-bind-acpi-bus.patch \
+    file://patches-7.2/0147-clk-cix-sky1-restore-platform-supplier.patch \
+    file://patches-7.2/0148-clk-cix-sky1-reject-partial-clkt-maps.patch \
+    file://patches-7.2/0157-clk-cix-sky1-dont-defer-bridge-on-partial-scmi-readiness.patch \
+    file://patches-7.2/0158-pwm-sky1-defer-probe-on-missing-clkt-clkdev.patch \
     file://patches-7.2/0097-soc-cix-acpi-resource-lookup-v1-bios10.patch \
     file://patches-7.2/0098-soc-cix-v1-lookup-owns-cixa1019.patch \
     file://patches-7.2/0099-pci-sky1-acpi-standard-ecam-mode-knob.patch \
@@ -228,15 +415,87 @@ SRC_URI = " \
     file://patches-7.2/0128-media-cix-add-linux-string.h-includes-7.2-build-fix.patch \
     file://patches-7.2/0129-media-cix-handle-missing-VPU-firmware-cleanly.patch \
     file://patches-7.2/0130-media-cix-vpu-sync-upstream-v1.0.1-irq-reset-race-fix.patch \
+    file://patches-7.2/0131-drm-linlondp-fix-WERROR.patch \
+    file://patches-7.2/0132-firmware-arm_scmi-setup-channel-for-acpi-activated-protocols.patch \
+    file://patches-7.2/0133-drm-linlondp-pin-display-power-domain-unconditionally.patch \
+    file://patches-7.2/0134-drm-trilin-dptx-restore-runtime-pm.patch \
+    file://patches-7.2/0135-media-cix-vpu-sync-upstream-v1.0.2.patch \
+    file://patches-7.2/0152-media-cix-amvx-serror-drain-masked-reads.patch \
+    file://patches-7.2/0153-media-cix-amvx-scmi-perf-devfreq.patch \
+    file://patches-7.2/0154-drm-cix-dptx-validate-reset-and-clock-lookups.patch \
+    file://patches-7.2/0155-phy-cix-usbdp-acquire-pclk-before-asserting-resets.patch \
+    file://patches-7.2/0156-drm-cix-linlondp-propagate-aclk-enable-failures.patch \
+    file://patches-7.2/0159-armchina-npu-drop-irqf-oneshot.patch \
+    file://patches-7.2/0160-hwmon-scmi-dont-skip-thermal-zone-on-config-set-fail.patch \
+    file://patches-7.2/0161-drm-cix-edp-panel-acpi-desc-properties.patch \
+    file://patches-7.2/0162-drm-cix-linlondp-defer-on-missing-aclk-instead-of-failing.patch \
+    file://patches-7.2/0163-phy-cix-usb3-defer-on-missing-clocks-fix-ref-clk-check.patch \
+    file://patches-7.2/0164-usb-cdns3-cdnsp-sky1-defer-on-missing-clocks.patch \
+    file://patches-7.2/0165-i2c-cadence-defer-on-missing-clock.patch \
+    file://patches-7.2/0166-clocksource-sky1-defer-on-missing-timer-clocks.patch \
+    file://patches-7.2/0167-soc-cix-acpi-resource-lookup-tighten-badly-specified-guard.patch \
+    file://patches-7.2/0168-clk-cix-sky1-remap-clkt-bridge-on-scmi-clocks-bind.patch \
+    file://patches-7.2/0169-drm-cix-linlondp-dont-double-put-acpi-pxlclk.patch \
+    file://patches-7.2/0170-drm-cix-dptx-optional-phy-reset-and-vid-clk23.patch \
+    file://patches-7.2/0171-asoc-cix-pick-hdmi-codec-child-explicitly.patch \
+    file://patches-7.2/0172-thermal-cix-resolve-scmi-perf-domain-via-genpd-acpi.patch \
+    file://patches-7.2/0173-amvx-vb2-queue-lock-7.2.patch \
+    file://patches-7.2/0176-drm-cix-dptx-aux-dpcd-robustness-cold-boot.patch \
+    file://patches-7.2/0177-pinctrl-sky1-quiet-absent-optional-pin-groups.patch \
+    file://patches-7.2/0178-firmware-arm-scmi-quiet-fastchannel-fallback-noise.patch \
+    file://patches-7.2/0179-iommu-arm-smmu-v3-demote-benign-fw-config-notes.patch \
+    file://patches-7.2/0180-usb-cdns3-sky1-fix-runtime-pm-parent-child-order.patch \
+    file://patches-7.2/0181-regulator-cix-handle-unsupported-pmic-constraints-quietly.patch \
+    file://patches-7.2/0182-asoc-cix-hdmi-audio-drop-duplicate-dapm-registration.patch \
+    file://patches-7.2/0183-genpd-cix-dedupe-power-domain-opp-table.patch \
+    file://patches-7.2/0184-thermal-cix-cpufreq-cooling-acpi-no-of-node.patch \
+    file://patches-7.2/0185-firmware-arm-scmi-perf-skip-opp-repopulation.patch \
+    file://patches-7.2/0187-drm-panthor-route-scmi-dvfs-through-perf-opp.patch \
+    file://patches-7.2/0190-soc-cix-only-deny-generic-ACPI-ids-on-sky1.patch \
+    file://patches-7.2/0191-soc-cix-default-acpi_scmi_en-off-so-the-clock-bridge-binds.patch \
+    file://patches-7.2/0192-usb-cdns3-sky1-keep-the-wrapper-pinned-by-its-children.patch \
+    file://patches-7.2/0193-usb-hub-give-root-hubs-the-same-power-on-good-floor.patch \
+    file://patches-7.2/0200-rpmsg-virtio-ratelimit-no-used-buffer.patch \
+    file://patches-7.2/0201-acpi-table-upgrade-add-disable-and-exclude-options.patch \
+    file://patches-7.2/0202-platform-acpi-resolve-named-irq-resources.patch \
+    file://patches-7.2/0203-power-opp-accept-acpi-only-configurations.patch \
+    file://patches-7.2/0204-topology-has-missing-cpufreq-ref.patch \
+    file://patches-7.2/0205-acpi-processor-clarify-ignore-ppc-module-parameter.patch \
+    file://patches-7.2/0206-pstore-ramoops-parse-firmware-node-properties.patch \
+    file://patches-7.2/0207-drm-cix-demote-internal-tbu-noop-logs.patch \
+    file://patches-7.2/0208-bluetooth-btrtl-return-register-read-error.patch \
+    file://patches-7.2/0209-firmware-arm-scmi-use-rational-perf-frequency-conversion.patch \
+    file://patches-7.2/0210-acpi-thermal-bind-devfreq-cooling-devices-safely.patch \
+    file://patches-7.2/0211-drm-panthor-declare-scmi-perf-softdep.patch \
+    file://patches-7.2/0212-cacheinfo-share-global-firmware-ids-across-levels.patch \
+    file://patches-7.2/0213-hwmon-cix-add-safe-acpi-fan-control.patch \
+    file://patches-7.2/0214-acpi-demote-cix-sky1-ecam-duplicate-reservations.patch \
+    file://patches-7.2/0215-pci-cix-enable-root-port-io-window-assignment.patch \
+    file://patches-7.2/0216-resctrl-mpam-expose-proportional-bandwidth.patch \
+    file://patches-7.2/0217-rtw89-disable-hw-rfkill-polling-on-orion-o6.patch \
+    file://patches-7.2/0218-rtw89-check-acpi-dsm-before-evaluating.patch \
+    file://patches-7.2/0219-DEBUG-ncz-resume-beacons-ramoops.patch \
+    file://patches-7.2/0220-misc-armchina-npu-use-irq-object-as-dev-id.patch \
+    file://patches-7.2/0221-usb-cdns3-sky1-defer-child-until-wrapper-ready.patch \
+    file://patches-7.2/0222-usb-hub-recover-connect-events-on-powered-but-runtime-suspended-ports.patch \
+    file://patches-7.2/0223-drm-cix-expose-dp-eld-to-hdmi-codec.patch \
+    file://patches-7.2/0224-sound-soc-cix-harden-sky1-audio-paths.patch \
+    file://patches-7.2/0226-drm-cix-populate-dptx-connector-eld.patch \
+    file://patches-7.2/0227-drm-cix-make-linlondp-dpu-links-stateless.patch \
+    file://patches-7.2/0228-drm-cix-cap-linlondp-cluster-plane-creation.patch \
+    file://patches-7.2/0229-drm-cix-dp-audio-no-live-channel-status-reprogram.patch \
+    file://patches-7.2/0231-drm-cix-reject-disconnected-dp-audio-startup.patch \
+    file://patches-7.2/0232-backlight-pwm-restore-sky1-acpi-support.patch \
 "
 
-S = "${WORKDIR}/git"
 COMPATIBLE_MACHINE = "(cixmini)"
+S = "${UNPACKDIR}/${BB_GIT_DEFAULT_DESTSUFFIX}"
+
 PROVIDES = "${PN} virtual/kernel"
 
 do_configure:prepend() {
     cd ${S}
-    cp ${WORKDIR}/config-7.2.defconfig ${B}/.config
+    cp ${UNPACKDIR}/config-7.2-lean-msr1-o6n.defconfig ${B}/.config
     oe_runmake ARCH=arm64 O=${B} olddefconfig
 }
 

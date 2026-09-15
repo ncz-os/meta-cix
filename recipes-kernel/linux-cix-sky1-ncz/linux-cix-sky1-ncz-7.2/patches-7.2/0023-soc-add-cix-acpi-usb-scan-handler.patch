@@ -3,6 +3,7 @@ From: Jianfeng Liu <Jianfeng.Liu@cixtech.com>
 Date: Wed, 1 Apr 2026 11:29:38 +0800
 Subject: [PATCH 23/83] soc: add cix acpi usb scan handler
 
+Upstream-Status: Inappropriate [oe-specific]
 ---
  drivers/soc/cix/Kconfig             | 12 +++++
  drivers/soc/cix/Makefile            |  1 +

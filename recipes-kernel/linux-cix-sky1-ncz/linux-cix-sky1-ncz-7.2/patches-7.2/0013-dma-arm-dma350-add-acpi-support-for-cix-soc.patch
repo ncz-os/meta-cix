@@ -4,6 +4,8 @@ Date: Wed, 18 Mar 2026 14:29:41 +0800
 Subject: [PATCH 13/83] dma: arm-dma350: add acpi support for cix soc
 
 Signed-off-by: Jianfeng Liu <Jianfeng.Liu@cixtech.com>
+
+Upstream-Status: Inappropriate [oe-specific]
 ---
  drivers/dma/arm-dma350.c | 1040 ++++++++++++++++++++++++++++++++++++--
  1 file changed, 1000 insertions(+), 40 deletions(-)

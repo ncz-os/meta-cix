@@ -1,0 +1,17 @@
+make: Entering directory '/home/jasonperlow/gpt6astra-task/artifacts/r268audio/headers-payload/usr/lib/modules/7.2.3-sky1-ncz/build'
+# HOSTCC  scripts/basic/fixdep
+  gcc -Wp,-MMD,scripts/basic/.fixdep.d -O2 -I ./scripts/include    -o scripts/basic/fixdep scripts/basic/fixdep.c  
+make: Leaving directory '/home/jasonperlow/gpt6astra-task/artifacts/r268audio/headers-payload/usr/lib/modules/7.2.3-sky1-ncz/build'
+make: Entering directory '/home/jasonperlow/gpt6astra-task/artifacts/r268audio/headers-payload/usr/lib/modules/7.2.3-sky1-ncz/build'
+# HOSTCC  scripts/mod/modpost.o
+  gcc -Wp,-MMD,scripts/mod/.modpost.o.d -O2 -I ./scripts/include   -c -o scripts/mod/modpost.o scripts/mod/modpost.c
+# HOSTCC  scripts/mod/file2alias.o
+  gcc -Wp,-MMD,scripts/mod/.file2alias.o.d -O2 -I ./scripts/include   -c -o scripts/mod/file2alias.o scripts/mod/file2alias.c
+# HOSTCC  scripts/mod/sumversion.o
+  gcc -Wp,-MMD,scripts/mod/.sumversion.o.d -O2 -I ./scripts/include   -c -o scripts/mod/sumversion.o scripts/mod/sumversion.c
+# HOSTCC  scripts/mod/symsearch.o
+  gcc -Wp,-MMD,scripts/mod/.symsearch.o.d -O2 -I ./scripts/include   -c -o scripts/mod/symsearch.o scripts/mod/symsearch.c
+# HOSTLD  scripts/mod/modpost
+  gcc  -o scripts/mod/modpost scripts/mod/modpost.o scripts/mod/file2alias.o scripts/mod/sumversion.o scripts/mod/symsearch.o  
+make: Leaving directory '/home/jasonperlow/gpt6astra-task/artifacts/r268audio/headers-payload/usr/lib/modules/7.2.3-sky1-ncz/build'
+Native fixdep/modpost built; 7410 header/config/symbol hashes unchanged.

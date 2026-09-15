@@ -3,6 +3,7 @@ From: Jianfeng Liu <Jianfeng.Liu@cixtech.com>
 Date: Thu, 7 May 2026 13:53:53 +0800
 Subject: [PATCH 08/83] drm: add cix linlon dp driver
 
+Upstream-Status: Inappropriate [oe-specific]
 ---
  drivers/gpu/drm/Kconfig                       |    1 +
  drivers/gpu/drm/Makefile                      |    1 +

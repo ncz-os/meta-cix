@@ -1,0 +1,12 @@
+filename:       /lib/modules/7.2.4-sky1-ncz/kernel/drivers/video/backlight/pwm_bl.ko.xz
+alias:          platform:pwm-backlight
+license:        GPL v2
+description:    PWM based Backlight Driver
+import_ns:      PWM
+alias:          of:N*T*Cpwm-backlightC*
+alias:          of:N*T*Cpwm-backlight
+depends:        
+intree:         Y
+name:           pwm_bl
+vermagic:       7.2.4-sky1-ncz SMP preempt mod_unload modversions aarch64
+insmod /lib/modules/7.2.4-sky1-ncz/kernel/drivers/video/backlight/pwm_bl.ko.xz 

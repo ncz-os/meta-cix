@@ -4,6 +4,7 @@ Date: Thu, 2 Jul 2026 22:12:37 -0400
 Subject: [PATCH 80/83] ASoC: cix: fix 6.6->7.2 API drift (rtd->id, daifmt
  parse, dpcm flags, SOF_IPC_TYPE_3, NS string literals, void remove)
 
+Upstream-Status: Inappropriate [oe-specific]
 ---
  drivers/gpu/drm/cix/cix_display.c             |  4 +-
  drivers/gpu/drm/cix/cix_virtual.c             |  9 ++---

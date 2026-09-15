@@ -1,8 +1,7 @@
-From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From d950a010320676d1f9472fc894b5c9cea1259b46 Mon Sep 17 00:00:00 2001
 From: Jason Perlow <jperlow@gmail.com>
-Date: Thu, 2 Jul 2026 22:03:39 -0400
-Subject: [PATCH 76/83] firmware arm_scmi add backward complibility to old f
- (NCZ forward-port to v7.2)
+Date: Mon, 14 Sep 2026 18:09:19 -0400
+Subject: [PATCH] firmware arm_scmi add backward complibility to old f
 
 ---
  drivers/firmware/arm_scmi/shmem.c | 15 +++++++++++++++

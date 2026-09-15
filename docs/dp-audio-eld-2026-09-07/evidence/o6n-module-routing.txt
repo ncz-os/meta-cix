@@ -1,0 +1,43 @@
+drm_edid_connector_update
+drm_edid_connector_add_modes
+drm_edid_read
+dptx_audio_get_eld
+drm_edid_connector_update
+drm_edid_connector_add_modes
+drm_edid_read
+Sink #35
+	State: SUSPENDED
+	Name: auto_null
+	Description: Dummy Output
+	Driver: PipeWire
+	Sample Specification: float32le 2ch 48000Hz
+	Channel Map: front-left,front-right
+	Owner Module: 4294967295
+	Mute: no
+	Volume: front-left: 65536 / 100% / 0.00 dB,   front-right: 65536 / 100% / 0.00 dB
+	        balance 0.00
+	Base Volume: 65536 / 100% / 0.00 dB
+	Monitor Source: auto_null.monitor
+	Latency: 0 usec, configured 0 usec
+	Flags: DECIBEL_VOLUME LATENCY 
+	Properties:
+		node.name = "auto_null"
+		device.description = "Dummy Output"
+		audio.rate = "48000"
+		audio.channels = "2"
+		audio.position = "FL,FR"
+		media.class = "Audio/Sink"
+		factory.name = "support.null-audio-sink"
+		node.virtual = "true"
+		monitor.channel-volumes = "true"
+		factory.id = "19"
+		clock.quantum-limit = "8192"
+		client.id = "33"
+		node.driver = "true"
+		port.group = "stream.0"
+		node.loop.name = "data-loop.0"
+		library.name = "audioconvert/libspa-audioconvert"
+		object.id = "35"
+		object.serial = "35"
+	Formats:
+		pcm

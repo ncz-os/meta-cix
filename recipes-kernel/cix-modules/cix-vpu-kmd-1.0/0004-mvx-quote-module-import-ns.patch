@@ -1,0 +1,31 @@
+From: Jason Perlow <jperlow@gmail.com>
+Subject: [PATCH] mvx: quote the MODULE_IMPORT_NS namespace
+
+Building against 7.2 fails with:
+
+  mvx_driver.c:42:18: error: 'VFS_internal_I_am_really_a_filesystem_and_am_NOT_a_driver'
+  undeclared here (not in a function)
+  mvx_driver.c:43:18: error: 'DMA_BUF' undeclared here (not in a function)
+
+6.13 changed MODULE_IMPORT_NS() to take a string literal rather than a bare
+token. This is the same change already carried for the NPU driver in
+cix-npu-kmd-1.0/0003-armchina-npu-quote-DMA_BUF-MODULE_IMPORT_NS.patch.
+
+Upstream-Status: Inappropriate [vendor tree]
+The CIX P1 VPU driver is a vendor drop with no upstream submission path;
+carried downstream only.
+
+Signed-off-by: Jason Perlow <jperlow@gmail.com>
+--- a/driver/mvx_driver.c
++++ b/driver/mvx_driver.c
+@@ -39,8 +39,8 @@
+ MODULE_LICENSE("GPL");
+ MODULE_AUTHOR("ARMChina");
+ MODULE_DESCRIPTION("Tiube VPU Driver.");
+-MODULE_IMPORT_NS(VFS_internal_I_am_really_a_filesystem_and_am_NOT_a_driver);
+-MODULE_IMPORT_NS(DMA_BUF);
++MODULE_IMPORT_NS("VFS_internal_I_am_really_a_filesystem_and_am_NOT_a_driver");
++MODULE_IMPORT_NS("DMA_BUF");
+ 
+ static int __init mvx_init(void)
+ {

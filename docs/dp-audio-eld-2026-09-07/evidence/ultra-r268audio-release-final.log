@@ -1,0 +1,193 @@
+
+=== 1/7 build kernel -- SKIPPED
+  KVER = 7.2.3-sky1-ncz
+  from = /home/jasonperlow/ybuild/tmp/work/cixmini-nclawzero-linux/linux-cix-sky1-ncz/7.2.3+ncz
+
+=== 2/7 build cix-gpu-kmd -- SKIPPED
+
+=== 3/7 stage mali overlay + verify vermagic
+  staged 3 modules into /home/jasonperlow/isobuild/cix-installer-eld-validation/assets/kernel/mali/7.2.3-sky1-ncz, all vermagic=7.2.3-sky1-ncz
+
+=== 4/7 stage kernel assets and run boot/ABI gates
+note: edge already points at a r268audio staging (r268audio-7.2.3-sky1-ncz-20260907) -- re-run.
+      comparing against the release before it: /home/jasonperlow/isobuild/cix-installer-eld-validation/assets/kernel/r264-7.2.4-sky1-ncz-20260907
+KVER=7.2.3-sky1-ncz  dest=/home/jasonperlow/isobuild/cix-installer-eld-validation/assets/kernel/r268audio-7.2.3-sky1-ncz-20260907  previous edge=/home/jasonperlow/isobuild/cix-installer-eld-validation/assets/kernel/r264-7.2.4-sky1-ncz-20260907
+module linlon-dp CHANGED
+module trilin-dpsub CHANGED
+[extract] 7.2.3-sky1-ncz (arm64, split build)
+[extract]   source: /home/jasonperlow/ybuild/tmp/work/cixmini-nclawzero-linux/linux-cix-sky1-ncz/7.2.3+ncz/kernel-source
+[extract]   build : /home/jasonperlow/ybuild/tmp/work/cixmini-nclawzero-linux/linux-cix-sky1-ncz/7.2.3+ncz/build
+[extract] staging build-system Makefiles/Kbuild/Kconfig from source
+[extract] overlaying generated headers from the build dir
+[extract] pinned localversion '-sky1-ncz' (base 7.2.3 -> 7.2.3-sky1-ncz)
+[extract] stripped 3 non-portable host tool(s); target will rebuild them
+[extract] OK — 14M (16773 files) → /home/jasonperlow/isobuild/cix-installer-eld-validation/assets/kernel/r268audio-7.2.3-sky1-ncz-20260907/headers-cixmini.tar.zst
+=== staged:
+total 67608
+drwxr-xr-x. 1 jasonperlow jasonperlow      266 Sep  7 22:45 .
+drwxr-xr-x. 1 jasonperlow jasonperlow      244 Sep  7 22:45 ..
+-rw-r--r--. 1 jasonperlow jasonperlow   277984 Sep  7 22:45 config-7.2.3-sky1-ncz
+-rw-r--r--. 1 jasonperlow jasonperlow 13950948 Sep  7 22:45 headers-cixmini.tar.zst
+drwxr-xr-x. 1 jasonperlow jasonperlow        6 Sep  7 22:45 headers-dir
+-rw-r--r--. 1 jasonperlow jasonperlow 47106560 Sep  7 22:45 Image-cixmini.bin
+-rw-r--r--. 1 jasonperlow jasonperlow       14 Sep  7 22:45 KVER
+=== GATE 1: KVM boot + PCI collision lint
+=== kvm-kernel-gate ===
+  Image : /home/jasonperlow/isobuild/cix-installer-eld-validation/assets/kernel/r268audio-7.2.3-sky1-ncz-20260907/Image-cixmini.bin (47106560 bytes)
+  Config: /home/jasonperlow/isobuild/cix-installer-eld-validation/assets/kernel/r268audio-7.2.3-sky1-ncz-20260907/config-7.2.3-sky1-ncz
+--- PCI ID collision lint ---
+  ok: CONFIG_USB_CDNS3_PCI_WRAP not set
+  ok: CONFIG_USB_CDNSP_PCI not set
+  ok: CONFIG_USB_CDNS2_UDC not set
+--- required symbols ---
+  ok: CONFIG_DEVTMPFS=y
+  ok: CONFIG_DEVTMPFS_MOUNT=y
+  ok: CONFIG_BLK_DEV_LOOP=y
+  ok: CONFIG_ISO9660_FS=y
+--- boot under qemu ---
+  accel=kvm cpu=host timeout=120s
+  reached root-mount (expected panic, no rootfs supplied)
+GATE: PASS ✅  Image-cixmini.bin
+  boot log: /tmp/kvm-kernel-gate.vdjX3Q.log
+=== GATE 2: dkms ABI
+  image banner  : Linux version 7.2.3-sky1-ncz (oe-user@oe-host) (aarch64-nclawzero-linux-gcc (GCC) 15.3.0, GNU ld (GNU Binutils) 2.46.1) #1 SMP PREEMPT Wed Sep  2 12:33:21 UTC 2026
+  header built by: oe-user@oe-host
+  header compiler: aarch64-nclawzero-linux-gcc (GCC) 15.3.0, GNU ld (GNU Binutils) 2.46.1
+dkms-abi-gate: ok: builder identity matches (oe-user@oe-host)
+dkms-abi-gate: ok: binutils matches (2.46.1)
+dkms-abi-gate: ok: CONFIG_MODVERSIONS=y (mismatched modules will refuse to load)
+dkms-abi-gate: PASS
+=== packaging: SKIPPED (NCZ_SKIP_PACKAGING=1; caller packages)
+
+=== 4b/7 rebuild panthor-cix DKMS module against staged headers for 7.2.3-sky1-ncz
+make: Entering directory '/home/jasonperlow/isobuild/cix-installer-eld-validation/assets/kernel/r268audio-7.2.3-sky1-ncz-20260907/headers-dir/lib/modules/7.2.3-sky1-ncz/build'
+# HOSTCC  scripts/basic/fixdep
+  gcc -Wp,-MMD,scripts/basic/.fixdep.d -O2 -I ./scripts/include    -o scripts/basic/fixdep scripts/basic/fixdep.c  
+make: Leaving directory '/home/jasonperlow/isobuild/cix-installer-eld-validation/assets/kernel/r268audio-7.2.3-sky1-ncz-20260907/headers-dir/lib/modules/7.2.3-sky1-ncz/build'
+make: Entering directory '/home/jasonperlow/isobuild/cix-installer-eld-validation/assets/kernel/r268audio-7.2.3-sky1-ncz-20260907/headers-dir/lib/modules/7.2.3-sky1-ncz/build'
+# HOSTCC  scripts/mod/modpost.o
+  gcc -Wp,-MMD,scripts/mod/.modpost.o.d -O2 -I ./scripts/include   -c -o scripts/mod/modpost.o scripts/mod/modpost.c
+# HOSTCC  scripts/mod/file2alias.o
+  gcc -Wp,-MMD,scripts/mod/.file2alias.o.d -O2 -I ./scripts/include   -c -o scripts/mod/file2alias.o scripts/mod/file2alias.c
+# HOSTCC  scripts/mod/sumversion.o
+  gcc -Wp,-MMD,scripts/mod/.sumversion.o.d -O2 -I ./scripts/include   -c -o scripts/mod/sumversion.o scripts/mod/sumversion.c
+# HOSTCC  scripts/mod/symsearch.o
+  gcc -Wp,-MMD,scripts/mod/.symsearch.o.d -O2 -I ./scripts/include   -c -o scripts/mod/symsearch.o scripts/mod/symsearch.c
+# HOSTLD  scripts/mod/modpost
+  gcc  -o scripts/mod/modpost scripts/mod/modpost.o scripts/mod/file2alias.o scripts/mod/sumversion.o scripts/mod/symsearch.o  
+make: Leaving directory '/home/jasonperlow/isobuild/cix-installer-eld-validation/assets/kernel/r268audio-7.2.3-sky1-ncz-20260907/headers-dir/lib/modules/7.2.3-sky1-ncz/build'
+Native fixdep/modpost built; 7410 header/config/symbol hashes unchanged.
+  image banner  : Linux version 7.2.3-sky1-ncz (oe-user@oe-host) (aarch64-nclawzero-linux-gcc (GCC) 15.3.0, GNU ld (GNU Binutils) 2.46.1) #1 SMP PREEMPT Wed Sep  2 12:33:21 UTC 2026
+  header built by: oe-user@oe-host
+  header compiler: aarch64-nclawzero-linux-gcc (GCC) 15.3.0, GNU ld (GNU Binutils) 2.46.1
+dkms-abi-gate: ok: builder identity matches (oe-user@oe-host)
+dkms-abi-gate: ok: binutils matches (2.46.1)
+dkms-abi-gate: ok: CONFIG_MODVERSIONS=y (mismatched modules will refuse to load)
+dkms-abi-gate: PASS
+Deprecated feature: CLEAN (/var/lib/dkms/panthor-cix/7.2.0/source/dkms.conf)
+The kernel is built without module signing facility, modules won't be signed
+
+Building module(s)..... done.
+  image banner  : Linux version 7.2.3-sky1-ncz (oe-user@oe-host) (aarch64-nclawzero-linux-gcc (GCC) 15.3.0, GNU ld (GNU Binutils) 2.46.1) #1 SMP PREEMPT Wed Sep  2 12:33:21 UTC 2026
+  header built by: oe-user@oe-host
+  header compiler: aarch64-nclawzero-linux-gcc (GCC) 15.3.0, GNU ld (GNU Binutils) 2.46.1
+dkms-abi-gate: ok: builder identity matches (oe-user@oe-host)
+dkms-abi-gate: ok: binutils matches (2.46.1)
+dkms-abi-gate: ok: CONFIG_MODVERSIONS=y (mismatched modules will refuse to load)
+dkms-abi-gate: PASS
+  panthor.ko vermagic=7.2.3-sky1-ncz confirmed, built against /home/jasonperlow/isobuild/cix-installer-eld-validation/assets/kernel/r268audio-7.2.3-sky1-ncz-20260907/headers-dir/lib/modules/7.2.3-sky1-ncz/build and included in staged modules
+
+=== 5/7 build kernel debs (must contain the GPU modules)
+== build-kernel-debs ==
+   edge=7.2.3-sky1-ncz  rev=r268audio
+   out=/repo/build/kernel-debs
+WARN: [edge] CONFIG_VIDEO_LINLON=m is IN-TREE in assets/kernel/edge/config-7.2.3-sky1-ncz — accelerators must ship out-of-tree (an in-tree copy masks the validated overlay/DKMS module at modprobe time)
+ERROR: [edge] modules sha256 drift vs manifest (regenerate with 'kernel-manifest.py gen')
+manifest check FAILED (1 error(s))
+WARN: kernel manifest drift detected (continuing; set STRICT_MANIFEST=1 to enforce)
+
+== kernel boot gate ==
+=== kvm-kernel-gate ===
+  Image : /repo/assets/kernel/edge/Image-cixmini.bin (47106560 bytes)
+  Config: /repo/assets/kernel/edge/config-7.2.3-sky1-ncz
+--- PCI ID collision lint ---
+  ok: CONFIG_USB_CDNS3_PCI_WRAP not set
+  ok: CONFIG_USB_CDNSP_PCI not set
+  ok: CONFIG_USB_CDNS2_UDC not set
+--- required symbols ---
+  ok: CONFIG_DEVTMPFS=y
+  ok: CONFIG_DEVTMPFS_MOUNT=y
+  ok: CONFIG_BLK_DEV_LOOP=y
+  ok: CONFIG_ISO9660_FS=y
+--- boot under qemu ---
+  accel=tcg cpu=cortex-a72 timeout=120s
+  reached root-mount (expected panic, no rootfs supplied)
+GATE: PASS ✅  Image-cixmini.bin
+  boot log: /tmp/kvm-kernel-gate.3DM05Q.log
+
+dpkg-deb: building package 'cixmini-boot' in '/repo/build/kernel-debs/cixmini-boot_1.2+r268audio_arm64.deb'.
+  [edge] 7.2.3-sky1-ncz -> linux-image-cixmini (7.2.3-sky1-ncz+r268audio)
+  [edge] staged 3 out-of-tree GPU module(s) into updates/
+dpkg-deb: building package 'linux-image-cixmini' in '/repo/build/kernel-debs/linux-image-cixmini_7.2.3-sky1-ncz+r268audio_arm64.deb'.
+  [edge] 7.2.3-sky1-ncz -> linux-headers-cixmini (7.2.3-sky1-ncz+r268audio)
+dpkg-deb: building package 'linux-headers-cixmini' in '/repo/build/kernel-debs/linux-headers-cixmini_7.2.3-sky1-ncz+r268audio_arm64.deb'.
+
+== built debs ==
+total 33M
+-rw-r--r--. 1 builder builder 16K Sep  8 02:45 cixmini-boot_1.2+r268audio_arm64.deb
+-rw-r--r--. 1 builder builder 13M Sep  8 02:46 linux-headers-cixmini_7.2.3-sky1-ncz+r268audio_arm64.deb
+-rw-r--r--. 1 builder builder 20M Sep  8 02:45 linux-image-cixmini_7.2.3-sky1-ncz+r268audio_arm64.deb
+
+== control summaries ==
+--- /repo/build/kernel-debs/cixmini-boot_1.2+r268audio_arm64.deb ---
+Package: cixmini-boot
+Version: 1.2+r268audio
+Architecture: arm64
+Depends: systemd, efibootmgr, util-linux, kmod, ncz-usb-recovery
+Installed-Size: 60
+--- /repo/build/kernel-debs/linux-headers-cixmini_7.2.3-sky1-ncz+r268audio_arm64.deb ---
+Package: linux-headers-cixmini
+Version: 7.2.3-sky1-ncz+r268audio
+Architecture: arm64
+Depends: cixmini-boot (>= 1.2+r268audio), kmod, make, gcc, python3
+Installed-Size: 115868
+--- /repo/build/kernel-debs/linux-image-cixmini_7.2.3-sky1-ncz+r268audio_arm64.deb ---
+Package: linux-image-cixmini
+Version: 7.2.3-sky1-ncz+r268audio
+Architecture: arm64
+Depends: cixmini-boot (>= 1.2+r268audio), linux-headers-cixmini (= 7.2.3-sky1-ncz+r268audio), kmod, dracut | initramfs-tools | linux-initramfs-tool, systemd
+Installed-Size: 57504
+  ok: 3 GPU modules inside linux-image-cixmini_7.2.3-sky1-ncz+r268audio_arm64.deb
+
+=== 6/7 build accelerator DKMS debs (mali, panthor, vpu, npu)
+built: cix-gpu-kmd-dkms_1.0+ncz1_all.deb  (908K)
+built: panthor-cix-dkms_7.2.0+ncz1_all.deb  (288K)
+built: cix-vpu-driver-dkms_1.0.2-ncz1+ncz1_all.deb  (836K)
+built: cix-npu-kmd-dkms_1.0+ncz1_all.deb  (72K)
+---
+4 package(s) in /repo/build/dkms-debs
+drwxr-xr-x. 1 jasonperlow jasonperlow    288 Sep  7 22:41 .
+drwxr-xr-x. 1 jasonperlow jasonperlow   2588 Sep  7 22:45 ..
+-rw-r--r--. 1 jasonperlow jasonperlow 929688 Sep  7 22:46 cix-gpu-kmd-dkms_1.0+ncz1_all.deb
+-rw-r--r--. 1 jasonperlow jasonperlow  70964 Sep  7 22:46 cix-npu-kmd-dkms_1.0+ncz1_all.deb
+-rw-r--r--. 1 jasonperlow jasonperlow 854936 Sep  7 22:46 cix-vpu-driver-dkms_1.0.2-ncz1+ncz1_all.deb
+-rw-r--r--. 1 jasonperlow jasonperlow 290904 Sep  7 22:46 panthor-cix-dkms_7.2.0+ncz1_all.deb
+
+=== 7/7 regenerate and enforce the kernel manifest
+wrote assets/kernel-manifest.json
+  edge kver=7.2.3-sky1-ncz           npu=None (?) [MISMATCH]
+WARN: [edge] CONFIG_VIDEO_LINLON=m is IN-TREE in assets/kernel/edge/config-7.2.3-sky1-ncz — accelerators must ship out-of-tree (an in-tree copy masks the validated overlay/DKMS module at modprobe time)
+manifest check OK (1 warning(s))
+
+=== release-kernel: COMPLETE
+    rev      r268audio
+    kver     7.2.3-sky1-ncz
+    assets   r268audio-7.2.3-sky1-ncz-20260907
+    debs     /home/jasonperlow/isobuild/cix-installer-eld-validation/build/kernel-debs/
+    dkms     /home/jasonperlow/isobuild/cix-installer-eld-validation/build/dkms-debs/
+
+Not yet done, and deliberately not automated:
+  - boot the image on real hardware, BOTH GPU entries (mali and panthor)
+  - run build/validate-accelerators.sh on the booted board: a module that is
+    resident in lsmod may be bound to nothing
+  - publish to the Buildkite registry

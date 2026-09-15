@@ -9,6 +9,8 @@ added their clkdev entries; devm_clk_get() then returns -ENOENT which
 the drivers treated as terminal, leaving sky1-pcie deferring forever and
 PCIe (hence the NVMe root disk) dead. Map early -ENOENT to -EPROBE_DEFER
 so the PHYs re-probe once the clock providers are up.
+
+Upstream-Status: Inappropriate [oe-specific]
 ---
  drivers/phy/cix/phy-cix-pcie.c  | 12 ++++++++----
  drivers/phy/cix/phy-cix-usbdp.c |  9 +++++----

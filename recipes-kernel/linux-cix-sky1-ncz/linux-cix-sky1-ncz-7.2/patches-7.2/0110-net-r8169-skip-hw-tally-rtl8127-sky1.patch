@@ -2,6 +2,7 @@ From: Jason Perlow <jperlow@gmail.com>
 Date: Wed, 8 Jul 2026 20:00:00 -0400
 Subject: [PATCH] net: r8169: skip HW tally dump on RTL8127A (Sky1)
 
+Upstream-Status: Inappropriate [oe-specific]
 ---
 diff --git a/drivers/net/ethernet/realtek/r8169_main.c b/drivers/net/ethernet/realtek/r8169_main.c
 index ec4fc21fa21f..afe310cc7cc5 100644

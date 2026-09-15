@@ -15,5 +15,4 @@ do_install() {
     printf '%s\n' "$modules" | while IFS= read -r ko; do install -m 0644 "$ko" "$install_dir/"; done
 }
 
-S = "${WORKDIR}/git"
 COMPATIBLE_MACHINE = "(cixmini)"

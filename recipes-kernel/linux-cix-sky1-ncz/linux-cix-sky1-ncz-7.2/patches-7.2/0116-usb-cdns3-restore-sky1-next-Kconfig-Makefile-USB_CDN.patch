@@ -4,6 +4,7 @@ Date: Thu, 9 Jul 2026 01:04:06 -0400
 Subject: [PATCH] usb: cdns3: restore sky1-next Kconfig+Makefile (USB_CDNS_HOST
  symbol)
 
+Upstream-Status: Inappropriate [oe-specific]
 ---
  drivers/usb/cdns3/Kconfig  | 158 ++++++++++++++++++++++---------------
  drivers/usb/cdns3/Makefile |  66 ++++++++++++----

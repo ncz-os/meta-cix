@@ -1,8 +1,13 @@
+From 131e455c19949466e5c50b0a807760f47aba4486 Mon Sep 17 00:00:00 2001
 From: Jason Perlow <jperlow@gmail.com>
-Date: Wed, 8 Jul 2026 20:00:00 -0400
-Subject: [PATCH] regulator: fixed: preserve firmware-enabled ACPI rails (RTL8127 NIC power fix)
+Date: Mon, 14 Sep 2026 18:09:19 -0400
+Subject: [PATCH] regulator: fixed: preserve firmware-enabled ACPI rails
+ (RTL8127 NIC power fix)
 
 ---
+ drivers/regulator/fixed.c | 13 +++++++++++--
+ 1 file changed, 11 insertions(+), 2 deletions(-)
+
 diff --git a/drivers/regulator/fixed.c b/drivers/regulator/fixed.c
 index 230cdb75968c..e179f91c24ad 100644
 --- a/drivers/regulator/fixed.c

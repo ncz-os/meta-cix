@@ -129,20 +129,33 @@ SRC_URI = " \
     file://next-patches/2015-ALSA-hda-cix-ipbloq-Add-ACPI-binding-DMA-range-map-a.patch \
     file://next-patches/2016-ALSA-hda-realtek-Add-CIX-Sky1-Phecda-board-fixup.patch \
     file://next-patches/2017-ALSA-hda-cix-ipbloq-Fix-ACPI-reset-clock-resource-na.patch \
+    file://next-patches/2018-armchina-npu-drop-irqf-oneshot.patch \
+    file://next-patches/2019-hwmon-scmi-dont-skip-thermal-zone-on-config-set-fail.patch \
+    file://next-patches/2020-drm-cix-edp-panel-acpi-desc-properties.patch \
+    file://next-patches/2021-drm-cix-linlondp-defer-on-missing-aclk-instead-of-failing.patch \
+    file://next-patches/2022-phy-cix-usb3-defer-on-missing-clocks-fix-ref-clk-check.patch \
+    file://next-patches/2023-usb-cdns3-cdnsp-sky1-defer-on-missing-clocks.patch \
+    file://next-patches/2024-i2c-cadence-defer-on-missing-clock.patch \
+    file://next-patches/2025-clocksource-sky1-defer-on-missing-timer-clocks.patch \
+    file://next-patches/2026-soc-cix-acpi-resource-lookup-tighten-badly-specified-guard.patch \
+    file://next-patches/2027-pmdomain-scmi-perf-defer-fwnode-provider-for-mali.patch \
+    file://next-patches/2028-pmdomain-fix-attach-by-name-eexist-for-mali.patch \
+    file://next-patches/2029-media-cix-fix-mvx-devfreq-null-clk-deref.patch \
 "
 
-S = "${WORKDIR}/git"
 
 COMPATIBLE_MACHINE = "(cixmini)"
 
 # This recipe does NOT provide virtual/kernel — that role belongs to
 # linux-cix-sky1 (LTS, 6.18.26). This is the BETA sibling, installed
 # alongside via explicit-build.
+S = "${UNPACKDIR}/${BB_GIT_DEFAULT_DESTSUFFIX}"
+
 PROVIDES = "${PN}"
 
 do_configure:prepend() {
     cd ${S}
-    cp ${WORKDIR}/config.sky1-next ${B}/.config
+    cp ${UNPACKDIR}/config.sky1-next ${B}/.config
     sed -i "s|^CONFIG_EXTRA_FIRMWARE=.*|# CONFIG_EXTRA_FIRMWARE is not set|" ${B}/.config
     sed -i "/^CONFIG_EXTRA_FIRMWARE_DIR=/d" ${B}/.config
     oe_runmake ARCH=arm64 O=${B} olddefconfig

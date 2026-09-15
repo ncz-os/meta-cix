@@ -4,6 +4,8 @@ Date: Tue, 31 Mar 2026 14:25:25 +0800
 Subject: [PATCH 21/83] phy: add cix phy driver
 
 Signed-off-by: Jianfeng Liu <Jianfeng.Liu@cixtech.com>
+
+Upstream-Status: Inappropriate [oe-specific]
 ---
  drivers/phy/Kconfig             |    1 +
  drivers/phy/Makefile            |    1 +

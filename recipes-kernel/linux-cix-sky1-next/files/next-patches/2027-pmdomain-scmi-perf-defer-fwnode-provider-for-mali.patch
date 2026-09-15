@@ -1,0 +1,156 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jason Perlow <jperlow@gmail.com>
+Date: Sun, 26 Jul 2026 22:00:00 -0400
+Subject: [PATCH] pmdomain: scmi-perf: defer fwnode provider + widen ACPI
+ lookup (forward-port of 7.2 0078+0088 for mali_kbase probe)
+
+mali_kbase never binds on 7.0.12-cix-sky1-next: CIXH5000:00 spins in
+-EPROBE_DEFER forever ("perf power-domain device not bound yet,
+deferring probe", confirmed non-transient via
+/sys/kernel/debug/devices_deferred). The generic SCMI perf-domain
+driver is byte-identical between the 7.0.12 base (SRCREV
+f53879e2e1e2fa053040e734c1ef8f386109a61b) and the 7.2 base -- this
+kernel's own downstream patch series simply never picked up the two
+probe-ordering hardening patches the 7.2 series carries for this exact
+file, proven on real hardware there:
+
+  * 0078-pmdomain-fix-dev_pm_domain_attach_by_name-for-sky1-m.patch
+    widens scmi_perf_find_proto_fwnode() to first check whether the
+    SCMI perf protocol device's OWN fwnode already matches
+    sdev->protocol_id (some ACPI layouts describe the "perf"/DVFS
+    protocol node directly rather than as an addressable child of a
+    separate parent SCMI controller node, which is all the original
+    child-walk logic accounted for), with a corrected parent lookup
+    (ACPI_COMPANION() then fwnode fallback) for the remaining
+    child-walk case. Only the scmi_perf_domain.c hunk of 0078 is
+    forward-ported here; its drivers/base/power/common.c and
+    drivers/pmdomain/core.c hunks address a distinct
+    dev_pm_domain_attach_by_name() EEXIST path not implicated in this
+    symptom and are deliberately left out unless real evidence on this
+    kernel says otherwise.
+
+  * 0088-pmdomain-scmi-perf-defer-fwnode-provider.patch defers the
+    genpd_add_fwnode_provider_onecell() call from
+    scmi_perf_domain_probe() itself to late_initcall, once the SCMI
+    mailbox/clock tree has settled, instead of registering (or, on
+    this kernel, potentially never succeeding at registering) the
+    fwnode provider synchronously during probe.
+
+Both are ported together, matching the exact pairing already validated
+on 7.2 hardware -- the investigation that root-caused this flagged
+these two as likely interdependent. DT boot is unchanged in both
+hunks.
+
+Upstream-Status: Inappropriate [oe-specific]
+Signed-off-by: Jason Perlow <jperlow@gmail.com>
+---
+ drivers/pmdomain/arm/scmi_perf_domain.c | 61 +++++++++++++++++++++++++++---
+ 1 file changed, 57 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/pmdomain/arm/scmi_perf_domain.c b/drivers/pmdomain/arm/scmi_perf_domain.c
+index 0391d4a..2e36cdb 100644
+--- a/drivers/pmdomain/arm/scmi_perf_domain.c
++++ b/drivers/pmdomain/arm/scmi_perf_domain.c
+@@ -109,18 +109,60 @@ static int match_proto_reg(struct acpi_device *adev, void *data)
+  *
+  * Returns the protocol fwnode, or NULL if not found.
+  */
++
++/* Deferred fwnode provider registration - avoids premature consumer
++ * attachment during SCMI protocol bring-up (can SError on unready
++ * hardware under ACPI). Probe stores; late_initcall commits.
++ *
++ * NCZ 2027 (forward-ported from the linux-cix-sky1-ncz 7.2 patch series,
++ * 0088-pmdomain-scmi-perf-defer-fwnode-provider + the scmi_perf_domain.c
++ * hunk of 0078-pmdomain-fix-dev_pm_domain_attach_by_name-for-sky1-mali):
++ * on 7.0.12-cix-sky1-next, mali_kbase's CIXH5000:00 "perf" power-domain
++ * consumer never completes attach and spins in -EPROBE_DEFER forever
++ * (visible in /sys/kernel/debug/devices_deferred). The 7.2 kernel hit the
++ * same class of bug and fixed it with this exact pairing, proven on real
++ * hardware: (a) widen the ACPI protocol-fwnode lookup below to also match
++ * directly on the SCMI perf protocol device's own fwnode (some ACPI
++ * layouts describe the "perf"/DVFS protocol node without a separate
++ * addressable parent-vs-child split the original child-walk assumed), and
++ * (b) defer the actual genpd_add_fwnode_provider_onecell() call to
++ * late_initcall so it runs after the SCMI mailbox/clock tree has settled.
++ */
++static struct {
++	struct scmi_device *sdev;
++	struct genpd_onecell_data *pd_data;
++	struct fwnode_handle *proto_fw;
++} scmi_perf_deferred;
++
+ static struct fwnode_handle *scmi_perf_find_proto_fwnode(struct scmi_device *sdev)
+ {
+ 	struct acpi_device *parent_adev;
++	struct fwnode_handle *fw = dev_fwnode(&sdev->dev);
+ 	struct proto_fwnode_match match = {
+ 		.protocol_id = sdev->protocol_id,
+ 		.result = NULL,
+ 	};
++	u32 reg;
+ 
+ 	if (sdev->dev.of_node)
+ 		return NULL;
+ 
+-	parent_adev = to_acpi_device_node(dev_fwnode(&sdev->dev));
++	/*
++	 * Under ACPI the SCMI perf protocol device may be created directly
++	 * on the protocol child node (e.g. \_SB.SCMI.DVFS with reg matching
++	 * the protocol id). Consumers reference that same node in
++	 * power-domains; the provider must be registered on its own fwnode
++	 * in that case rather than on a sibling search rooted at what would
++	 * otherwise be treated as the parent SCMI controller node.
++	 */
++	if (fw && !fwnode_property_read_u32(fw, "reg", &reg) &&
++	    reg == sdev->protocol_id)
++		return fw;
++
++	/* Fallback: walk SCMI controller children (legacy / usual layout). */
++	parent_adev = ACPI_COMPANION(sdev->dev.parent);
++	if (!parent_adev)
++		parent_adev = to_acpi_device_node(dev_fwnode(sdev->dev.parent));
+ 	if (!parent_adev)
+ 		return NULL;
+ 
+@@ -215,10 +257,10 @@ static int scmi_perf_domain_probe(struct scmi_device *sdev)
+ 
+ 		proto_fw = scmi_perf_find_proto_fwnode(sdev);
+ 		if (proto_fw) {
+-			ret = genpd_add_fwnode_provider_onecell(proto_fw,
+-								scmi_pd_data);
+-			if (ret)
+-				goto err;
++			scmi_perf_deferred.sdev = sdev;
++			scmi_perf_deferred.pd_data = scmi_pd_data;
++			scmi_perf_deferred.proto_fw = proto_fw;
++			dev_info(dev, "%s: fwnode provider deferred to late_initcall\n", __func__);
+ 		}
+ 	}
+ 
+@@ -320,6 +362,23 @@ EXPORT_SYMBOL_GPL(scmi_perf_domain_power_scale);
+ 
+ module_scmi_driver(scmi_perf_domain_driver);
+ 
++static int __init scmi_perf_deferred_init(void)
++{
++	if (scmi_perf_deferred.sdev && scmi_perf_deferred.pd_data &&
++	    scmi_perf_deferred.proto_fw) {
++		int ret = genpd_add_fwnode_provider_onecell(
++			scmi_perf_deferred.proto_fw,
++			scmi_perf_deferred.pd_data);
++		if (ret)
++			pr_err("scmi_perf: late fwnode provider failed: %d\n", ret);
++		else
++			pr_info("scmi_perf: late fwnode provider registered (%d domains)\n",
++				scmi_perf_deferred.pd_data->num_domains);
++	}
++	return 0;
++}
++late_initcall(scmi_perf_deferred_init);
++
+ MODULE_AUTHOR("Ulf Hansson <ulf.hansson@linaro.org>");
+ MODULE_DESCRIPTION("ARM SCMI perf domain driver");
+ MODULE_LICENSE("GPL v2");
+--
+2.51.0

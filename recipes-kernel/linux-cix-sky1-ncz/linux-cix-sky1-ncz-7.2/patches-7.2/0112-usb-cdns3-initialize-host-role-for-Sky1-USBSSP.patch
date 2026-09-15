@@ -6,6 +6,8 @@ Subject: [PATCH] usb: cdns3: initialize host role for Sky1 USBSSP
 The v7.2 cdns3 core split role initialization out of cdns_init(), but the imported CIX USBSSP platform driver still assumes the old monolithic behavior. As a result all CIXH2031 devices bind with USB_ROLE_NONE and never instantiate their xHCI children.
 
 Wire the USBSSP platform driver to the unified core host callback and call cdns_core_init_role(). Also retain the xHCI child in the vendor xhci_device field used by the Sky1 runtime-PM hooks.
+
+Upstream-Status: Inappropriate [oe-specific]
 ---
  drivers/usb/cdns3/cdnsp-plat.c | 14 +++++++++++---
  drivers/usb/cdns3/host.c       |  5 +++++

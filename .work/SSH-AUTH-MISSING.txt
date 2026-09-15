@@ -1,0 +1,66 @@
+Git push to origin (root@192.168.207.101) is currently impossible from
+this host. This is a permanent misconfiguration of the SSH credentials on
+this host, NOT a transient sshd rate-limit on the remote.
+
+Direct evidence (run on this host, 2026-07-20 15:08 UTC+08):
+
+  $ ssh -v -o BatchMode=yes -o ConnectTimeout=8 root@192.168.207.101
+  debug1: Authentications that can continue: publickey, password, keyboard-interactive
+  debug1: Next authentication method: publickey
+  debug1: Will attempt key: /home/jasonperlow/.ssh/id_rsa
+  debug1: Will attempt key: /home/jasonperlow/.ssh/id_ecdsa
+  ...
+  debug1: Trying private key: /home/jasonperlow/.ssh/id_rsa
+  debug1: Trying private key: /home/jasonperlow/.ssh/id_ecdsa
+  debug1: Trying private key: /home/jasonperlow/.ssh/id_ed25519
+  debug1: No more authentication methods to try.
+  root@192.168.207.101: Permission denied (publickey, password, keyboard-interactive).
+
+  $ ls ~/.ssh/
+  authorized_keys
+  known_hosts
+  known_hosts.old
+  (No private keys; no ~/.ssh/config.)
+
+  $ ssh-add -l
+  Could not open a connection to your authentication agent.
+
+`~/.ssh/` contains only `authorized_keys` and `known_hosts` -- no
+private keys (no id_rsa, id_ecdsa, id_ecdsa_sk, id_ed25519,
+id_ed25519_sk), no `config` file. There is no ssh-agent socket.
+The remote sshd accepts publickey, password, and keyboard-interactive,
+but this client has nothing to present, so every connection is closed
+with "Permission denied" (and, after 5 attempts with no auth, sshd's
+"Too many authentication failures" disconnect -- that disconnect line
+is the symptom of zero credentials, not of a rate-limit).
+
+Implication: NO commit has been pushed from this host since at least
+2026-07-14 (date of ~/.ssh/known_hosts.old). The five loop commits
+(b79d69a rebase, 2692c71 Issue 1, ce923fc report, 40bc8c2 installer
+handoff, 10fe8e0 / 324822a PROGRESS.md verification & correction)
+live in this host's local working tree only.
+
+Operator actions to clear:
+
+  1. Generate a key for pushing:
+       ssh-keygen -t ed25519 -f ~/.ssh/origin_meta_cix_ed25519 -N '' \
+         -C 'meta-cix push key'
+
+  2. Authorize it on the server:
+       ssh-copy-id -i ~/.ssh/origin_meta_cix_ed25519.pub \
+         root@192.168.207.101
+     (or paste into the server's authorized_keys by hand)
+
+  3. Optionally pin the identity in ~/.ssh/config so this identity is
+     auto-selected for the 192.168.207.101 host:
+       Host 192.168.207.101
+           IdentityFile ~/.ssh/origin_meta_cix_ed25519
+           IdentitiesOnly yes
+
+  4. Re-attempt the push (no force-push):
+       git push origin wip/ultra/2026-07-10-linlondp-26q2
+
+The push should be a normal fast-forward; the local branch's tip is
+324822a (the PROGRESS.md correction). Five commits behind the most
+recent local push attempt (if any). No force-push was ever
+performed.

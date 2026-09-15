@@ -14,17 +14,17 @@ SRC_URI = " \
     file://cix-run-accelerator-tests.sh \
 "
 
-S = "${WORKDIR}"
+S = "${UNPACKDIR}"
 
 RDEPENDS:${PN} = "bash coreutils python3-core"
 
 do_install() {
     install -d ${D}${libexecdir}/cix-accelerator-tests
-    install -m 0755 ${WORKDIR}/cix-gpu-vulkan-mlp-test.sh ${D}${libexecdir}/cix-accelerator-tests/
-    install -m 0755 ${WORKDIR}/cix-vpu-h264-inference-test.sh ${D}${libexecdir}/cix-accelerator-tests/
-    install -m 0755 ${WORKDIR}/cix-npu-vgg-inference-test.sh ${D}${libexecdir}/cix-accelerator-tests/
-    install -m 0755 ${WORKDIR}/cix-npu-sustained-benchmark.sh ${D}${libexecdir}/cix-accelerator-tests/
-    install -m 0755 ${WORKDIR}/cix-run-accelerator-tests.sh ${D}${libexecdir}/cix-accelerator-tests/
+    install -m 0755 ${UNPACKDIR}/cix-gpu-vulkan-mlp-test.sh ${D}${libexecdir}/cix-accelerator-tests/
+    install -m 0755 ${UNPACKDIR}/cix-vpu-h264-inference-test.sh ${D}${libexecdir}/cix-accelerator-tests/
+    install -m 0755 ${UNPACKDIR}/cix-npu-vgg-inference-test.sh ${D}${libexecdir}/cix-accelerator-tests/
+    install -m 0755 ${UNPACKDIR}/cix-npu-sustained-benchmark.sh ${D}${libexecdir}/cix-accelerator-tests/
+    install -m 0755 ${UNPACKDIR}/cix-run-accelerator-tests.sh ${D}${libexecdir}/cix-accelerator-tests/
 
     install -d ${D}${bindir}
     ln -sf ${libexecdir}/cix-accelerator-tests/cix-gpu-vulkan-mlp-test.sh ${D}${bindir}/cix-gpu-vulkan-mlp-test
