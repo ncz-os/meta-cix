@@ -1,7 +1,7 @@
-From 510cdec787bf8872f53f8806c4cffd4455811e93 Mon Sep 17 00:00:00 2001
+From 0f84122813eedecaf5f9528f4014d196f31b2fc8 Mon Sep 17 00:00:00 2001
 From: Jason Perlow <jperlow@gmail.com>
 Date: Mon, 14 Sep 2026 18:12:50 -0400
-Subject: [PATCH 5/6] firmware: arm_scmi: add acpi support to SCMI (NCZ-0003)
+Subject: [PATCH] firmware: arm_scmi: add acpi support to SCMI (NCZ-0003)
 
 Two hunks manually forward-ported past real upstream drift between our
 base and v7.2.6, verified against pristine upstream content (not
@@ -24,7 +24,7 @@ assumed):
   consistent with every other already-converted call site in the same
   function.
 ---
- drivers/firmware/arm_scmi/bus.c               | 23 ++---
+ drivers/firmware/arm_scmi/bus.c               | 25 +++---
  drivers/firmware/arm_scmi/common.h            | 12 +--
  drivers/firmware/arm_scmi/driver.c            | 47 +++++-----
  drivers/firmware/arm_scmi/shmem.c             | 88 ++++++++++++++++---
@@ -32,10 +32,10 @@ assumed):
  drivers/firmware/arm_scmi/transports/optee.c  | 17 ++--
  drivers/firmware/arm_scmi/transports/smc.c    |  8 +-
  drivers/firmware/arm_scmi/transports/virtio.c |  4 +-
- 8 files changed, 160 insertions(+), 79 deletions(-)
+ 8 files changed, 161 insertions(+), 80 deletions(-)
 
 diff --git a/drivers/firmware/arm_scmi/bus.c b/drivers/firmware/arm_scmi/bus.c
-index e060edbe7e83..9c4c18c8b8f3 100644
+index e060edbe7e83..a760fba59de9 100644
 --- a/drivers/firmware/arm_scmi/bus.c
 +++ b/drivers/firmware/arm_scmi/bus.c
 @@ -9,7 +9,8 @@
@@ -48,7 +48,15 @@ index e060edbe7e83..9c4c18c8b8f3 100644
  #include <linux/kernel.h>
  #include <linux/slab.h>
  #include <linux/device.h>
-@@ -436,8 +437,8 @@ static void scmi_device_release(struct device *dev)
+@@ -429,15 +430,15 @@ static void scmi_device_release(struct device *dev)
+ 	struct scmi_device *scmi_dev = to_scmi_dev(dev);
+ 
+ 	scmi_device_release_resources(scmi_dev);
+-	of_node_put(dev->of_node);
++	fwnode_handle_put(dev->fwnode);
+ 	kfree_const(scmi_dev->name);
+ 	kfree(scmi_dev);
+ }
  
  static void __scmi_device_destroy(struct scmi_device *scmi_dev)
  {
@@ -168,7 +176,7 @@ index fe8c22cfb9f7..311a78537a84 100644
  	.probe = __tag##_probe,						       \
  }
 diff --git a/drivers/firmware/arm_scmi/driver.c b/drivers/firmware/arm_scmi/driver.c
-index 633d45720685..b7723e5fdc3a 100644
+index ef29fd223287..65c1cb043409 100644
 --- a/drivers/firmware/arm_scmi/driver.c
 +++ b/drivers/firmware/arm_scmi/driver.c
 @@ -16,6 +16,7 @@
@@ -340,7 +348,7 @@ index 633d45720685..b7723e5fdc3a 100644
  		scmi_create_protocol_devices(child, info, prot_id, NULL);
  	}
  
-@@ -3449,7 +3450,7 @@ static void scmi_remove(struct platform_device *pdev)
+@@ -3409,7 +3410,7 @@ static void scmi_remove(struct platform_device *pdev)
  {
  	int id;
  	struct scmi_info *info = platform_get_drvdata(pdev);
@@ -349,7 +357,7 @@ index 633d45720685..b7723e5fdc3a 100644
  
  	if (IS_ENABLED(CONFIG_ARM_SCMI_RAW_MODE_SUPPORT))
  		scmi_raw_mode_cleanup(info->raw);
-@@ -3474,7 +3475,7 @@ static void scmi_remove(struct platform_device *pdev)
+@@ -3434,7 +3435,7 @@ static void scmi_remove(struct platform_device *pdev)
  	mutex_unlock(&info->protocols_mtx);
  
  	idr_for_each_entry(&info->active_protocols, child, id)
@@ -359,11 +367,11 @@ index 633d45720685..b7723e5fdc3a 100644
  
  	bus_unregister_notifier(&scmi_bus_type, &info->bus_nb);
 diff --git a/drivers/firmware/arm_scmi/shmem.c b/drivers/firmware/arm_scmi/shmem.c
-index 73930f4e5b1e..d4d343b90fc6 100644
+index dadb37557f8a..4f858e74026e 100644
 --- a/drivers/firmware/arm_scmi/shmem.c
 +++ b/drivers/firmware/arm_scmi/shmem.c
-@@ -12,6 +12,8 @@
- #endif
+@@ -9,6 +9,8 @@
+ #include <linux/io.h>
  #include <linux/of.h>
  #include <linux/of_address.h>
 +#include <linux/platform_device.h>
@@ -371,7 +379,7 @@ index 73930f4e5b1e..d4d343b90fc6 100644
  #include <linux/processor.h>
  #include <linux/types.h>
  
-@@ -207,23 +209,82 @@ static void __iomem *shmem_setup_iomap(struct scmi_chan_info *cinfo,
+@@ -204,23 +206,82 @@ static void __iomem *shmem_setup_iomap(struct scmi_chan_info *cinfo,
  	void __iomem *addr;
  	u32 reg_io_width;
  
@@ -467,7 +475,7 @@ index 73930f4e5b1e..d4d343b90fc6 100644
  	}
  
  	size = resource_size(res);
-@@ -238,7 +299,6 @@ static void __iomem *shmem_setup_iomap(struct scmi_chan_info *cinfo,
+@@ -235,7 +296,6 @@ static void __iomem *shmem_setup_iomap(struct scmi_chan_info *cinfo,
  		return IOMEM_ERR_PTR(-EADDRNOTAVAIL);
  	}
  

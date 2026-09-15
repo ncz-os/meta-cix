@@ -1,8 +1,7 @@
-From c3e4bc339c067dc19f4cffa2a623c38a13bfb37a Mon Sep 17 00:00:00 2001
+From 8122405b407b50ddd75f3e6f1dc9b220bf584844 Mon Sep 17 00:00:00 2001
 From: Jason Perlow <jperlow@gmail.com>
 Date: Mon, 14 Sep 2026 18:09:29 -0400
-Subject: [PATCH 4/6] regulator: cix: handle unsupported pmic constraints
- quietly
+Subject: [PATCH] regulator: cix: handle unsupported pmic constraints quietly
 
 ---
  drivers/regulator/fwnode_regulator.c | 8 +++-----

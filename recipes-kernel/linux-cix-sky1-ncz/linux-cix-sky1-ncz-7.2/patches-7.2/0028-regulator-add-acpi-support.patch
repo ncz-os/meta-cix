@@ -1,7 +1,7 @@
-From 5bb9b736ec9ae338ce428f7e51197dc131a4ea8a Mon Sep 17 00:00:00 2001
+From 6c1cdd4d9a27b1ae1e2086bfe5d4374462047355 Mon Sep 17 00:00:00 2001
 From: Jianfeng Liu <Jianfeng.Liu@cixtech.com>
 Date: Mon, 14 Sep 2026 18:08:59 -0400
-Subject: [PATCH 1/6] regulator: add acpi support
+Subject: [PATCH] regulator: add acpi support
 
 ---
  drivers/regulator/Makefile                 |    3 +-

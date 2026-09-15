@@ -1,4 +1,4 @@
-From ed97aaf9a311641b240ea6aeb30652e20daa2c14 Mon Sep 17 00:00:00 2001
+From e96b5a26f17db7399ce902a3a7b981e3a7106bf3 Mon Sep 17 00:00:00 2001
 From: Jason Perlow <jperlow@gmail.com>
 Date: Tue, 7 Jul 2026 05:31:30 -0400
 Subject: [PATCH] firmware: arm_scmi: activate implemented protocols on ACPI
@@ -20,10 +20,10 @@ Upstream-Status: Inappropriate [oe-specific]
  1 file changed, 29 insertions(+)
 
 diff --git a/drivers/firmware/arm_scmi/driver.c b/drivers/firmware/arm_scmi/driver.c
-index 9477e4d9b0c5..b38d76461f39 100644
+index 65c1cb043409..0410dfc9af9f 100644
 --- a/drivers/firmware/arm_scmi/driver.c
 +++ b/drivers/firmware/arm_scmi/driver.c
-@@ -3366,6 +3366,35 @@ static int scmi_probe(struct platform_device *pdev)
+@@ -3386,6 +3386,35 @@ static int scmi_probe(struct platform_device *pdev)
  		scmi_create_protocol_devices(child, info, prot_id, NULL);
  	}
  
@@ -58,7 +58,4 @@ index 9477e4d9b0c5..b38d76461f39 100644
 +
  	return 0;
  
- notification_exit:
--- 
-2.51.0
-
+ raw_mode_cleanup:

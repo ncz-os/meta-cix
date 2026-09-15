@@ -1,7 +1,7 @@
-From 8d222aa3ce9cf603f669bd267905767ff7d61cf6 Mon Sep 17 00:00:00 2001
+From f7cbbf3cdb8f1faa3c4d296ce1e821eb64dd1d7f Mon Sep 17 00:00:00 2001
 From: Jason Perlow <jperlow@gmail.com>
 Date: Mon, 14 Sep 2026 18:12:59 -0400
-Subject: [PATCH 6/6] firmware: arm_scmi: mailbox: fix acpi driver_data type
+Subject: [PATCH] firmware: arm_scmi: mailbox: fix acpi driver_data type
  confusion
 
 ---
