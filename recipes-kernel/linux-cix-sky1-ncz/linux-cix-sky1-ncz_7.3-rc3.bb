@@ -227,3 +227,39 @@ KERNEL_DEVICETREE = " \
 # 2026-09-13: rebased all 207 kernel-73rc2-port commits from v7.3-rc2
 # onto v7.3-rc3 as kernel-73rc3-port. All commits applied cleanly; none
 # needed conflict resolution or were dropped as already upstream.
+#
+# 2026-09-17 (GRAEAE-consulted patch-strategy review, operator directive):
+# investigated whether tonight's patches-7.2/ regeneration (meta-cix
+# 6e02f69, fixing 2 real v7.2.6 compile bugs in drivers/firmware/arm_scmi/
+# bus.c and mm/shmem.c) needs forward-porting onto kernel-73rc3-port. It
+# does NOT, because this recipe never consumes patches-7.2/*.patch at all
+# (see the file's own header above) -- so build/port-series.sh's report of
+# "33 failed against v7.3.0-rc3" (6+ of them being those exact regenerated
+# files, now correct for v7.2.6's tree but context-mismatched against
+# v7.3.0-rc3's different tree) is NOT a real risk to what this recipe
+# ships. That tool is dry-run-replaying a patch series this recipe doesn't
+# use; treat its v7.3-rc3 output as informational only, not a gate, unless
+# this recipe's SRC_URI mechanism changes.
+#
+# Spot-checked 2 of the 6 regenerated files directly against this branch's
+# tree instead: drivers/firmware/arm_scmi/bus.c already has the correct
+# fwnode_handle_put(dev->fwnode) fix independently (this branch's own
+# 10th forward-port fix, a49de0beac8c-adjacent mailbox/ACPI work, covers
+# adjacent code in the same file). drivers/regulator/fwnode_regulator.c
+# does not exist on this branch at all -- never forward-ported -- but a
+# real bitbake compile (below) proves that's not currently a build
+# blocker; whether it's a real functional gap needing its own forward-port
+# commit is unverified and NOT yet triaged. Did not attempt to
+# individually re-triage the other ~27 patches-7.2/ failures against this
+# branch's mechanism -- that is real, unfinished work if anyone later
+# wants a full accounting of which of the 33 are genuine forward-port
+# gaps here vs. simply inapplicable-by-design.
+#
+# Re-verified this exact recipe with a real, forced `bitbake -c compile -f`
+# against the current SRCREV (22c9f93059a7, confirmed == kernel-73rc3-port
+# branch tip on both ARGONAS and gitlab.com/ncz-os/linux-cix.git): compile
+# succeeded clean (1 benign warning). build/kvm-kernel-gate.sh PASSED
+# (PCI-ID lint clean, boots to root-mount under qemu). build/dkms-abi-gate.sh
+# PASSED (builder identity + binutils match, CONFIG_MODVERSIONS=y). Real
+# hardware boot on O6N/cixmini deliberately NOT attempted here --
+# human-supervised only.
