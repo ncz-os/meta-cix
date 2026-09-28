@@ -204,7 +204,7 @@ do_shared_workdir:append() {
 # CIXH6070) stays in permanent -EPROBE_DEFER. linlondp-cluster
 # (CIXH50C0) finds no slave mdev, "ACPI cluster: no DPUs", no /dev/dri.
 # See commit a49de0beac8c for the full commit message.
-SRCREV_kernel = "3da51e546c4bcfe47b303edeb0d889fd538e33c2"
+SRCREV_kernel = "72d3fcf802c45d00b300f25b848a93c3a2bd7c7e"
 
 # NOTE: fetches from a LOCAL bare mirror under this build container's workdir mount
 # (the ncz-yocto-y6 podman sandbox has no SSH keys, so it cannot reach the
