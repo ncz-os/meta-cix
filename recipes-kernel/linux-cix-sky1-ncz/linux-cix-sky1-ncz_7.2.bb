@@ -124,10 +124,10 @@ LIC_FILES_CHKSUM = "file://COPYING;md5=6bc538ed5bd9a7fc9398086aedcd7e46"
 inherit kernel
 FILESEXTRAPATHS:prepend := "${THISDIR}/linux-cix-sky1-ncz-7.2:"
 
-LINUX_VERSION = "7.2.6"
+LINUX_VERSION = "7.2.8"
 KERNEL_LOCALVERSION = "-sky1-ncz"
 PATCHTOOL = "git"
-PV = "7.2.6+ncz"
+PV = "7.2.8+ncz"
 PR = "r1"
 KBRANCH = "linux-7.2.y"
 # Internal KERNEL_PACKAGE_NAME: chose `linux-cix-sky1-ncz-kernel` as a
@@ -276,7 +276,7 @@ do_shared_workdir:append() {
 #     deliberately removed, kept only the necessary of_node->fwnode rename
 #     the same hunk also carried. zoder (MiniMax-M3) adversarial review,
 #     verdict SAFE.
-SRCREV_kernel = "500df175a7f9e6bc1a9c328590ca5150f84f9ff0"
+SRCREV_kernel = "9a66fdc0d7fd55f54235524a73435af99051e46f"
 
 SRC_URI = " \
     git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git;protocol=https;branch=${KBRANCH};name=kernel \
