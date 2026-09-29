@@ -13,13 +13,49 @@
 # applies the complete, rebased CIX port as sky1-ncz-v7.3-rc5-port.patch.
 # The equivalent 207-commit review branch is kernel-73rc5-port.
 #
-# Patch decisions vs. the dry-run 205-patch replay (operator-verified 2026-09-27):
-#   DROP 0027 (Cadence Sky1 vendor PCIe fix). Verdict 7990b7823816: forcing
-#        the old 88-line hunk is unsafe; mainline's replacement Cadence driver
-#        supersedes it.
-#   DROP 0029 (Cadence ACPI clock release). Replacement PCIe uses devm clock
-#        acquisition; a manual clk_put is unnecessary and unsafe on top of it.
-#   DO NOT APPLY 0058 or 0074. They are under separate investigation.
+# Patch decisions vs. the dry-run 205-patch replay (operator accepted the
+# orchestrator advisory 2026-09-29; each item re-verified against source, see
+# cix-installer docs/reports/2026-09-29-sky1-rc5-advisory-implementation.md).
+# None of the raw 7.2 patches below is in SRC_URI: this recipe applies ONE
+# consolidated diff of the kernel-73rc5-port branch, so "drop" means "the raw
+# patch is not re-applied", NOT "its content is absent from the tree".
+#   0027 (Cadence Sky1 vendor PCIe) and 0029 (Cadence ACPI clock release):
+#        not re-applied. CAUTION: mainline b5672f9463f2 / ea34744eb094 /
+#        d70e964dc099 add the HPA flag and LTSSM debugfs only; they do NOT
+#        cover 0027. The port carries 0027's cdns_pcie_hpa_host_restore()
+#        (65108d59b2be), register_syscore() and the LMR base block
+#        (23d4657ab234), but not its HPA ECAM region programming,
+#        sky1_cdns_pcie_find_capability(), the "sky1-pcie-cix" driver rename
+#        (pci-sky1.c and pci-sky1-cix.c both register "sky1-pcie", both =y)
+#        or the vendor-id/device-id/no-inbound-bar ACPI properties. 0029 needs
+#        the CLKT clkdev bridge. Gated on the supervised r278 boot (PCIe/NVMe/
+#        USB3 items on the test sheet).
+#   0058 (fwnode_drm_find_panel export): dropped. Its forward-port
+#        3d3bd1842516 is reverted and the only caller (0008 trilin_dp_probe)
+#        is re-aimed at the counted of_drm_find_panel() by
+#        0001-drm-cix-trilin-dp-drop-fwnode_drm_find_panel-use-cou.patch below;
+#        drm_panel.[ch] are byte-identical to v7.3-rc5 again.
+#   0074 (6.6->7.2 API drift): not re-applied. H1-H14 are present in the port
+#        tree; H15-H17 are superseded by the 0172-shaped cix_scmi_em.[ch] from
+#        9fa83019a3ea (not by 0066/0068/0069, whose 0069 copy still called
+#        perf_ops->device_domain_id()).
+#   0004/0005/0065/0105: not re-applied (there is no per-patch SRC_URI to
+#        delete them from). 0105 is covered (no .prepare op, no put_noidle).
+#        0004/0005/0065 are only PARTLY covered by mainline 3730fe6032d9 /
+#        7cd3ca90d921 / b5fa9d3beec4 (DT AUDSS clock + reset). Their ACPI
+#        halves are load-bearing and stay: CIXHA010 provider a4de88c36585,
+#        reset ACPI lookup db1fd834dae3 + cad63faa518b, AUDSS CIXH6061 match
+#        77b1624778cc.
+#   NPU in-tree chain 0119 0120 0121 0123 0125 0159 0220: DROPPED BY POLICY.
+#        The NPU ships as the DKMS cix-npu-driver (aipu), never in-tree
+#        (port commit 3da51e546c4b records the verdict).
+#   Queued, port ONLY if the supervised r278 boot shows missing clocks or
+#   thermals: CLKT bridge refinements 0096 0138 0147 0148 0157 0168 (the base
+#   clk-sky1-acpi.c from 0065 is present), 0172 (cix_scmi_register_em() is
+#   defined but has no caller), 0089 (runtime-PM ACPI gate), 0212, 0216.
+#   0001 and 0091 are listed as class (b) by the raw replay but are already
+#   carried by the port (0001: 3d7823f9c2b2 + 535db5995054; 0091:
+#   6d3cab5b0154 + 9291c638f97a); the boot sheet verifies them.
 #
 # Expected replay result: ~178 applied of 205, matching rc3/rc4 exactly.
 # rc4 and rc5 have an identical failure set, so a result close to that is
@@ -58,7 +94,7 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/linux-cix-sky1-ncz-7.3-rc5:"
 LINUX_VERSION = "7.3-rc5"
 KERNEL_LOCALVERSION = "-sky1-ncz"
 PV = "7.3-rc5+ncz"
-PR = "r1"
+PR = "r2"
 KBRANCH = "kernel-73rc5-port"
 KERNEL_PACKAGE_NAME = "kernel-${PN}"
 
@@ -219,6 +255,7 @@ SRC_URI = " \
     git:///workdir/kernel-mirrors/linux-cix-kernel-73rc5-port.git;protocol=file;branch=${KBRANCH};name=kernel \
     file://config-7.3-rc5.defconfig \
     file://sky1-ncz-v7.3-rc5-port.patch \
+    file://0001-drm-cix-trilin-dp-drop-fwnode_drm_find_panel-use-cou.patch \
 "
 
 COMPATIBLE_MACHINE = "(cixmini)"
