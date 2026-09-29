@@ -28,7 +28,9 @@
 #        "sky1-pcie-cix" rename, ACPI vendor-id/device-id/no-inbound-bar)
 #        and 0029's CLKT-keyed clocks are re-ported for native mode in
 #        0002-PCI-cadence-sky1-cix-restore-ACPI-native-mode-on-v7.3.patch
-#        (operator decision 2026-09-29: native PCIe wanted on 7.3). Default
+#        (operator decision 2026-09-29: native PCIe wanted on 7.3), plus the
+#        review fixes in 0004 (clock error paths, AER re-enable, pdev name,
+#        ECAM size). Default
 #        cmdline sky1_pcie_native=off is unchanged.
 #   0058 (fwnode_drm_find_panel export): dropped. Its forward-port
 #        3d3bd1842516 is reverted and the only caller (0008 trilin_dp_probe)
@@ -264,6 +266,7 @@ SRC_URI = " \
     file://0001-drm-cix-trilin-dp-drop-fwnode_drm_find_panel-use-cou.patch \
     file://0002-PCI-cadence-sky1-cix-restore-ACPI-native-mode-on-v7.3.patch \
     file://0003-PM-runtime-restore-the-CIX-Sky1-early-boot-runtime-P.patch \
+    file://0004-PCI-cadence-sky1-cix-native-mode-review-fixes-clocks.patch \
 "
 
 COMPATIBLE_MACHINE = "(cixmini)"
