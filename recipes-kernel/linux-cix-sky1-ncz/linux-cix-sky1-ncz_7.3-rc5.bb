@@ -20,16 +20,16 @@
 # consolidated diff of the kernel-73rc5-port branch, so "drop" means "the raw
 # patch is not re-applied", NOT "its content is absent from the tree".
 #   0027 (Cadence Sky1 vendor PCIe) and 0029 (Cadence ACPI clock release):
-#        not re-applied. CAUTION: mainline b5672f9463f2 / ea34744eb094 /
-#        d70e964dc099 add the HPA flag and LTSSM debugfs only; they do NOT
-#        cover 0027. The port carries 0027's cdns_pcie_hpa_host_restore()
-#        (65108d59b2be), register_syscore() and the LMR base block
-#        (23d4657ab234), but not its HPA ECAM region programming,
-#        sky1_cdns_pcie_find_capability(), the "sky1-pcie-cix" driver rename
-#        (pci-sky1.c and pci-sky1-cix.c both register "sky1-pcie", both =y)
-#        or the vendor-id/device-id/no-inbound-bar ACPI properties. 0029 needs
-#        the CLKT clkdev bridge. Gated on the supervised r278 boot (PCIe/NVMe/
-#        USB3 items on the test sheet).
+#        mainline b5672f9463f2 / ea34744eb094 / d70e964dc099 add the HPA flag
+#        and LTSSM debugfs only; they do NOT cover 0027. The port carried
+#        cdns_pcie_hpa_host_restore() (65108d59b2be), register_syscore() and
+#        the LMR base block (23d4657ab234). The rest (HPA ECAM region,
+#        sky1_cdns_pcie_find_capability(), HPA root-port base, the
+#        "sky1-pcie-cix" rename, ACPI vendor-id/device-id/no-inbound-bar)
+#        and 0029's CLKT-keyed clocks are re-ported for native mode in
+#        0002-PCI-cadence-sky1-cix-restore-ACPI-native-mode-on-v7.3.patch
+#        (operator decision 2026-09-29: native PCIe wanted on 7.3). Default
+#        cmdline sky1_pcie_native=off is unchanged.
 #   0058 (fwnode_drm_find_panel export): dropped. Its forward-port
 #        3d3bd1842516 is reverted and the only caller (0008 trilin_dp_probe)
 #        is re-aimed at the counted of_drm_find_panel() by
@@ -49,13 +49,19 @@
 #   NPU in-tree chain 0119 0120 0121 0123 0125 0159 0220: DROPPED BY POLICY.
 #        The NPU ships as the DKMS cix-npu-driver (aipu), never in-tree
 #        (port commit 3da51e546c4b records the verdict).
-#   Queued, port ONLY if the supervised r278 boot shows missing clocks or
-#   thermals: CLKT bridge refinements 0096 0138 0147 0148 0157 0168 (the base
-#   clk-sky1-acpi.c from 0065 is present), 0172 (cix_scmi_register_em() is
-#   defined but has no caller), 0089 (runtime-PM ACPI gate), 0212, 0216.
-#   0001 and 0091 are listed as class (b) by the raw replay but are already
-#   carried by the port (0001: 3d7823f9c2b2 + 535db5995054; 0091:
-#   6d3cab5b0154 + 9291c638f97a); the boot sheet verifies them.
+#   CLKT chain 0096 0138 0147 0148 0157 0168: drivers/clk/cix is identical
+#        to the r277 (v7.2.8) tree except clk-sky1-audss.c (mainline driver
+#        + port fixes), so the chain is at r277 parity; nothing to port.
+#   0172: carried by 9fa83019a3ea. cix_scmi_register_em() is called by the
+#        out-of-tree mali_kbase DKMS (mali_kbase_devfreq.c), not in-tree.
+#   0089: acpi_clk.c half present; the runtime-PM early-boot gate is
+#        re-ported in 0003-PM-runtime-restore-the-CIX-Sky1-early-boot-runtime-P.patch.
+#   0001 and 0091: already carried (0001: 3d7823f9c2b2 + 535db5995054;
+#        0091: 6d3cab5b0154 + 9291c638f97a).
+#   0212 (cacheinfo PPTT global IDs): NOT ported; no 7.3 failure has been
+#        observed; the r279 boot sheet compares cache topology with 7.2.8.
+#   0216 (resctrl MB_PROP): NOT ported; inert (CONFIG_ARM64_MPAM is off).
+#   r279 config: CONFIG_MODULE_COMPRESS off (fleet rule: never xz a .ko).
 #
 # Expected replay result: ~178 applied of 205, matching rc3/rc4 exactly.
 # rc4 and rc5 have an identical failure set, so a result close to that is
@@ -94,7 +100,7 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/linux-cix-sky1-ncz-7.3-rc5:"
 LINUX_VERSION = "7.3-rc5"
 KERNEL_LOCALVERSION = "-sky1-ncz"
 PV = "7.3-rc5+ncz"
-PR = "r2"
+PR = "r3"
 KBRANCH = "kernel-73rc5-port"
 KERNEL_PACKAGE_NAME = "kernel-${PN}"
 
@@ -256,6 +262,8 @@ SRC_URI = " \
     file://config-7.3-rc5.defconfig \
     file://sky1-ncz-v7.3-rc5-port.patch \
     file://0001-drm-cix-trilin-dp-drop-fwnode_drm_find_panel-use-cou.patch \
+    file://0002-PCI-cadence-sky1-cix-restore-ACPI-native-mode-on-v7.3.patch \
+    file://0003-PM-runtime-restore-the-CIX-Sky1-early-boot-runtime-P.patch \
 "
 
 COMPATIBLE_MACHINE = "(cixmini)"
