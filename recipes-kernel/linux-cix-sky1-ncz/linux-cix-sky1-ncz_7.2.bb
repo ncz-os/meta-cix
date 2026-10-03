@@ -124,10 +124,10 @@ LIC_FILES_CHKSUM = "file://COPYING;md5=6bc538ed5bd9a7fc9398086aedcd7e46"
 inherit kernel
 FILESEXTRAPATHS:prepend := "${THISDIR}/linux-cix-sky1-ncz-7.2:"
 
-LINUX_VERSION = "7.2.8"
+LINUX_VERSION = "7.2.9"
 KERNEL_LOCALVERSION = "-sky1-ncz"
 PATCHTOOL = "git"
-PV = "7.2.8+ncz"
+PV = "7.2.9+ncz"
 PR = "r1"
 KBRANCH = "linux-7.2.y"
 # Internal KERNEL_PACKAGE_NAME: chose `linux-cix-sky1-ncz-kernel` as a
@@ -276,7 +276,27 @@ do_shared_workdir:append() {
 #     deliberately removed, kept only the necessary of_node->fwnode rename
 #     the same hunk also carried. zoder (MiniMax-M3) adversarial review,
 #     verdict SAFE.
-SRCREV_kernel = "9a66fdc0d7fd55f54235524a73435af99051e46f"
+# Bumped 2026-10-03 from v7.2.8 to the v7.2.9 STABLE point release.
+#   v7.2.8 = 9a66fdc0d7fd55f54235524a73435af99051e46f
+#   v7.2.9 = 5fce161649b4d779d1b76d9fcd52dc77779774b8   <- pinned below
+# SRCREV re-resolved from kernel.org on 2026-10-03 rather than copied from the
+# task text: `git ls-remote .../stable/linux.git 'refs/tags/v7.2.9^{}'` returns
+# 5fce161649b4d779d1b76d9fcd52dc77779774b8. (The bare annotated tag object is
+# bd50482a9c7a6eb91468f1064a346a75e677e692; as with every prior pin in this
+# recipe we pin the dereferenced COMMIT, not the tag object.)
+# Replayed on a clean v7.2.9 checkout with `git am --3way` over the 205 patches
+# the SRC_URI wires, in recipe order: 205 applied, 0 failed of 205 wired -- a
+# clean first pass, so NO patch needed adaptation this cycle.
+#   7.2.8 -> 7.2.9 was a smaller delta than the cycles before it: no touch of
+#   the arm_scmi bus.c/driver.c refcounting that forced 0075/0085 to be
+#   hand-resolved in the 7.2.6 cycle, and no cdnsp context-loss commit of the
+#   kind that made 0114/0221 need regeneration in the 7.2.5 cycle.
+# NOTE for the next person: ULTRA carries TWO meta-cix trees and they disagree.
+#   ~/yocto-work/meta-cix                      <- the one the build reads
+#   ~/yocto-docker/yocto6-ncz-tydeus/meta-cix  <- stale
+# Confirm which tree the build actually consumes before trusting any recipe
+# value read off disk. See docs/kernel-7.2.9-port.md.
+SRCREV_kernel = "5fce161649b4d779d1b76d9fcd52dc77779774b8"
 
 SRC_URI = " \
     git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git;protocol=https;branch=${KBRANCH};name=kernel \
