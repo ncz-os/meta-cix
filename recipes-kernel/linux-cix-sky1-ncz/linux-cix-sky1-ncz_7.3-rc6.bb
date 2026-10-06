@@ -1,8 +1,9 @@
 # SPDX-FileCopyrightText: Copyright (c) 2026 Jason Perlow
 # SPDX-License-Identifier: Apache-2.0
 #
-# Linux kernel for Cix Sky1 / CP8180 -- NCZ 7.3 track (NEXT/test, not yet
-# the shipping/stable release -- that is 7.2.x, see linux-cix-sky1-ncz_7.2.bb).
+# Linux kernel for Cix Sky1 / CP8180 -- NCZ 7.3 track. NCZ-OS ships one
+# kernel series, 7.3, on every arch (operator decision 2026-10-05); the 7.2.x
+# recipe was retired from the working tree (see CORRESPONDING-SOURCE.md).
 #
 # Base: torvalds mainline v7.3-rc6, peeled commit a90ee4305c4a5df72c11b31dacfdc76e00fcf78a.
 # (v7.3-rc6 is NOT in linux-stable -- rc tags live in Linus's tree. Stable's

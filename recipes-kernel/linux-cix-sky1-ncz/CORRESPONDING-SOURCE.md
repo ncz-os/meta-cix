@@ -13,6 +13,20 @@ up forever.
 
 ## 7.2 track — `linux-cix-sky1-ncz_7.2.bb`
 
+**Retired from the working tree 2026-10-06** (NCZ-OS ships one kernel series,
+7.3). The recipe and `linux-cix-sky1-ncz-7.2/patches-7.2/*.patch` were removed
+from the tree but NOT from history; previously shipped 7.2.x binaries keep
+their corresponding-source obligation, so these refs must stay reachable:
+
+- `feat/kernel-7.2.9-port-2026-10-03` (ARGONAS) @ `44508870dff029aa7c0bc6a67d6b3f1e3c6f33d8`
+  — last 7.2 recipe state (v7.2.9, Sky1 r280).
+- `wip/ultra/2026-10-04-rc6-meta-cix` @ `d8e7da34c4c76476fd1c9d37bc1b3cc004c7a219`
+  — v7.2.8 recipe state, parent of the retirement commit.
+- Older 7.2 states: `git log -- recipes-kernel/linux-cix-sky1-ncz/linux-cix-sky1-ncz_7.2.bb`.
+
+The entries below are kept as the historical index. Pristine-base self-mirrors
+for the later 7.2.x point releases (7.2.4 ... 7.2.9) are not recorded here yet.
+
 ### Current: v7.2-rc6 (SRCREV bumped 2026-08-02)
 
 - Our patches: `linux-cix-sky1-ncz-7.2/patches-7.2/*.patch` (this repo, full
