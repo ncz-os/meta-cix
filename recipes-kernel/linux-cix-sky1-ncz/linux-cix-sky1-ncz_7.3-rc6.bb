@@ -112,6 +112,24 @@
 # with --strip-debug (INSTALL_MOD_STRIP=1). That keeps .BTF and the GNU
 # build-id note and leaves the shipped modules the same size class as r282.
 
+# r284 (2026-10-06, PR r3): r283 plus the four r279 patches that r282/r283
+# lost. The rc6 recipe (d8e7da34) was branched from d3176d61 before the r279
+# commits 3014e78f / c6203a8b, so its decision comment above described
+# 0001-0004 while SRC_URI applied none of them. They are restored verbatim
+# (diff bodies byte-identical to r279; headers keep the original author and
+# Signed-off-by) and apply in order on v7.3-rc6 + sky1-ncz-v7.3-rc6-port.patch
+# with no offset or fuzz:
+#   0001 trilin-dp: counted OF panel lookup, fwnode_drm_find_panel() dropped
+#   0002 sky1-cix: ACPI native PCIe on v7.3, vendor driver "sky1-pcie-cix"
+#        (fixes "Driver 'sky1-pcie' is already registered" at boot)
+#   0003 PM: runtime: CIX early-boot runtime-PM gate ("cix_pm: system ready")
+#   0004 sky1-cix: native-mode review fixes (clocks, AER, pdev name, ECAM)
+# The source delta against the base tag is content-identical to r279's
+# (v7.3-rc5 + rc5 port + 0001-0004). The defconfig is unchanged from r283;
+# the r279 defconfig carried nothing r283 lacks. Default cmdline
+# sky1_pcie_native=off is unchanged. r284_patch_check (a do_patch postfunc)
+# fails the build if any of the four is missing from the patched tree.
+
 LICENSE = "GPL-2.0-only"
 LIC_FILES_CHKSUM = "file://COPYING;md5=6bc538ed5bd9a7fc9398086aedcd7e46"
 
@@ -121,7 +139,7 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/linux-cix-sky1-ncz-7.3-rc6:"
 LINUX_VERSION = "7.3-rc6"
 KERNEL_LOCALVERSION = "-sky1-ncz"
 PV = "7.3-rc6+ncz"
-PR = "r2"
+PR = "r3"
 KBRANCH = "kernel-73rc6-port"
 KERNEL_PACKAGE_NAME = "kernel-${PN}"
 
@@ -282,6 +300,10 @@ SRC_URI = " \
     git:///workdir/kernel-mirrors/linux-cix-kernel-73rc6-port.git;protocol=file;branch=${KBRANCH};name=kernel \
     file://config-7.3-rc6.defconfig \
     file://sky1-ncz-v7.3-rc6-port.patch \
+    file://0001-drm-cix-trilin-dp-drop-fwnode_drm_find_panel-use-cou.patch \
+    file://0002-PCI-cadence-sky1-cix-restore-ACPI-native-mode-on-v7.3.patch \
+    file://0003-PM-runtime-restore-the-CIX-Sky1-early-boot-runtime-P.patch \
+    file://0004-PCI-cadence-sky1-cix-native-mode-review-fixes-clocks.patch \
 "
 
 COMPATIBLE_MACHINE = "(cixmini)"
@@ -294,6 +316,20 @@ do_configure:prepend() {
     cp ${UNPACKDIR}/config-7.3-rc6.defconfig ${B}/.config
     oe_runmake ARCH=arm64 O=${B} olddefconfig
 }
+
+# Fail the build if any r284 patch (0001-0004) is absent from the patched tree.
+r284_patch_check() {
+    if grep -q fwnode_drm_find_panel ${S}/include/drm/drm_panel.h; then
+        bbfatal "r284 patch check: 0001 missing (fwnode_drm_find_panel still exported)"
+    fi
+    grep -q '"sky1-pcie-cix"' ${S}/drivers/pci/controller/cadence/pci-sky1-cix.c || \
+        bbfatal "r284 patch check: 0002 missing (vendor driver not renamed sky1-pcie-cix)"
+    grep -q 'cix_pm: system ready' ${S}/drivers/base/power/runtime.c || \
+        bbfatal "r284 patch check: 0003 missing (no CIX early-boot runtime-PM gate)"
+    grep -q 'pdevinfo.name = "sky1-pcie-cix"' ${S}/drivers/pci/controller/cadence/pci-sky1-acpi.c || \
+        bbfatal "r284 patch check: 0004 missing (ACPI pdev not renamed sky1-pcie-cix)"
+}
+do_patch[postfuncs] += "r284_patch_check"
 
 DEPENDS += "pahole-native elfutils-native"
 EXTRA_OEMAKE += "INSTALL_MOD_STRIP=1"
