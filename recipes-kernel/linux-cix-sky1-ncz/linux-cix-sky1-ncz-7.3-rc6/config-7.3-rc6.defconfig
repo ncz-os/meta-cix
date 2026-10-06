@@ -1292,3 +1292,19 @@ CONFIG_SQUASHFS_ZSTD=y
 CONFIG_MT7921U=m
 CONFIG_MT7925U=m
 CONFIG_RTW89_8922DE=m
+
+
+# ---------------------------------------------------------------------------
+# r285 (2026-10-06): config fixes from the O6N r284 dmesg review.
+
+# --- zstd crypto API ----------------------------------------------------------
+# zram-generator runs `modprobe crypto-zstd` before it configures zram and
+# logs "modprobe \"crypto-zstd\" failed" on every boot (twice: initrd and
+# root). zram itself uses ZRAM_BACKEND_ZSTD, not the crypto API, so this is a
+# module that only has to exist for that probe and for other crypto users.
+CONFIG_CRYPTO_ZSTD=m
+
+# --- /dev/i2c-* -----------------------------------------------------------------
+# KNOWN-ISSUES item 6: fwupd's i2c plugins and i2c-tools need i2c-dev; the
+# image masks fwupd's request as a workaround until the kernel provides it.
+CONFIG_I2C_CHARDEV=m

@@ -145,6 +145,38 @@
 # fix in regulator_init_coupling(). It changes the struct regulator_desc and
 # regulator_config layout, so do a full rebuild with DKMS overlays rebuilt.
 # r285_patch_check fails the build if 0005 is missing.
+#
+# r285 also carries the dmesg-noise fixes from the O6N r284 validation
+# (2026-10-06). Each is a cause fix, not a loglevel change:
+#   0006 pinctrl: acpi: defer consumers until the named pin controller
+#        registers ("sbsa-uart ARMH0011:02: pctldev with ACPI name
+#        '\_SB.MUX0' not found": COM2 enumerates before MUX0 and ran
+#        without its pin state; the deferral leaked maps, now freed)
+#   0007 usb: cdns3: cdnsp-sky1: hold the ACPI wrapper active until its
+#        children bind (10x "runtime PM trying to activate child device
+#        CIXH2031:0N but parent (CIXH2030:0N) is not active"; the 0003
+#        gate let the wrapper suspend before the DLKL-linked child probed)
+#   0008 clk: cix: sky1-audss: resolve ACPI parent clocks by connection ID
+#        ("clock x8k/x11k/sys/48m not ready (-2)": the DSDT CLKT names them
+#        audio_clk0/2/4/5; the composite parents were global-name-only, so
+#        every I2S mux was orphaned and MS-R1 playback failed with
+#        "cdns-i2s-mc ...: clk freq 0 is too low")
+#   0009 backlight: pwm: restore CIX Sky1 ACPI backlight support (v7.2.7
+#        0169924d1898, never on kernel-73rc6-port; "CIXH5040: deferred
+#        probe pending: supplier CIXH5041 not ready")
+#   0010 drm/cix: linlondp: don't warn about DPUs the firmware disabled
+#        (O6N DPU2/DPU3 have _STA 0; "no physical node (trimmed?)")
+#   0011 arm64: cpufeature: treat ID_AA64MMFR1_EL1.SpecSEI as non-strict
+#        (A720 0 vs A520 1: "SANITY CHECK: Unexpected variation" x4 and
+#        TAINT_CPU_OUT_OF_SPEC)
+# Config (config-7.3-rc6.defconfig "r285" block): CRYPTO_ZSTD=m (zram-
+# generator's modprobe crypto-zstd failed every boot) and I2C_CHARDEV=m
+# (KNOWN-ISSUES item 6, fwupd /dev/i2c-*). The PCIe default is unchanged:
+# installed and installer entries keep sky1_pcie_native=off pcie_pnp_en.
+# Not kernel bugs and handled in cix-installer: the ramoops "already
+# initialized" -22 (cmdline ramoops.* duplicates the ACPI RAOP node and
+# oversizes it into rdr_ap_adapter), rtl8125b-2.fw missing in the d-i
+# initrd, mali "Unbalanced pm_runtime_enable" (DKMS detach path).
 
 LICENSE = "GPL-2.0-only"
 LIC_FILES_CHKSUM = "file://COPYING;md5=6bc538ed5bd9a7fc9398086aedcd7e46"
@@ -321,6 +353,12 @@ SRC_URI = " \
     file://0003-PM-runtime-restore-the-CIX-Sky1-early-boot-runtime-P.patch \
     file://0004-PCI-cadence-sky1-cix-native-mode-review-fixes-clocks.patch \
     file://0005-regulator-restore-CIX-Sky1-ACPI-fixed-regulator-supp.patch \
+    file://0006-pinctrl-acpi-defer-consumers-until-the-named-pin-con.patch \
+    file://0007-usb-cdns3-cdnsp-sky1-hold-the-ACPI-wrapper-active-un.patch \
+    file://0008-clk-cix-sky1-audss-resolve-ACPI-parent-clocks-by-con.patch \
+    file://0009-backlight-pwm-restore-CIX-Sky1-ACPI-backlight-suppor.patch \
+    file://0010-drm-cix-linlondp-don-t-warn-about-DPUs-the-firmware-.patch \
+    file://0011-arm64-cpufeature-treat-ID_AA64MMFR1_EL1.SpecSEI-as-n.patch \
 "
 
 COMPATIBLE_MACHINE = "(cixmini)"
@@ -356,7 +394,33 @@ r285_patch_check() {
         bbfatal "r285 patch check: 0005 missing (fixed.c has no ACPI config path)"
     grep -q "config->enabled_at_boot = true" ${S}/drivers/regulator/fixed.c || \
         bbfatal "r285 patch check: 0005 incomplete (RTL8127 rail preserve missing)"
+    grep -q "driver_deferred_probe_check_state(dev)" ${S}/drivers/pinctrl/pinctrl-acpi.c || \
+        bbfatal "r285 patch check: 0006 missing (ACPI pinctrl lookup does not defer)"
+    grep -q "cdnsp_sky1_sync_state" ${S}/drivers/usb/cdns3/cdnsp-sky1.c || \
+        bbfatal "r285 patch check: 0007 missing (no cdnsp-sky1 sync_state)"
+    grep -q "sky1_audss_acpi_clk_names" ${S}/drivers/clk/cix/clk-sky1-audss.c || \
+        bbfatal "r285 patch check: 0008 missing (audss has no ACPI clock names)"
+    grep -q "sky1_audss_register_fixed_div" ${S}/drivers/clk/cix/clk-sky1-audss.c || \
+        bbfatal "r285 patch check: 0008 incomplete (audss ACPI parents not resolved by connection ID)"
+    grep -q '"CIXH5041"' ${S}/drivers/video/backlight/pwm_bl.c || \
+        bbfatal "r285 patch check: 0009 missing (pwm_bl has no CIXH5041 match)"
+    grep -q "disabled by firmware" ${S}/drivers/gpu/drm/cix/linlon-dp/linlondp_cluster.c || \
+        bbfatal "r285 patch check: 0010 missing (linlondp still warns on _STA 0 DPUs)"
+    grep -q "FTR_NONSTRICT, FTR_HIGHER_SAFE, ID_AA64MMFR1_EL1_SpecSEI_SHIFT" ${S}/arch/arm64/kernel/cpufeature.c || \
+        bbfatal "r285 patch check: 0011 missing (SpecSEI still strict)"
+    # Count what quilt actually applied, not what SRC_URI intends: the port
+    # patch plus 0001-0011, in order.
+    applied="${S}/.pc/applied-patches"
+    [ -f "$applied" ] || bbfatal "r285 patch check: $applied missing, cannot count applied patches"
+    n=$(grep -c . "$applied")
+    [ "$n" -eq "${R285_EXPECTED_PATCHES}" ] || \
+        bbfatal "r285 patch check: quilt applied $n patches, expected ${R285_EXPECTED_PATCHES}"
+    for i in 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011; do
+        grep -q "^$i-" "$applied" || bbfatal "r285 patch check: $i not in $applied"
+    done
+    bbnote "r285 patch check: $n patches applied (port + 0001-0011)"
 }
+R285_EXPECTED_PATCHES = "12"
 do_patch[postfuncs] += "r285_patch_check"
 
 DEPENDS += "pahole-native elfutils-native"
@@ -372,12 +436,20 @@ R283_REQUIRED_CONFIG = " \
     CONFIG_RTW89_8922DE=m \
     CONFIG_MODVERSIONS=y \
 "
+# r285: zram-generator modprobes crypto-zstd; fwupd wants /dev/i2c-*.
+R285_REQUIRED_CONFIG = " \
+    CONFIG_CRYPTO_ZSTD=m \
+    CONFIG_I2C_CHARDEV=m \
+"
 do_configure:append() {
     for want in ${R283_REQUIRED_CONFIG}; do
         grep -qxF "$want" ${B}/.config || bbfatal "r283 config check: $want missing from ${B}/.config"
     done
     grep -qx 'CONFIG_DRM_PANIC_SCREEN="kmsg"' ${B}/.config || \
         bbfatal "r283 config check: CONFIG_DRM_PANIC_SCREEN is not kmsg"
+    for want in ${R285_REQUIRED_CONFIG}; do
+        grep -qxF "$want" ${B}/.config || bbfatal "r285 config check: $want missing from ${B}/.config"
+    done
     if grep -q '^CONFIG_DMABUF_DEBUG=y' ${B}/.config; then
         bbfatal "r283 config check: CONFIG_DMABUF_DEBUG=y (amvx dma-buf import maps zero pages)"
     fi
