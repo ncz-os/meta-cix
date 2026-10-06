@@ -130,6 +130,22 @@
 # sky1_pcie_native=off is unchanged. r284_patch_check (a do_patch postfunc)
 # fails the build if any of the four is missing from the patched tree.
 
+# r285 (2026-10-06, PR r4): r284 plus 0005, the CIX 0028 ACPI regulator
+# support that the v7.3 port dropped (deferred in linux-cix 65fa8cfadb02).
+# Without it every ACPI PRP0001 "regulator-fixed" node fails with
+# "probe with driver reg-fixed-voltage failed with error -12": mainline
+# fixed.c reads config only from OF or platform data, and finds neither, so
+# config is NULL. The firmware DLKL tables link those rails to the RTL8127
+# root ports with device_link_add(..., 0), a managed link. So since r284
+# brought native PCIe back, sky1-pcie-cix.2 and .3 stayed at "supplier
+# PRP0001:11/10 not ready" and the O6N had no Ethernet. fw_devlink=permissive
+# does not release these links (they are explicit, not inferred). 0005 is
+# the r277 (v7.2.7) regulator code. fwnode_regulator.c, fixed.c, internal.h,
+# fwnode_regulator.h and driver.h are byte-identical to it, plus one brace
+# fix in regulator_init_coupling(). It changes the struct regulator_desc and
+# regulator_config layout, so do a full rebuild with DKMS overlays rebuilt.
+# r285_patch_check fails the build if 0005 is missing.
+
 LICENSE = "GPL-2.0-only"
 LIC_FILES_CHKSUM = "file://COPYING;md5=6bc538ed5bd9a7fc9398086aedcd7e46"
 
@@ -139,7 +155,7 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/linux-cix-sky1-ncz-7.3-rc6:"
 LINUX_VERSION = "7.3-rc6"
 KERNEL_LOCALVERSION = "-sky1-ncz"
 PV = "7.3-rc6+ncz"
-PR = "r3"
+PR = "r4"
 KBRANCH = "kernel-73rc6-port"
 KERNEL_PACKAGE_NAME = "kernel-${PN}"
 
@@ -304,6 +320,7 @@ SRC_URI = " \
     file://0002-PCI-cadence-sky1-cix-restore-ACPI-native-mode-on-v7.3.patch \
     file://0003-PM-runtime-restore-the-CIX-Sky1-early-boot-runtime-P.patch \
     file://0004-PCI-cadence-sky1-cix-native-mode-review-fixes-clocks.patch \
+    file://0005-regulator-restore-CIX-Sky1-ACPI-fixed-regulator-supp.patch \
 "
 
 COMPATIBLE_MACHINE = "(cixmini)"
@@ -330,6 +347,17 @@ r284_patch_check() {
         bbfatal "r284 patch check: 0004 missing (ACPI pdev not renamed sky1-pcie-cix)"
 }
 do_patch[postfuncs] += "r284_patch_check"
+
+# Fail the build if 0005 (ACPI fixed-regulator support) is absent.
+r285_patch_check() {
+    [ -f ${S}/drivers/regulator/fwnode_regulator.c ] || \
+        bbfatal "r285 patch check: 0005 missing (no drivers/regulator/fwnode_regulator.c)"
+    grep -q fwnode_get_fixed_voltage_config ${S}/drivers/regulator/fixed.c || \
+        bbfatal "r285 patch check: 0005 missing (fixed.c has no ACPI config path)"
+    grep -q "config->enabled_at_boot = true" ${S}/drivers/regulator/fixed.c || \
+        bbfatal "r285 patch check: 0005 incomplete (RTL8127 rail preserve missing)"
+}
+do_patch[postfuncs] += "r285_patch_check"
 
 DEPENDS += "pahole-native elfutils-native"
 EXTRA_OEMAKE += "INSTALL_MOD_STRIP=1"
