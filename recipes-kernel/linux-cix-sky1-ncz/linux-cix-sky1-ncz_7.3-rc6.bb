@@ -93,6 +93,25 @@
 # CONFIG_MODVERSIONS=y, boot on O6N only/human-supervised) all still apply
 # before this track is ever considered for shipping.
 
+# r283 (2026-10-06, PR r2): config-only respin of r282. Same SRCREV_kernel and
+# the same sky1-ncz-v7.3-rc6-port.patch (sha256 9be6f5f3...c6594); the only
+# changes are in config-7.3-rc6.defconfig (see its "r283" block):
+#   DMABUF_DEBUG=n, DEBUG_INFO_BTF=y (+ DWARF, BTF_MODULES),
+#   DRM_PANIC_SCREEN="kmsg", SQUASHFS_ZSTD=y, MT7921U/MT7925U/RTW89_8922DE=m.
+# BTF build requirements:
+#   - pahole >= 1.22 (Kconfig PAHOLE_VERSION >= 122). Provided by meta-oe
+#     pahole-native (1.31 in wrynose). Kconfig probes pahole at configure time,
+#     so without it olddefconfig silently drops DEBUG_INFO_BTF; the
+#     do_configure:append check below turns that into a hard failure.
+#   - resolve_btfids is a host tool built from the kernel tree; it needs host
+#     libelf (elfutils-native).
+#   - Out-of-tree modules built against a full build tree (vmlinux present)
+#     need pahole on PATH too; DKMS builds against the headers package (no
+#     vmlinux) print "Skipping BTF generation" and still succeed.
+# DEBUG_INFO also puts DWARF into every module, so modules_install strips
+# with --strip-debug (INSTALL_MOD_STRIP=1). That keeps .BTF and the GNU
+# build-id note and leaves the shipped modules the same size class as r282.
+
 LICENSE = "GPL-2.0-only"
 LIC_FILES_CHKSUM = "file://COPYING;md5=6bc538ed5bd9a7fc9398086aedcd7e46"
 
@@ -102,7 +121,7 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/linux-cix-sky1-ncz-7.3-rc6:"
 LINUX_VERSION = "7.3-rc6"
 KERNEL_LOCALVERSION = "-sky1-ncz"
 PV = "7.3-rc6+ncz"
-PR = "r1"
+PR = "r2"
 KBRANCH = "kernel-73rc6-port"
 KERNEL_PACKAGE_NAME = "kernel-${PN}"
 
@@ -274,6 +293,33 @@ do_configure:prepend() {
     cd ${S}
     cp ${UNPACKDIR}/config-7.3-rc6.defconfig ${B}/.config
     oe_runmake ARCH=arm64 O=${B} olddefconfig
+}
+
+DEPENDS += "pahole-native elfutils-native"
+EXTRA_OEMAKE += "INSTALL_MOD_STRIP=1"
+
+# Fail the build if olddefconfig dropped or changed any r283 config fix.
+R283_REQUIRED_CONFIG = " \
+    CONFIG_DEBUG_INFO_BTF=y \
+    CONFIG_DEBUG_INFO_BTF_MODULES=y \
+    CONFIG_SQUASHFS_ZSTD=y \
+    CONFIG_MT7921U=m \
+    CONFIG_MT7925U=m \
+    CONFIG_RTW89_8922DE=m \
+    CONFIG_MODVERSIONS=y \
+"
+do_configure:append() {
+    for want in ${R283_REQUIRED_CONFIG}; do
+        grep -qxF "$want" ${B}/.config || bbfatal "r283 config check: $want missing from ${B}/.config"
+    done
+    grep -qx 'CONFIG_DRM_PANIC_SCREEN="kmsg"' ${B}/.config || \
+        bbfatal "r283 config check: CONFIG_DRM_PANIC_SCREEN is not kmsg"
+    if grep -q '^CONFIG_DMABUF_DEBUG=y' ${B}/.config; then
+        bbfatal "r283 config check: CONFIG_DMABUF_DEBUG=y (amvx dma-buf import maps zero pages)"
+    fi
+    if grep -q '^CONFIG_MODULE_COMPRESS=y' ${B}/.config; then
+        bbfatal "r283 config check: CONFIG_MODULE_COMPRESS=y (modules must ship as plain .ko)"
+    fi
 }
 
 KERNEL_IMAGETYPE = "Image"
