@@ -409,6 +409,8 @@ r285_patch_check() {
         bbfatal "r285 patch check: 0010 missing (linlondp still warns on _STA 0 DPUs)"
     grep -q "FTR_NONSTRICT, FTR_HIGHER_SAFE, ID_AA64MMFR1_EL1_SpecSEI_SHIFT" ${S}/arch/arm64/kernel/cpufeature.c || \
         bbfatal "r285 patch check: 0011 missing (SpecSEI still strict)"
+    grep -q "trilin_dp_aux_engine_reinit" ${S}/drivers/gpu/drm/cix/dptx/trilin_dptx.c || \
+        bbfatal "r5 patch check: 0012 missing (DP AUX-wedge recovery not applied)"
     # Count what quilt actually applied, not what SRC_URI intends: the port
     # patch plus 0001-0011, in order.
     applied="${S}/.pc/applied-patches"
@@ -419,9 +421,9 @@ r285_patch_check() {
     for i in 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011; do
         grep -q "^$i-" "$applied" || bbfatal "r285 patch check: $i not in $applied"
     done
-    bbnote "r285 patch check: $n patches applied (port + 0001-0011)"
+    bbnote "r285 patch check: $n patches applied (port + 0001-0011 + r5 aux recovery)"
 }
-R285_EXPECTED_PATCHES = "12"
+R285_EXPECTED_PATCHES = "13"
 do_patch[postfuncs] += "r285_patch_check"
 
 DEPENDS += "pahole-native elfutils-native"
