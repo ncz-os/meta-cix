@@ -187,7 +187,7 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/linux-cix-sky1-ncz-7.3-rc6:"
 LINUX_VERSION = "7.3-rc6"
 KERNEL_LOCALVERSION = "-sky1-ncz"
 PV = "7.3-rc6+ncz"
-PR = "r4"
+PR = "r5"
 KBRANCH = "kernel-73rc6-port"
 KERNEL_PACKAGE_NAME = "kernel-${PN}"
 
@@ -359,6 +359,7 @@ SRC_URI = " \
     file://0009-backlight-pwm-restore-CIX-Sky1-ACPI-backlight-suppor.patch \
     file://0010-drm-cix-linlondp-don-t-warn-about-DPUs-the-firmware-.patch \
     file://0011-arm64-cpufeature-treat-ID_AA64MMFR1_EL1.SpecSEI-as-n.patch \
+    file://sky1-ncz-dptx-aux-wedge-recovery.patch \
 "
 
 COMPATIBLE_MACHINE = "(cixmini)"
