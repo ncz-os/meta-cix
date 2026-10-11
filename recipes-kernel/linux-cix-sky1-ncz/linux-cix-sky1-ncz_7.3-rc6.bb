@@ -187,7 +187,7 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/linux-cix-sky1-ncz-7.3-rc6:"
 LINUX_VERSION = "7.3-rc6"
 KERNEL_LOCALVERSION = "-sky1-ncz"
 PV = "7.3-rc6+ncz"
-PR = "r5"
+PR = "r6"
 KBRANCH = "kernel-73rc6-port"
 KERNEL_PACKAGE_NAME = "kernel-${PN}"
 
@@ -360,8 +360,30 @@ SRC_URI = " \
     file://0010-drm-cix-linlondp-don-t-warn-about-DPUs-the-firmware-.patch \
     file://0011-arm64-cpufeature-treat-ID_AA64MMFR1_EL1.SpecSEI-as-n.patch \
     file://sky1-ncz-dptx-aux-wedge-recovery.patch \
+    file://0013-ASoC-cix-i2s_mc-mask-all-interrupts-CIX.patch \
+    file://0014-usb-usb-cdns3-Fix-RCU-stall-in-cdnsp_thread_irq_hand.patch \
+    file://0015-usb-cdnsp-skip-DISABLE_SLOT-command-if-slot-is-alrea.patch \
+    file://0016-dptx-cix-Add-support-for-out-of-bound-hotplug-events.patch \
+    file://0017-DRM-cix-dptx-physical-dp-status-and-MST-HPD-handling.patch \
+    file://0018-restrict-psr-caps-update-conditions-CIX.patch \
+    file://0019-DRM-cix-dptx-notify-GOP-plug-after-HDCP-init-CIX.patch \
+    file://0020-usb-cdns3-Fix-NULL-pointer-dereference-when-comp_des.patch \
+    file://0021-typec-rts5453-expose-portX-orientation-node-CIX.patch \
 "
 
+# ---------------------------------------------------------------------------
+# r287 (2026-10-11): CIX vendor-tree q3 sync + the RT-group-scheduling root fix.
+# - config-7.3-rc6.defconfig: CONFIG_RT_GROUP_SCHED is now "not set" (see the
+#   r287 block in that file). This is the kernel-level fix for the O6N audio
+#   cutouts (rtkit/pipewire could never get SCHED_RR under cgroup v2).
+# - patches 0013-0021 port the relevant cixtech/cix_opensource__linux
+#   cix_k6.6.89_2026q2..cix_k6.6.89_2026q3 commits that were still missing
+#   from the 7.3-rc6 series: ASoC i2s_mc global-interrupt mask; cdns3/cdnsp
+#   RCU-stall + DISABLE_SLOT + comp_desc-NULL fixes; dptx out-of-bound HPD,
+#   physical dp->status/MST HPD, eDP-only PSR caps and GOP-plug-after-HDCP;
+#   typec rts5453 portX/orientation. Each carries its upstream commit id.
+# - the DP-AUX-wedge recovery (r286/0012) is unchanged and still applied.
+# ---------------------------------------------------------------------------
 COMPATIBLE_MACHINE = "(cixmini)"
 S = "${UNPACKDIR}/${BB_GIT_DEFAULT_DESTSUFFIX}"
 
@@ -411,19 +433,40 @@ r285_patch_check() {
         bbfatal "r285 patch check: 0011 missing (SpecSEI still strict)"
     grep -q "trilin_dp_aux_engine_reinit" ${S}/drivers/gpu/drm/cix/dptx/trilin_dptx.c || \
         bbfatal "r5 patch check: 0012 missing (DP AUX-wedge recovery not applied)"
+    # --- r287 CIX vendor q3 sync (patches 0013-0021) ------------------------
+    grep -q "it cannot be cleared" ${S}/sound/soc/cix/cdns_i2s_mc.c || \
+        bbfatal "r287 patch check: 0013 missing (i2s_mc global interrupt still enabled)"
+    grep -q "max_events" ${S}/drivers/usb/cdns3/cdnsp-ring.c || \
+        bbfatal "r287 patch check: 0014 missing (cdnsp-ring event loop unbounded)"
+    grep -q "Slot already disabled, skip" ${S}/drivers/usb/cdns3/cdnsp-gadget.c || \
+        bbfatal "r287 patch check: 0015 missing (cdnsp disable_slot does not skip)"
+    grep -q "trilin_dp_oob_hotplug_event" ${S}/drivers/gpu/drm/cix/dptx/trilin_drm.c || \
+        bbfatal "r287 patch check: 0016 missing (no dptx out-of-bound hotplug)"
+    grep -q "reflects physical sink presence" ${S}/drivers/gpu/drm/cix/dptx/trilin_dptx.c || \
+        bbfatal "r287 patch check: 0017 missing (dptx physical dp->status not applied)"
+    grep -q "dpcd\[DP_EDP_CONFIGURATION_CAP\]" ${S}/drivers/gpu/drm/cix/dptx/trilin_dptx.c || \
+        bbfatal "r287 patch check: 0018 missing (psr caps not gated on eDP)"
+    grep -q "GOP boot: plug notify after HDCP init" ${S}/drivers/gpu/drm/cix/dptx/trilin_dptx.c || \
+        bbfatal "r287 patch check: 0019 missing (dptx GOP plug notify not applied)"
+    grep -q "pep->endpoint.comp_desc" ${S}/drivers/usb/cdns3/cdnsp-mem.c || \
+        bbfatal "r287 patch check: 0020 missing (cdnsp comp_desc NULL guards)"
+    grep -q "orientation_aware" ${S}/drivers/usb/typec/rts5453.c || \
+        bbfatal "r287 patch check: 0021 missing (rts5453 orientation node not wired)"
     # Count what quilt actually applied, not what SRC_URI intends: the port
-    # patch plus 0001-0011, in order.
+    # patch plus 0001-0011, plus aux (0012) and the r287 CIX set (0013-0021).
     applied="${S}/.pc/applied-patches"
     [ -f "$applied" ] || bbfatal "r285 patch check: $applied missing, cannot count applied patches"
     n=$(grep -c . "$applied")
-    [ "$n" -eq "${R285_EXPECTED_PATCHES}" ] || \
-        bbfatal "r285 patch check: quilt applied $n patches, expected ${R285_EXPECTED_PATCHES}"
-    for i in 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011; do
-        grep -q "^$i-" "$applied" || bbfatal "r285 patch check: $i not in $applied"
+    [ "$n" -eq "${R287_EXPECTED_PATCHES}" ] || \
+        bbfatal "r287 patch check: quilt applied $n patches, expected ${R287_EXPECTED_PATCHES}"
+    for i in 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011 0013 0014 0015 0016 0017 0018 0019 0020 0021; do
+        grep -q "^$i-" "$applied" || bbfatal "r287 patch check: $i not in $applied"
     done
-    bbnote "r285 patch check: $n patches applied (port + 0001-0011 + r5 aux recovery)"
+    grep -q "^sky1-ncz-dptx-aux-wedge-recovery.patch" "$applied" || \
+        bbfatal "r287 patch check: 0012 (aux recovery) not in $applied"
+    bbnote "r287 patch check: $n patches applied (port + 0001-0011 + r5 aux + r287 CIX q3 set)"
 }
-R285_EXPECTED_PATCHES = "13"
+R287_EXPECTED_PATCHES = "22"
 do_patch[postfuncs] += "r285_patch_check"
 
 DEPENDS += "pahole-native elfutils-native"
@@ -444,6 +487,16 @@ R285_REQUIRED_CONFIG = " \
     CONFIG_CRYPTO_ZSTD=m \
     CONFIG_I2C_CHARDEV=m \
 "
+# r287: the Sky1 kernel must NOT be built with RT_GROUP_SCHED=y. Together with
+# the cgroup v2 cpu controller (enabled by systemd on every boot) it makes
+# every non-root cgroup carry zero RT runtime, so sched_setscheduler(SCHED_RR)
+# returns EPERM even for CAP_SYS_NICE -- rtkit/pipewire silently stay
+# SCHED_OTHER and O6N audio XRUNs. With RT_GROUP_SCHED=n the RT bandwidth
+# accounting is global (root cgroup) and RTKit grants succeed; FAIR_GROUP_SCHED
+# / CFS_BANDWIDTH / cpu.weight/cpu.max are untouched.
+R287_REQUIRED_NOT_CONFIG = " \
+    CONFIG_RT_GROUP_SCHED \
+"
 do_configure:append() {
     for want in ${R283_REQUIRED_CONFIG}; do
         grep -qxF "$want" ${B}/.config || bbfatal "r283 config check: $want missing from ${B}/.config"
@@ -452,6 +505,11 @@ do_configure:append() {
         bbfatal "r283 config check: CONFIG_DRM_PANIC_SCREEN is not kmsg"
     for want in ${R285_REQUIRED_CONFIG}; do
         grep -qxF "$want" ${B}/.config || bbfatal "r285 config check: $want missing from ${B}/.config"
+    done
+    for bad in ${R287_REQUIRED_NOT_CONFIG}; do
+        if grep -qxF "${bad}=y" ${B}/.config; then
+            bbfatal "r287 config check: ${bad}=y (rtkit cannot grant RT under cgroup v2)"
+        fi
     done
     if grep -q '^CONFIG_DMABUF_DEBUG=y' ${B}/.config; then
         bbfatal "r283 config check: CONFIG_DMABUF_DEBUG=y (amvx dma-buf import maps zero pages)"

@@ -23,7 +23,7 @@ CONFIG_CGROUP_FAVOR_DYNMODS=y
 CONFIG_MEMCG=y
 CONFIG_BLK_CGROUP=y
 CONFIG_CFS_BANDWIDTH=y
-CONFIG_RT_GROUP_SCHED=y
+# CONFIG_RT_GROUP_SCHED is not set
 CONFIG_UCLAMP_TASK_GROUP=y
 CONFIG_CGROUP_PIDS=y
 CONFIG_CGROUP_RDMA=y
@@ -1308,3 +1308,27 @@ CONFIG_CRYPTO_ZSTD=m
 # KNOWN-ISSUES item 6: fwupd's i2c plugins and i2c-tools need i2c-dev; the
 # image masks fwupd's request as a workaround until the kernel provides it.
 CONFIG_I2C_CHARDEV=m
+
+
+# ---------------------------------------------------------------------------
+# r287 (2026-10-11): kernel-level root fix for the O6N audio cutouts.
+
+# --- RT group scheduling OFF (rtkit/pipewire SCHED_RR) ------------------------
+# The board kernel shipped CONFIG_RT_GROUP_SCHED=y. With the cgroup v2 "cpu"
+# controller enabled (systemd puts every service in a cgroup that enables it),
+# RT_GROUP_SCHED allocates each child cgroup a cpu.rt_runtime_us of 0, and
+# cgroup v2 exposes no per-cgroup rt_runtime knob -- so EVERY sched_setscheduler
+# (SCHED_FIFO/SCHED_RR) from inside a non-root cgroup fails with EPERM
+# regardless of CAP_SYS_NICE. rtkit-daemon therefore cannot grant PipeWire's
+# data-loop SCHED_RR and (silently, via a DBus success it cannot actually back)
+# leaves it SCHED_OTHER, which is one confirmed cause of the O6N HDMI/DP audio
+# cutouts and growing pw-top ERR counts.
+# With RT_GROUP_SCHED=n, RT bandwidth is accounted once, globally (root cgroup),
+# and RTKit's SCHED_RR grant succeeds. Fair-group scheduling is unaffected:
+# CONFIG_FAIR_GROUP_SCHED / CONFIG_CFS_BANDWIDTH / cpu.weight / cpu.max and
+# CONFIG_SCHED_AUTOGROUP all stay enabled, so systemd cgroup CPU control is
+# preserved. The userspace `DisableControllers=cpu` drop-in (post-install
+# 43-hw-quirks) is retained as belt-and-braces for boards that run an older
+# kernel without this change.
+# (The symbol is set to n above, next to CONFIG_CFS_BANDWIDTH.)
+
