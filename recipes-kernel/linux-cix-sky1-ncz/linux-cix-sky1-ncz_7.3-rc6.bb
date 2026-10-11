@@ -448,7 +448,7 @@ r285_patch_check() {
         bbfatal "r287 patch check: 0018 missing (psr caps not gated on eDP)"
     grep -q "GOP boot: plug notify after HDCP init" ${S}/drivers/gpu/drm/cix/dptx/trilin_dptx.c || \
         bbfatal "r287 patch check: 0019 missing (dptx GOP plug notify not applied)"
-    grep -q "pep->endpoint.comp_desc" ${S}/drivers/usb/cdns3/cdnsp-mem.c || \
+    grep -q "!pep->endpoint.comp_desc" ${S}/drivers/usb/cdns3/cdnsp-mem.c || \
         bbfatal "r287 patch check: 0020 missing (cdnsp comp_desc NULL guards)"
     grep -q "orientation_aware" ${S}/drivers/usb/typec/rts5453.c || \
         bbfatal "r287 patch check: 0021 missing (rts5453 orientation node not wired)"
