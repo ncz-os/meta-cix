@@ -1,6 +1,6 @@
-From a1af4aa7747479cc10d2991631c829e6a9290966 Mon Sep 17 00:00:00 2001
+From b9cddff4d5b8ca9eff26126ebff5c2931c52a1fe Mon Sep 17 00:00:00 2001
 From: Jason Perlow <jperlow@gmail.com>
-Date: Sun, 11 Oct 2026 15:16:42 -0400
+Date: Sun, 11 Oct 2026 17:32:27 -0400
 Subject: [PATCH 8/9] usb: cdns3: Fix NULL pointer dereference when comp_desc
  is NULL - CIX
 

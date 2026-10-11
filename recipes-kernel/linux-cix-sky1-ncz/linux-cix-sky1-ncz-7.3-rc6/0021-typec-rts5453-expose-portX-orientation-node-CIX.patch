@@ -1,11 +1,12 @@
-From 4bb754de446158e065dcdf7f7d075f470e9c7136 Mon Sep 17 00:00:00 2001
+From cc713737d5a5b68b40e6feb0b8106341a05ff97d Mon Sep 17 00:00:00 2001
 From: Jason Perlow <jperlow@gmail.com>
-Date: Sun, 11 Oct 2026 15:16:43 -0400
+Date: Sun, 11 Oct 2026 17:32:28 -0400
 Subject: [PATCH 9/9] typec: rts5453: expose portX/orientation node - CIX
 
-Set port->orientation from the decoded CC orientation and mark the port
-orientation_aware so /sys/class/typec/portX/orientation exists for DP
-Alt-Mode / SBU consumers (PROJ009-142).
+Set the port orientation via typec_set_orientation() from the decoded CC
+orientation and mark the port orientation_aware so
+/sys/class/typec/portX/orientation exists for DP Alt-Mode / SBU consumers
+(PROJ009-142).
 
 Upstream: cixtech/cix_opensource__linux 3ce9f347bf20 (cix_k6.6.89_2026q3)
 ---
@@ -13,7 +14,7 @@ Upstream: cixtech/cix_opensource__linux 3ce9f347bf20 (cix_k6.6.89_2026q3)
  1 file changed, 9 insertions(+)
 
 diff --git a/drivers/usb/typec/rts5453.c b/drivers/usb/typec/rts5453.c
-index 5521a00d41d40..69b2816ec1e33 100644
+index 5521a00d41d40..06267e4ec8481 100644
 --- a/drivers/usb/typec/rts5453.c
 +++ b/drivers/usb/typec/rts5453.c
 @@ -271,6 +271,11 @@ static void rts5453_update_port(struct rts5453 *rts)
@@ -24,7 +25,7 @@ index 5521a00d41d40..69b2816ec1e33 100644
 +	/* Publish the cable orientation so /sys/class/typec/portX/orientation
 +	 * reflects the real plug orientation (DP Alt-Mode / SBU mux consumers
 +	 * read it). Requires cap->orientation_aware to be set. */
-+	rts->port->orientation = orientation;
++	typec_set_orientation(rts->port, orientation);
  }
  
  static int rts5453_event_handler(struct rts5453 *rts, bool clear_irq)

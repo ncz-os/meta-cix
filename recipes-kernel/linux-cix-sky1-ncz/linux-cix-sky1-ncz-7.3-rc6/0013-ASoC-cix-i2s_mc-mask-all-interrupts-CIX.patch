@@ -1,6 +1,6 @@
-From f6d369e6f1b3f0130089ee367a5efe4c278eb9f9 Mon Sep 17 00:00:00 2001
+From 9de5b6300251a2ca7342f16193cfb32688cc131a Mon Sep 17 00:00:00 2001
 From: Jason Perlow <jperlow@gmail.com>
-Date: Sun, 11 Oct 2026 15:15:38 -0400
+Date: Sun, 11 Oct 2026 17:32:20 -0400
 Subject: [PATCH 1/9] ASoC: cix: i2s_mc: mask all interrupts - CIX
 
 ---

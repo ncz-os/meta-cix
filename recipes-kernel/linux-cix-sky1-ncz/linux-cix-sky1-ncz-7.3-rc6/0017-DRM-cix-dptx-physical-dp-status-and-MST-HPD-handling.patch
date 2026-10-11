@@ -1,6 +1,6 @@
-From b7e61bcb51ca60d0e225f29333aafb7a42a2e536 Mon Sep 17 00:00:00 2001
+From 4e5d6c9e238625ffd7fd2ce9bf78ac255cb2ff11 Mon Sep 17 00:00:00 2001
 From: Jason Perlow <jperlow@gmail.com>
-Date: Sun, 11 Oct 2026 15:15:40 -0400
+Date: Sun, 11 Oct 2026 17:32:21 -0400
 Subject: [PATCH 5/9] DRM/cix: dptx: physical dp->status and MST HPD handling -
  CIX
 

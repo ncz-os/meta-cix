@@ -1,6 +1,6 @@
-From b2f7c2a2ce7647f345600f7b3632c644a3c27eff Mon Sep 17 00:00:00 2001
+From 6eb0371bef369d8afa34c91d8e15ee9cf52c4e3b Mon Sep 17 00:00:00 2001
 From: Jason Perlow <jperlow@gmail.com>
-Date: Sun, 11 Oct 2026 15:15:40 -0400
+Date: Sun, 11 Oct 2026 17:32:21 -0400
 Subject: [PATCH 6/9] restrict psr caps update conditions - CIX
 
 ---

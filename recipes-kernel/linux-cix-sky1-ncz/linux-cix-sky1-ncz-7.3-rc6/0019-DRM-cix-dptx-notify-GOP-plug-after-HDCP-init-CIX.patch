@@ -1,6 +1,6 @@
-From 1bb2d029238247f00e8f1560cf850fdb9035623b Mon Sep 17 00:00:00 2001
+From 1f3b427ff1f29647d6da5180dfc17061e63f5098 Mon Sep 17 00:00:00 2001
 From: Jason Perlow <jperlow@gmail.com>
-Date: Sun, 11 Oct 2026 15:15:40 -0400
+Date: Sun, 11 Oct 2026 17:32:22 -0400
 Subject: [PATCH 7/9] DRM/cix: dptx: notify GOP plug after HDCP init - CIX
 
 ---

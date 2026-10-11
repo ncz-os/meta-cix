@@ -1,6 +1,6 @@
-From 418ef8e3e16e8f829811a87f4baef45f5c825ea2 Mon Sep 17 00:00:00 2001
+From 6af1719155bbba6f734ecb604416989e1c748cd4 Mon Sep 17 00:00:00 2001
 From: Jason Perlow <jperlow@gmail.com>
-Date: Sun, 11 Oct 2026 15:15:39 -0400
+Date: Sun, 11 Oct 2026 17:32:21 -0400
 Subject: [PATCH 4/9] dptx: cix: Add support for out-of-bound hotplug events -
  CIX
 

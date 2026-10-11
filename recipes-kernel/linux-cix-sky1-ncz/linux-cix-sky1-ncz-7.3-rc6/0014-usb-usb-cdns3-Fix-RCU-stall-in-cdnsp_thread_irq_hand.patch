@@ -1,6 +1,6 @@
-From 0303aa1a3da0c4b46649c7e4c5971f3b788ae3f2 Mon Sep 17 00:00:00 2001
+From 4c01349b078ceeab069cd56a39700861d0654c85 Mon Sep 17 00:00:00 2001
 From: Jason Perlow <jperlow@gmail.com>
-Date: Sun, 11 Oct 2026 15:15:39 -0400
+Date: Sun, 11 Oct 2026 17:32:20 -0400
 Subject: [PATCH 2/9] usb : usb: cdns3: Fix RCU stall in
  cdnsp_thread_irq_handler - CIX
 

@@ -1,18 +1,18 @@
-From b1c9d534216fe293126ca2946d647ad03384f42e Mon Sep 17 00:00:00 2001
+From 5871a2616085acded39a126f4f8058da99234e71 Mon Sep 17 00:00:00 2001
 From: Jason Perlow <jperlow@gmail.com>
-Date: Sun, 11 Oct 2026 15:15:39 -0400
+Date: Sun, 11 Oct 2026 17:32:20 -0400
 Subject: [PATCH 3/9] usb: cdnsp: skip DISABLE_SLOT command if slot is already
  - CIX
 
 ---
- drivers/usb/cdns3/cdnsp-gadget.c | 31 ++++++++++++++++++++++++++++++-
- 1 file changed, 30 insertions(+), 1 deletion(-)
+ drivers/usb/cdns3/cdnsp-gadget.c | 30 +++++++++++++++++++++++++++++-
+ 1 file changed, 29 insertions(+), 1 deletion(-)
 
 diff --git a/drivers/usb/cdns3/cdnsp-gadget.c b/drivers/usb/cdns3/cdnsp-gadget.c
-index e84405352caab..8f0c209fac80a 100644
+index e84405352caab..c86f117532371 100644
 --- a/drivers/usb/cdns3/cdnsp-gadget.c
 +++ b/drivers/usb/cdns3/cdnsp-gadget.c
-@@ -549,6 +549,27 @@ static void cdnsp_invalidate_ep_events(struct cdnsp_device *pdev,
+@@ -549,6 +549,26 @@ static void cdnsp_invalidate_ep_events(struct cdnsp_device *pdev,
  	}
  }
  
@@ -32,7 +32,6 @@ index e84405352caab..8f0c209fac80a 100644
 +	case TRB_FORCE_HEADER:	return "FORCE_HEADER";
 +	case TRB_CMD_NOOP:	return "NOOP";
 +	case TRB_HALT_ENDPOINT:	return "HALT_EP";
-+	case TRB_FLUSH_ENDPOINT: return "FLUSH_EP";
 +	default:		return "UNKNOWN";
 +	}
 +}
@@ -40,7 +39,7 @@ index e84405352caab..8f0c209fac80a 100644
  int cdnsp_wait_for_cmd_compl(struct cdnsp_device *pdev)
  {
  	struct cdnsp_segment *event_deq_seg;
-@@ -570,7 +591,10 @@ int cdnsp_wait_for_cmd_compl(struct cdnsp_device *pdev)
+@@ -570,7 +590,10 @@ int cdnsp_wait_for_cmd_compl(struct cdnsp_device *pdev)
  					!CMD_RING_BUSY(val), 1,
  					CDNSP_CMD_TIMEOUT);
  	if (ret) {
@@ -52,7 +51,7 @@ index e84405352caab..8f0c209fac80a 100644
  		trace_cdnsp_cmd_timeout(pdev->cmd_ring, &cmd_trb->generic);
  		pdev->cdnsp_state = CDNSP_STATE_DYING;
  		return -ETIMEDOUT;
-@@ -850,6 +874,11 @@ int cdnsp_disable_slot(struct cdnsp_device *pdev)
+@@ -850,6 +873,11 @@ int cdnsp_disable_slot(struct cdnsp_device *pdev)
  {
  	int ret;
  
