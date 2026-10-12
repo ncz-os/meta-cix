@@ -255,12 +255,12 @@ SRCREV_kernel = "ec8bf8280261294a9b9b4520414b42704c7f9f6b"
 # ARGONAS ssh:// remote directly). The canonical pushed copies are
 # gitlab.com/ncz-os/linux-cix.git + the ARGONAS bare mirror at
 # /mnt/datapool/git/ncz-os/linux-cix.git, branch kernel-73rc7-port-20261011.
-# Local mirror at ~/yocto-work/kernel-mirrors/linux-cix-kernel-73rc7-port-20261011.git
+# Local mirror at ~/yocto-work/kernel-mirrors/linux-cix-kernel-73rc7-port.git
 # was created from ~/linux-port-v7.3-rc7 on 2026-09-27 by cherry-picking all
 # 207 kernel-73rc4-port commits onto peeled v7.3-rc7^{} = 72d3fcf802c4.
 # Rebuild with `git clone --bare ~/linux-port-v7.3-rc7` if it goes stale again.
 SRC_URI = " \
-    git:///workdir/kernel-mirrors/linux-cix-kernel-73rc7-port-20261011.git;protocol=file;branch=${KBRANCH};name=kernel \
+    git:///workdir/kernel-mirrors/linux-cix-kernel-73rc7-port.git;protocol=file;branch=${KBRANCH};name=kernel \
     file://config-7.3-rc7.defconfig \
     file://sky1-ncz-v7.3-rc7-port.patch \
 "
