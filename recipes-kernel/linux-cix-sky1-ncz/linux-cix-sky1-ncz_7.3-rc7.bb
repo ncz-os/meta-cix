@@ -12,21 +12,23 @@
 # Linux kernel for Cix Sky1 / CP8180 -- NCZ 7.3 track (NEXT/test, not yet
 # the shipping/stable release -- that is 7.2.x, see linux-cix-sky1-ncz_7.2.bb).
 #
-# Base: torvalds mainline v7.3-rc6, peeled commit a90ee4305c4a5df72c11b31dacfdc76e00fcf78a.
-# (v7.3-rc6 is NOT in linux-stable -- rc tags live in Linus's tree. Stable's
-# refs/tags/v7.3-rc6^{} is absent; torvalds's refs/tags/v7.3-rc6^{} resolves
-# to 72d3fcf802c4.)
+# Base: torvalds mainline v7.3-rc7, peeled commit ec8bf8280261294a9b9b4520414b42704c7f9f6b.
+# (v7.3-rc7 is NOT in linux-stable -- rc tags live in Linus's tree. Stable's
+# refs/tags/v7.3-rc7^{} is absent; torvalds's refs/tags/v7.3-rc7^{} resolves
+# to 24a19b953e2a3d0ea5a8c4951a0ab8f32720c907.)
 #
-# The recipe pins the peeled upstream v7.3-rc6 commit in SRCREV_kernel and
-# applies the complete, rebased CIX port as sky1-ncz-v7.3-rc6-port.patch.
-# The equivalent 207-commit review branch is kernel-73rc6-port.
+# The recipe pins the peeled upstream v7.3-rc7 commit in SRCREV_kernel and
+# applies the complete, rebased CIX port as sky1-ncz-v7.3-rc7-port.patch
+# (which also carries the DP AUX-wedge recovery v2).
+# The equivalent 207-commit review branch is kernel-73rc7-port-20261011.
 #
 # Patch decisions vs. the dry-run 205-patch replay (operator accepted the
 # orchestrator advisory 2026-09-29; each item re-verified against source, see
 # cix-installer docs/reports/2026-09-29-sky1-rc5-advisory-implementation.md).
-# None of the raw 7.2 patches below is in SRC_URI: this recipe applies ONE
-# consolidated diff of the kernel-73rc6-port branch, so "drop" means "the raw
-# patch is not re-applied", NOT "its content is absent from the tree".
+# The raw 7.2 patches below are superseded by the consolidated diff of the
+# kernel-73rc7-port-20261011 branch; this recipe ALSO applies the numbered
+# review/q3 patches 0001-0011 and 0013-0021 (see SRC_URI). "drop" below means
+# "the raw patch is not re-applied", NOT "its content is absent from the tree".
 #   0027 (Cadence Sky1 vendor PCIe) and 0029 (Cadence ACPI clock release):
 #        mainline b5672f9463f2 / ea34744eb094 / d70e964dc099 add the HPA flag
 #        and LTSSM debugfs only; they do NOT cover 0027. The port carried
@@ -347,11 +349,11 @@ SRCREV_kernel = "ec8bf8280261294a9b9b4520414b42704c7f9f6b"
 # (the ncz-yocto-y6 podman sandbox has no SSH keys, so it cannot reach the
 # ARGONAS ssh:// remote directly). The canonical pushed copies are
 # gitlab.com/ncz-os/linux-cix.git + the ARGONAS bare mirror at
-# /mnt/datapool/git/ncz-os/linux-cix.git, branch kernel-73rc6-port.
-# Local mirror at ~/yocto-work/kernel-mirrors/linux-cix-kernel-73rc6-port.git
-# was created from ~/linux-port-v7.3-rc6 on 2026-09-27 by cherry-picking all
-# 207 kernel-73rc4-port commits onto peeled v7.3-rc6^{} = 72d3fcf802c4.
-# Rebuild with `git clone --bare ~/linux-port-v7.3-rc6` if it goes stale again.
+# /mnt/datapool/git/ncz-os/linux-cix.git, branch kernel-73rc7-port-20261011.
+# Local mirror at ~/yocto-work/kernel-mirrors/linux-cix-kernel-73rc7-port.git
+# was created from ~/linux-port-v7.3-rc7 by cherry-picking all 207
+# kernel-73rc6-port commits onto peeled v7.3-rc7^{} = 24a19b953e2a.
+# Rebuild with `git clone --bare ~/linux-port-v7.3-rc7` if it goes stale again.
 SRC_URI = " \
     git:///workdir/kernel-mirrors/linux-cix-kernel-73rc7-port.git;protocol=file;branch=${KBRANCH};name=kernel \
     file://config-7.3-rc7.defconfig \
@@ -439,7 +441,7 @@ r285_patch_check() {
     grep -q "FTR_NONSTRICT, FTR_HIGHER_SAFE, ID_AA64MMFR1_EL1_SpecSEI_SHIFT" ${S}/arch/arm64/kernel/cpufeature.c || \
         bbfatal "r285 patch check: 0011 missing (SpecSEI still strict)"
     grep -q "trilin_dp_aux_engine_reinit" ${S}/drivers/gpu/drm/cix/dptx/trilin_dptx.c || \
-        bbfatal "r5 patch check: 0012 missing (DP AUX-wedge recovery not applied)"
+        bbfatal "r289 patch check: 0012 content missing (DP AUX-wedge recovery not in the port patch)"
     # --- r287 CIX vendor q3 sync (patches 0013-0021) ------------------------
     grep -q "it cannot be cleared" ${S}/sound/soc/cix/cdns_i2s_mc.c || \
         bbfatal "r289 patch check: 0013 missing (i2s_mc global interrupt still enabled)"
