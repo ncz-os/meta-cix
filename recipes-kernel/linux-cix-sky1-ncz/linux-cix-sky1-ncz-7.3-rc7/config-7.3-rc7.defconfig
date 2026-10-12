@@ -23,7 +23,7 @@ CONFIG_CGROUP_FAVOR_DYNMODS=y
 CONFIG_MEMCG=y
 CONFIG_BLK_CGROUP=y
 CONFIG_CFS_BANDWIDTH=y
-CONFIG_RT_GROUP_SCHED=y
+# CONFIG_RT_GROUP_SCHED is not set
 CONFIG_UCLAMP_TASK_GROUP=y
 CONFIG_CGROUP_PIDS=y
 CONFIG_CGROUP_RDMA=y
@@ -546,7 +546,7 @@ CONFIG_V4L_TEST_DRIVERS=y
 # installed system before assuming this change alone closed the gap.
 CONFIG_DRM=y
 CONFIG_DRM_PANIC=y
-CONFIG_DRM_PANIC_SCREEN="qr_code"
+CONFIG_DRM_PANIC_SCREEN="kmsg"
 CONFIG_DRM_LOAD_EDID_FIRMWARE=y
 CONFIG_DRM_DISPLAY_DP_AUX_CHARDEV=y
 CONFIG_DRM_CIX=m
@@ -1246,4 +1246,89 @@ CONFIG_BT_HIDP=m
 # --- Autofs ----------------------------------------------------------------
 # systemd logs "Failed to find module 'autofs4'" on every boot of both boards.
 CONFIG_AUTOFS_FS=m
+
+
+# ---------------------------------------------------------------------------
+# r283 (2026-10-06): config fixes from the 7.3 audit. Same source revision as
+# r282 (v7.3-rc6 a90ee4305c4a + sky1-ncz-v7.3-rc6-port.patch); only the
+# symbols below (and DRM_PANIC_SCREEN above) change.
+
+# --- dma-buf debug wrapper OFF ---------------------------------------------
+# 7.3 commit 143755bdabaa makes DMABUF_DEBUG default y on DEBUG_KERNEL kernels
+# (r273/r279/r282 all had it; r280 7.2.9 did not). With it on,
+# dma_buf_map_attachment() hands importers a copied sg_table whose entries
+# have length 0 and no page (dma_buf_wrap_sg_table). The amvx VPU imports
+# V4L2 DMABUF buffers through vb2_dma_sg and counts pages with
+# for_each_sg_page() (mvx_mmu.c get_sg_table_npages/append_sg_table), which
+# walks sg->length, so every imported buffer maps zero pages. The CIX VA-API
+# driver queues CAPTURE buffers as V4L2_MEMORY_DMABUF, i.e. hardware video
+# decode imports through exactly this path.
+# CONFIG_DMABUF_DEBUG is not set
+
+# --- BTF type information ---------------------------------------------------
+# Needed for CO-RE eBPF, sched_ext, HID-BPF and bpftool/bpftrace. Requires
+# pahole >= 1.22 at configure AND build time (PAHOLE_VERSION is probed by
+# Kconfig; without pahole olddefconfig silently drops DEBUG_INFO_BTF). The
+# recipe adds pahole-native and asserts the symbol in the built .config.
+CONFIG_DEBUG_INFO_DWARF_TOOLCHAIN_DEFAULT=y
+CONFIG_DEBUG_INFO_BTF=y
+CONFIG_DEBUG_INFO_BTF_MODULES=y
+
+# --- panic screen -------------------------------------------------------------
+# DRM_PANIC_SCREEN is set to "kmsg" above (was "qr_code"). The QR encoder
+# (DRM_PANIC_SCREEN_QR_CODE) depends on RUST, which is off, so r282 logged
+# "Unsupported value for CONFIG_DRM_PANIC_SCREEN (qr_code), falling back to
+# user" on every boot. DRM_EFIDRM/FB_EFI are deliberately unchanged: linlondp
+# never removes conflicting firmware framebuffers, so a built-in efidrm would
+# stay registered as an extra DRM card next to linlondp.
+
+# --- squashfs zstd ------------------------------------------------------------
+# Our image layers (build-squashfs-layers.sh) are "mksquashfs -comp zstd".
+# The installer unpacks them in userspace, but a booted system could not
+# mount its own layer files (or a zstd OTA repo squashfs) without this.
+CONFIG_SQUASHFS_ZSTD=y
+
+# --- Wi-Fi: USB MediaTek and Realtek 8922DE -----------------------------------
+CONFIG_MT7921U=m
+CONFIG_MT7925U=m
+CONFIG_RTW89_8922DE=m
+
+
+# ---------------------------------------------------------------------------
+# r285 (2026-10-06): config fixes from the O6N r284 dmesg review.
+
+# --- zstd crypto API ----------------------------------------------------------
+# zram-generator runs `modprobe crypto-zstd` before it configures zram and
+# logs "modprobe \"crypto-zstd\" failed" on every boot (twice: initrd and
+# root). zram itself uses ZRAM_BACKEND_ZSTD, not the crypto API, so this is a
+# module that only has to exist for that probe and for other crypto users.
+CONFIG_CRYPTO_ZSTD=m
+
+# --- /dev/i2c-* -----------------------------------------------------------------
+# KNOWN-ISSUES item 6: fwupd's i2c plugins and i2c-tools need i2c-dev; the
+# image masks fwupd's request as a workaround until the kernel provides it.
+CONFIG_I2C_CHARDEV=m
+
+
+# ---------------------------------------------------------------------------
+# r287 (2026-10-11): kernel-level root fix for the O6N audio cutouts.
+
+# --- RT group scheduling OFF (rtkit/pipewire SCHED_RR) ------------------------
+# The board kernel shipped CONFIG_RT_GROUP_SCHED=y. With the cgroup v2 "cpu"
+# controller enabled (systemd puts every service in a cgroup that enables it),
+# RT_GROUP_SCHED allocates each child cgroup a cpu.rt_runtime_us of 0, and
+# cgroup v2 exposes no per-cgroup rt_runtime knob -- so EVERY sched_setscheduler
+# (SCHED_FIFO/SCHED_RR) from inside a non-root cgroup fails with EPERM
+# regardless of CAP_SYS_NICE. rtkit-daemon therefore cannot grant PipeWire's
+# data-loop SCHED_RR and (silently, via a DBus success it cannot actually back)
+# leaves it SCHED_OTHER, which is one confirmed cause of the O6N HDMI/DP audio
+# cutouts and growing pw-top ERR counts.
+# With RT_GROUP_SCHED=n, RT bandwidth is accounted once, globally (root cgroup),
+# and RTKit's SCHED_RR grant succeeds. Fair-group scheduling is unaffected:
+# CONFIG_FAIR_GROUP_SCHED / CONFIG_CFS_BANDWIDTH / cpu.weight / cpu.max and
+# CONFIG_SCHED_AUTOGROUP all stay enabled, so systemd cgroup CPU control is
+# preserved. The userspace `DisableControllers=cpu` drop-in (post-install
+# 43-hw-quirks) is retained as belt-and-braces for boards that run an older
+# kernel without this change.
+# (The symbol is set to n above, next to CONFIG_CFS_BANDWIDTH.)
 

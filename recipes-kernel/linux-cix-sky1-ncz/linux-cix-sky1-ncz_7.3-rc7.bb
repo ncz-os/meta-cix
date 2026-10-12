@@ -1,23 +1,31 @@
 # SPDX-FileCopyrightText: Copyright (c) 2026 Jason Perlow
 # SPDX-License-Identifier: Apache-2.0
 #
+# r289 (2026-10-12): the COMPLETE Sky1 rc7 kernel. This recipe is the r287
+# recipe (fully guarded; RT_GROUP_SCHED=n; 0001-0011 + 0013-0021 CIX q3 sync)
+# ported to the 7.3-rc7 line. It supersedes r288 (fix/sky1-rc7-20261011),
+# which was branched from the pre-r284 lineage and applied ONLY the
+# consolidated port patch (missing 0001-0011, 0013-0021 and every r283/r285
+# defconfig fix; RT_GROUP_SCHED=y). The DP AUX-wedge recovery v2 is folded
+# INTO sky1-ncz-v7.3-rc7-port.patch (it is NOT a separate patch here).
+#
 # Linux kernel for Cix Sky1 / CP8180 -- NCZ 7.3 track (NEXT/test, not yet
 # the shipping/stable release -- that is 7.2.x, see linux-cix-sky1-ncz_7.2.bb).
 #
-# Base: torvalds mainline v7.3-rc7, peeled commit ec8bf8280261294a9b9b4520414b42704c7f9f6b.
-# (v7.3-rc7 is NOT in linux-stable -- rc tags live in Linus's tree. Stable's
-# refs/tags/v7.3-rc7^{} is absent; torvalds's refs/tags/v7.3-rc7^{} resolves
+# Base: torvalds mainline v7.3-rc6, peeled commit a90ee4305c4a5df72c11b31dacfdc76e00fcf78a.
+# (v7.3-rc6 is NOT in linux-stable -- rc tags live in Linus's tree. Stable's
+# refs/tags/v7.3-rc6^{} is absent; torvalds's refs/tags/v7.3-rc6^{} resolves
 # to 72d3fcf802c4.)
 #
-# The recipe pins the peeled upstream v7.3-rc7 commit in SRCREV_kernel and
-# applies the complete, rebased CIX port as sky1-ncz-v7.3-rc7-port.patch.
-# The equivalent 207-commit review branch is kernel-73rc7-port-20261011.
+# The recipe pins the peeled upstream v7.3-rc6 commit in SRCREV_kernel and
+# applies the complete, rebased CIX port as sky1-ncz-v7.3-rc6-port.patch.
+# The equivalent 207-commit review branch is kernel-73rc6-port.
 #
 # Patch decisions vs. the dry-run 205-patch replay (operator accepted the
 # orchestrator advisory 2026-09-29; each item re-verified against source, see
 # cix-installer docs/reports/2026-09-29-sky1-rc5-advisory-implementation.md).
 # None of the raw 7.2 patches below is in SRC_URI: this recipe applies ONE
-# consolidated diff of the kernel-73rc7-port-20261011 branch, so "drop" means "the raw
+# consolidated diff of the kernel-73rc6-port branch, so "drop" means "the raw
 # patch is not re-applied", NOT "its content is absent from the tree".
 #   0027 (Cadence Sky1 vendor PCIe) and 0029 (Cadence ACPI clock release):
 #        mainline b5672f9463f2 / ea34744eb094 / d70e964dc099 add the HPA flag
@@ -36,7 +44,7 @@
 #        3d3bd1842516 is reverted and the only caller (0008 trilin_dp_probe)
 #        is re-aimed at the counted of_drm_find_panel() by
 #        0001-drm-cix-trilin-dp-drop-fwnode_drm_find_panel-use-cou.patch below;
-#        drm_panel.[ch] are byte-identical to v7.3-rc7 again.
+#        drm_panel.[ch] are byte-identical to v7.3-rc6 again.
 #   0074 (6.6->7.2 API drift): not re-applied. H1-H14 are present in the port
 #        tree; H15-H17 are superseded by the 0172-shaped cix_scmi_em.[ch] from
 #        9fa83019a3ea (not by 0066/0068/0069, whose 0069 copy still called
@@ -93,6 +101,91 @@
 # CONFIG_MODVERSIONS=y, boot on O6N only/human-supervised) all still apply
 # before this track is ever considered for shipping.
 
+# r283 (2026-10-06, PR r2): config-only respin of r282. Same SRCREV_kernel and
+# the same sky1-ncz-v7.3-rc6-port.patch (sha256 9be6f5f3...c6594); the only
+# changes are in config-7.3-rc6.defconfig (see its "r283" block):
+#   DMABUF_DEBUG=n, DEBUG_INFO_BTF=y (+ DWARF, BTF_MODULES),
+#   DRM_PANIC_SCREEN="kmsg", SQUASHFS_ZSTD=y, MT7921U/MT7925U/RTW89_8922DE=m.
+# BTF build requirements:
+#   - pahole >= 1.22 (Kconfig PAHOLE_VERSION >= 122). Provided by meta-oe
+#     pahole-native (1.31 in wrynose). Kconfig probes pahole at configure time,
+#     so without it olddefconfig silently drops DEBUG_INFO_BTF; the
+#     do_configure:append check below turns that into a hard failure.
+#   - resolve_btfids is a host tool built from the kernel tree; it needs host
+#     libelf (elfutils-native).
+#   - Out-of-tree modules built against a full build tree (vmlinux present)
+#     need pahole on PATH too; DKMS builds against the headers package (no
+#     vmlinux) print "Skipping BTF generation" and still succeed.
+# DEBUG_INFO also puts DWARF into every module, so modules_install strips
+# with --strip-debug (INSTALL_MOD_STRIP=1). That keeps .BTF and the GNU
+# build-id note and leaves the shipped modules the same size class as r282.
+
+# r284 (2026-10-06, PR r3): r283 plus the four r279 patches that r282/r283
+# lost. The rc6 recipe (d8e7da34) was branched from d3176d61 before the r279
+# commits 3014e78f / c6203a8b, so its decision comment above described
+# 0001-0004 while SRC_URI applied none of them. They are restored verbatim
+# (diff bodies byte-identical to r279; headers keep the original author and
+# Signed-off-by) and apply in order on v7.3-rc6 + sky1-ncz-v7.3-rc6-port.patch
+# with no offset or fuzz:
+#   0001 trilin-dp: counted OF panel lookup, fwnode_drm_find_panel() dropped
+#   0002 sky1-cix: ACPI native PCIe on v7.3, vendor driver "sky1-pcie-cix"
+#        (fixes "Driver 'sky1-pcie' is already registered" at boot)
+#   0003 PM: runtime: CIX early-boot runtime-PM gate ("cix_pm: system ready")
+#   0004 sky1-cix: native-mode review fixes (clocks, AER, pdev name, ECAM)
+# The source delta against the base tag is content-identical to r279's
+# (v7.3-rc5 + rc5 port + 0001-0004). The defconfig is unchanged from r283;
+# the r279 defconfig carried nothing r283 lacks. Default cmdline
+# sky1_pcie_native=off is unchanged. r284_patch_check (a do_patch postfunc)
+# fails the build if any of the four is missing from the patched tree.
+
+# r285 (2026-10-06, PR r4): r284 plus 0005, the CIX 0028 ACPI regulator
+# support that the v7.3 port dropped (deferred in linux-cix 65fa8cfadb02).
+# Without it every ACPI PRP0001 "regulator-fixed" node fails with
+# "probe with driver reg-fixed-voltage failed with error -12": mainline
+# fixed.c reads config only from OF or platform data, and finds neither, so
+# config is NULL. The firmware DLKL tables link those rails to the RTL8127
+# root ports with device_link_add(..., 0), a managed link. So since r284
+# brought native PCIe back, sky1-pcie-cix.2 and .3 stayed at "supplier
+# PRP0001:11/10 not ready" and the O6N had no Ethernet. fw_devlink=permissive
+# does not release these links (they are explicit, not inferred). 0005 is
+# the r277 (v7.2.7) regulator code. fwnode_regulator.c, fixed.c, internal.h,
+# fwnode_regulator.h and driver.h are byte-identical to it, plus one brace
+# fix in regulator_init_coupling(). It changes the struct regulator_desc and
+# regulator_config layout, so do a full rebuild with DKMS overlays rebuilt.
+# r285_patch_check fails the build if 0005 is missing.
+#
+# r285 also carries the dmesg-noise fixes from the O6N r284 validation
+# (2026-10-06). Each is a cause fix, not a loglevel change:
+#   0006 pinctrl: acpi: defer consumers until the named pin controller
+#        registers ("sbsa-uart ARMH0011:02: pctldev with ACPI name
+#        '\_SB.MUX0' not found": COM2 enumerates before MUX0 and ran
+#        without its pin state; the deferral leaked maps, now freed)
+#   0007 usb: cdns3: cdnsp-sky1: hold the ACPI wrapper active until its
+#        children bind (10x "runtime PM trying to activate child device
+#        CIXH2031:0N but parent (CIXH2030:0N) is not active"; the 0003
+#        gate let the wrapper suspend before the DLKL-linked child probed)
+#   0008 clk: cix: sky1-audss: resolve ACPI parent clocks by connection ID
+#        ("clock x8k/x11k/sys/48m not ready (-2)": the DSDT CLKT names them
+#        audio_clk0/2/4/5; the composite parents were global-name-only, so
+#        every I2S mux was orphaned and MS-R1 playback failed with
+#        "cdns-i2s-mc ...: clk freq 0 is too low")
+#   0009 backlight: pwm: restore CIX Sky1 ACPI backlight support (v7.2.7
+#        0169924d1898, never on kernel-73rc6-port; "CIXH5040: deferred
+#        probe pending: supplier CIXH5041 not ready")
+#   0010 drm/cix: linlondp: don't warn about DPUs the firmware disabled
+#        (O6N DPU2/DPU3 have _STA 0; "no physical node (trimmed?)")
+#   0011 arm64: cpufeature: treat ID_AA64MMFR1_EL1.SpecSEI as non-strict
+#        (A720 0 vs A520 1: "SANITY CHECK: Unexpected variation" x4 and
+#        TAINT_CPU_OUT_OF_SPEC)
+# Config (config-7.3-rc6.defconfig "r285" block): CRYPTO_ZSTD=m (zram-
+# generator's modprobe crypto-zstd failed every boot) and I2C_CHARDEV=m
+# (KNOWN-ISSUES item 6, fwupd /dev/i2c-*). The PCIe default is unchanged:
+# installed and installer entries keep sky1_pcie_native=off pcie_pnp_en.
+# Not kernel bugs and handled in cix-installer: the ramoops "already
+# initialized" -22 (cmdline ramoops.* duplicates the ACPI RAOP node and
+# oversizes it into rdr_ap_adapter), rtl8125b-2.fw missing in the d-i
+# initrd, mali "Unbalanced pm_runtime_enable" (DKMS detach path).
+
 LICENSE = "GPL-2.0-only"
 LIC_FILES_CHKSUM = "file://COPYING;md5=6bc538ed5bd9a7fc9398086aedcd7e46"
 
@@ -102,7 +195,7 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/linux-cix-sky1-ncz-7.3-rc7:"
 LINUX_VERSION = "7.3-rc7"
 KERNEL_LOCALVERSION = "-sky1-ncz"
 PV = "7.3-rc7+ncz"
-PR = "r1"
+PR = "r2"
 KBRANCH = "kernel-73rc7-port-20261011"
 KERNEL_PACKAGE_NAME = "kernel-${PN}"
 
@@ -254,17 +347,50 @@ SRCREV_kernel = "ec8bf8280261294a9b9b4520414b42704c7f9f6b"
 # (the ncz-yocto-y6 podman sandbox has no SSH keys, so it cannot reach the
 # ARGONAS ssh:// remote directly). The canonical pushed copies are
 # gitlab.com/ncz-os/linux-cix.git + the ARGONAS bare mirror at
-# /mnt/datapool/git/ncz-os/linux-cix.git, branch kernel-73rc7-port-20261011.
-# Local mirror at ~/yocto-work/kernel-mirrors/linux-cix-kernel-73rc7-port.git
-# was created from ~/linux-port-v7.3-rc7 on 2026-09-27 by cherry-picking all
-# 207 kernel-73rc4-port commits onto peeled v7.3-rc7^{} = 72d3fcf802c4.
-# Rebuild with `git clone --bare ~/linux-port-v7.3-rc7` if it goes stale again.
+# /mnt/datapool/git/ncz-os/linux-cix.git, branch kernel-73rc6-port.
+# Local mirror at ~/yocto-work/kernel-mirrors/linux-cix-kernel-73rc6-port.git
+# was created from ~/linux-port-v7.3-rc6 on 2026-09-27 by cherry-picking all
+# 207 kernel-73rc4-port commits onto peeled v7.3-rc6^{} = 72d3fcf802c4.
+# Rebuild with `git clone --bare ~/linux-port-v7.3-rc6` if it goes stale again.
 SRC_URI = " \
     git:///workdir/kernel-mirrors/linux-cix-kernel-73rc7-port.git;protocol=file;branch=${KBRANCH};name=kernel \
     file://config-7.3-rc7.defconfig \
     file://sky1-ncz-v7.3-rc7-port.patch \
+    file://0001-drm-cix-trilin-dp-drop-fwnode_drm_find_panel-use-cou.patch \
+    file://0002-PCI-cadence-sky1-cix-restore-ACPI-native-mode-on-v7.3.patch \
+    file://0003-PM-runtime-restore-the-CIX-Sky1-early-boot-runtime-P.patch \
+    file://0004-PCI-cadence-sky1-cix-native-mode-review-fixes-clocks.patch \
+    file://0005-regulator-restore-CIX-Sky1-ACPI-fixed-regulator-supp.patch \
+    file://0006-pinctrl-acpi-defer-consumers-until-the-named-pin-con.patch \
+    file://0007-usb-cdns3-cdnsp-sky1-hold-the-ACPI-wrapper-active-un.patch \
+    file://0008-clk-cix-sky1-audss-resolve-ACPI-parent-clocks-by-con.patch \
+    file://0009-backlight-pwm-restore-CIX-Sky1-ACPI-backlight-suppor.patch \
+    file://0010-drm-cix-linlondp-don-t-warn-about-DPUs-the-firmware-.patch \
+    file://0011-arm64-cpufeature-treat-ID_AA64MMFR1_EL1.SpecSEI-as-n.patch \
+    file://0013-ASoC-cix-i2s_mc-mask-all-interrupts-CIX.patch \
+    file://0014-usb-usb-cdns3-Fix-RCU-stall-in-cdnsp_thread_irq_hand.patch \
+    file://0015-usb-cdnsp-skip-DISABLE_SLOT-command-if-slot-is-alrea.patch \
+    file://0016-dptx-cix-Add-support-for-out-of-bound-hotplug-events.patch \
+    file://0017-DRM-cix-dptx-physical-dp-status-and-MST-HPD-handling.patch \
+    file://0018-restrict-psr-caps-update-conditions-CIX.patch \
+    file://0019-DRM-cix-dptx-notify-GOP-plug-after-HDCP-init-CIX.patch \
+    file://0020-usb-cdns3-Fix-NULL-pointer-dereference-when-comp_des.patch \
+    file://0021-typec-rts5453-expose-portX-orientation-node-CIX.patch \
 "
 
+# ---------------------------------------------------------------------------
+# r289 (2026-10-12): CIX vendor-tree q3 sync + the RT-group-scheduling root fix.
+# - config-7.3-rc6.defconfig: CONFIG_RT_GROUP_SCHED is now "not set" (see the
+#   r287 block in that file). This is the kernel-level fix for the O6N audio
+#   cutouts (rtkit/pipewire could never get SCHED_RR under cgroup v2).
+# - patches 0013-0021 port the relevant cixtech/cix_opensource__linux
+#   cix_k6.6.89_2026q2..cix_k6.6.89_2026q3 commits that were still missing
+#   from the 7.3-rc6 series: ASoC i2s_mc global-interrupt mask; cdns3/cdnsp
+#   RCU-stall + DISABLE_SLOT + comp_desc-NULL fixes; dptx out-of-bound HPD,
+#   physical dp->status/MST HPD, eDP-only PSR caps and GOP-plug-after-HDCP;
+#   typec rts5453 portX/orientation. Each carries its upstream commit id.
+# - the DP-AUX-wedge recovery (r286/0012/v2) is folded into sky1-ncz-v7.3-rc7-port.patch.
+# ---------------------------------------------------------------------------
 COMPATIBLE_MACHINE = "(cixmini)"
 S = "${UNPACKDIR}/${BB_GIT_DEFAULT_DESTSUFFIX}"
 
@@ -274,6 +400,128 @@ do_configure:prepend() {
     cd ${S}
     cp ${UNPACKDIR}/config-7.3-rc7.defconfig ${B}/.config
     oe_runmake ARCH=arm64 O=${B} olddefconfig
+}
+
+# Fail the build if any r284 patch (0001-0004) is absent from the patched tree.
+r284_patch_check() {
+    if grep -q fwnode_drm_find_panel ${S}/include/drm/drm_panel.h; then
+        bbfatal "r284 patch check: 0001 missing (fwnode_drm_find_panel still exported)"
+    fi
+    grep -q '"sky1-pcie-cix"' ${S}/drivers/pci/controller/cadence/pci-sky1-cix.c || \
+        bbfatal "r284 patch check: 0002 missing (vendor driver not renamed sky1-pcie-cix)"
+    grep -q 'cix_pm: system ready' ${S}/drivers/base/power/runtime.c || \
+        bbfatal "r284 patch check: 0003 missing (no CIX early-boot runtime-PM gate)"
+    grep -q 'pdevinfo.name = "sky1-pcie-cix"' ${S}/drivers/pci/controller/cadence/pci-sky1-acpi.c || \
+        bbfatal "r284 patch check: 0004 missing (ACPI pdev not renamed sky1-pcie-cix)"
+}
+do_patch[postfuncs] += "r284_patch_check"
+
+# Fail the build if 0005 (ACPI fixed-regulator support) is absent.
+r285_patch_check() {
+    [ -f ${S}/drivers/regulator/fwnode_regulator.c ] || \
+        bbfatal "r285 patch check: 0005 missing (no drivers/regulator/fwnode_regulator.c)"
+    grep -q fwnode_get_fixed_voltage_config ${S}/drivers/regulator/fixed.c || \
+        bbfatal "r285 patch check: 0005 missing (fixed.c has no ACPI config path)"
+    grep -q "config->enabled_at_boot = true" ${S}/drivers/regulator/fixed.c || \
+        bbfatal "r285 patch check: 0005 incomplete (RTL8127 rail preserve missing)"
+    grep -q "driver_deferred_probe_check_state(dev)" ${S}/drivers/pinctrl/pinctrl-acpi.c || \
+        bbfatal "r285 patch check: 0006 missing (ACPI pinctrl lookup does not defer)"
+    grep -q "cdnsp_sky1_sync_state" ${S}/drivers/usb/cdns3/cdnsp-sky1.c || \
+        bbfatal "r285 patch check: 0007 missing (no cdnsp-sky1 sync_state)"
+    grep -q "sky1_audss_acpi_clk_names" ${S}/drivers/clk/cix/clk-sky1-audss.c || \
+        bbfatal "r285 patch check: 0008 missing (audss has no ACPI clock names)"
+    grep -q "sky1_audss_register_fixed_div" ${S}/drivers/clk/cix/clk-sky1-audss.c || \
+        bbfatal "r285 patch check: 0008 incomplete (audss ACPI parents not resolved by connection ID)"
+    grep -q '"CIXH5041"' ${S}/drivers/video/backlight/pwm_bl.c || \
+        bbfatal "r285 patch check: 0009 missing (pwm_bl has no CIXH5041 match)"
+    grep -q "disabled by firmware" ${S}/drivers/gpu/drm/cix/linlon-dp/linlondp_cluster.c || \
+        bbfatal "r285 patch check: 0010 missing (linlondp still warns on _STA 0 DPUs)"
+    grep -q "FTR_NONSTRICT, FTR_HIGHER_SAFE, ID_AA64MMFR1_EL1_SpecSEI_SHIFT" ${S}/arch/arm64/kernel/cpufeature.c || \
+        bbfatal "r285 patch check: 0011 missing (SpecSEI still strict)"
+    grep -q "trilin_dp_aux_engine_reinit" ${S}/drivers/gpu/drm/cix/dptx/trilin_dptx.c || \
+        bbfatal "r5 patch check: 0012 missing (DP AUX-wedge recovery not applied)"
+    # --- r287 CIX vendor q3 sync (patches 0013-0021) ------------------------
+    grep -q "it cannot be cleared" ${S}/sound/soc/cix/cdns_i2s_mc.c || \
+        bbfatal "r289 patch check: 0013 missing (i2s_mc global interrupt still enabled)"
+    grep -q "max_events" ${S}/drivers/usb/cdns3/cdnsp-ring.c || \
+        bbfatal "r289 patch check: 0014 missing (cdnsp-ring event loop unbounded)"
+    grep -q "Slot already disabled, skip" ${S}/drivers/usb/cdns3/cdnsp-gadget.c || \
+        bbfatal "r289 patch check: 0015 missing (cdnsp disable_slot does not skip)"
+    grep -q "trilin_dp_oob_hotplug_event" ${S}/drivers/gpu/drm/cix/dptx/trilin_drm.c || \
+        bbfatal "r289 patch check: 0016 missing (no dptx out-of-bound hotplug)"
+    grep -q "reflects physical sink presence" ${S}/drivers/gpu/drm/cix/dptx/trilin_dptx.c || \
+        bbfatal "r289 patch check: 0017 missing (dptx physical dp->status not applied)"
+    grep -q "dpcd\[DP_EDP_CONFIGURATION_CAP\]" ${S}/drivers/gpu/drm/cix/dptx/trilin_dptx.c || \
+        bbfatal "r289 patch check: 0018 missing (psr caps not gated on eDP)"
+    grep -q "GOP boot: plug notify after HDCP init" ${S}/drivers/gpu/drm/cix/dptx/trilin_dptx.c || \
+        bbfatal "r289 patch check: 0019 missing (dptx GOP plug notify not applied)"
+    grep -q "!pep->endpoint.comp_desc" ${S}/drivers/usb/cdns3/cdnsp-mem.c || \
+        bbfatal "r289 patch check: 0020 missing (cdnsp comp_desc NULL guards)"
+    grep -q "orientation_aware" ${S}/drivers/usb/typec/rts5453.c || \
+        bbfatal "r289 patch check: 0021 missing (rts5453 orientation node not wired)"
+    # Count what quilt actually applied, not what SRC_URI intends: the port
+    # patch plus 0001-0011, plus aux (0012) and the r287 CIX set (0013-0021).
+    applied="${S}/.pc/applied-patches"
+    [ -f "$applied" ] || bbfatal "r285 patch check: $applied missing, cannot count applied patches"
+    n=$(grep -c . "$applied")
+    [ "$n" -eq "${R289_EXPECTED_PATCHES}" ] || \
+        bbfatal "r289 patch check: quilt applied $n patches, expected ${R289_EXPECTED_PATCHES}"
+    for i in 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011 0013 0014 0015 0016 0017 0018 0019 0020 0021; do
+        grep -q "^$i-" "$applied" || bbfatal "r289 patch check: $i not in $applied"
+    done
+    bbnote "r289 patch check: $n patches applied (rc7 port incl. r5 aux + 0001-0011 + r289 CIX q3 set)"
+}
+R289_EXPECTED_PATCHES = "21"
+do_patch[postfuncs] += "r285_patch_check"
+
+DEPENDS += "pahole-native elfutils-native"
+EXTRA_OEMAKE += "INSTALL_MOD_STRIP=1"
+
+# Fail the build if olddefconfig dropped or changed any r283 config fix.
+R283_REQUIRED_CONFIG = " \
+    CONFIG_DEBUG_INFO_BTF=y \
+    CONFIG_DEBUG_INFO_BTF_MODULES=y \
+    CONFIG_SQUASHFS_ZSTD=y \
+    CONFIG_MT7921U=m \
+    CONFIG_MT7925U=m \
+    CONFIG_RTW89_8922DE=m \
+    CONFIG_MODVERSIONS=y \
+"
+# r285: zram-generator modprobes crypto-zstd; fwupd wants /dev/i2c-*.
+R285_REQUIRED_CONFIG = " \
+    CONFIG_CRYPTO_ZSTD=m \
+    CONFIG_I2C_CHARDEV=m \
+"
+# r287: the Sky1 kernel must NOT be built with RT_GROUP_SCHED=y. Together with
+# the cgroup v2 cpu controller (enabled by systemd on every boot) it makes
+# every non-root cgroup carry zero RT runtime, so sched_setscheduler(SCHED_RR)
+# returns EPERM even for CAP_SYS_NICE -- rtkit/pipewire silently stay
+# SCHED_OTHER and O6N audio XRUNs. With RT_GROUP_SCHED=n the RT bandwidth
+# accounting is global (root cgroup) and RTKit grants succeed; FAIR_GROUP_SCHED
+# / CFS_BANDWIDTH / cpu.weight/cpu.max are untouched.
+R289_REQUIRED_NOT_CONFIG = " \
+    CONFIG_RT_GROUP_SCHED \
+"
+do_configure:append() {
+    for want in ${R283_REQUIRED_CONFIG}; do
+        grep -qxF "$want" ${B}/.config || bbfatal "r283 config check: $want missing from ${B}/.config"
+    done
+    grep -qx 'CONFIG_DRM_PANIC_SCREEN="kmsg"' ${B}/.config || \
+        bbfatal "r283 config check: CONFIG_DRM_PANIC_SCREEN is not kmsg"
+    for want in ${R285_REQUIRED_CONFIG}; do
+        grep -qxF "$want" ${B}/.config || bbfatal "r285 config check: $want missing from ${B}/.config"
+    done
+    for bad in ${R289_REQUIRED_NOT_CONFIG}; do
+        if grep -qxF "${bad}=y" ${B}/.config; then
+            bbfatal "r289 config check: ${bad}=y (rtkit cannot grant RT under cgroup v2)"
+        fi
+    done
+    if grep -q '^CONFIG_DMABUF_DEBUG=y' ${B}/.config; then
+        bbfatal "r283 config check: CONFIG_DMABUF_DEBUG=y (amvx dma-buf import maps zero pages)"
+    fi
+    if grep -q '^CONFIG_MODULE_COMPRESS=y' ${B}/.config; then
+        bbfatal "r283 config check: CONFIG_MODULE_COMPRESS=y (modules must ship as plain .ko)"
+    fi
 }
 
 KERNEL_IMAGETYPE = "Image"
