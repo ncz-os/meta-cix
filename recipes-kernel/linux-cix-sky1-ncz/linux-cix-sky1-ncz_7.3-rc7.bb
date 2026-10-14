@@ -7,6 +7,13 @@
 #   driver (amvx) ships only as the cix-vpu-driver DKMS module; an in-tree
 #   amvx.ko with the same name could load in its place without any error
 #   (see config-7.3-rc7.defconfig);
+# - 0023-0026 display fixes (linlondp): clocks running across the firmware
+#   takeover with every firmware pipeline stopped, flip-timeout recovery that
+#   leaves the other output alone and remodesets the affected CRTC, engine
+#   clock set while the unit is inactive and raised for a second output,
+#   overlay planes spread over all outputs above the DRM plane limit;
+# - 0027-0028 PCIe: no 0000:0000 root port ID, and the vendor driver reports
+#   the CIX root port ID 1f6c:0001 in native mode (as mainline pci-sky1 does).
 # The same series is the commit history of linux-cix branch
 # kernel-dev/sky1-7.3.0-rc7-r290 on top of release/sky1-7.3.0-rc7-r289.
 #
@@ -388,6 +395,12 @@ SRC_URI = " \
     file://0020-usb-cdns3-Fix-NULL-pointer-dereference-when-comp_des.patch \
     file://0021-typec-rts5453-expose-portX-orientation-node-CIX.patch \
     file://0022-media-cix-build-the-in-tree-VPU-driver-only-with-CON.patch \
+    file://0023-drm-cix-linlondp-keep-clocks-running-across-the-firm.patch \
+    file://0024-drm-cix-linlondp-recover-from-a-flip-timeout-without.patch \
+    file://0025-drm-cix-linlondp-set-the-engine-clock-while-the-disp.patch \
+    file://0026-drm-cix-linlondp-spread-overlay-planes-when-layers-e.patch \
+    file://0027-PCI-cadence-hpa-never-program-a-zero-root-port-ID.patch \
+    file://0028-PCI-sky1-cix-report-the-CIX-root-port-ID-in-native-m.patch \
 "
 
 # ---------------------------------------------------------------------------
@@ -474,6 +487,18 @@ r285_patch_check() {
     # --- r290 (patches 0022-) ----------------------------------------------
     grep -qx 'obj-$(CONFIG_VIDEO_LINLON) += cix/' ${S}/drivers/media/platform/Makefile || \
         bbfatal "r290 patch check: 0022 missing (cix/ VPU driver still built without CONFIG_VIDEO_LINLON)"
+    grep -q "linlondp_crtc_takeover_from_gop" ${S}/drivers/gpu/drm/cix/linlon-dp/linlondp_crtc.c || \
+        bbfatal "r290 patch check: 0023 missing (firmware takeover still resets with clocks off)"
+    grep -q "linlondp_crtc_recover_work" ${S}/drivers/gpu/drm/cix/linlon-dp/linlondp_crtc.c || \
+        bbfatal "r290 patch check: 0024 missing (no flip-timeout recovery)"
+    grep -q "second output needs more" ${S}/drivers/gpu/drm/cix/linlon-dp/linlondp_crtc.c || \
+        bbfatal "r290 patch check: 0025 missing (engine clock not raised for a second output)"
+    grep -q "linlondp_kms_add_overlays_spread" ${S}/drivers/gpu/drm/cix/linlon-dp/linlondp_plane.c || \
+        bbfatal "r290 patch check: 0026 missing (overlay planes not spread)"
+    grep -q "Nothing provided an ID" ${S}/drivers/pci/controller/cadence/pcie-cadence-host-hpa.c || \
+        bbfatal "r290 patch check: 0027 missing (hpa can still write a zero root port ID)"
+    grep -q "rc->device_id = PCI_DEVICE_ID_CIX_SKY1" ${S}/drivers/pci/controller/cadence/pci-sky1-cix.c || \
+        bbfatal "r290 patch check: 0028 missing (vendor driver keeps the 17cd:0100 root port ID)"
     # Count what quilt actually applied, not what SRC_URI intends: the port
     # patch plus 0001-0011, plus aux (0012) and the r287 CIX set (0013-0021).
     applied="${S}/.pc/applied-patches"
@@ -481,12 +506,12 @@ r285_patch_check() {
     n=$(grep -c . "$applied")
     [ "$n" -eq "${R290_EXPECTED_PATCHES}" ] || \
         bbfatal "r290 patch check: quilt applied $n patches, expected ${R290_EXPECTED_PATCHES}"
-    for i in 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011 0013 0014 0015 0016 0017 0018 0019 0020 0021 0022; do
+    for i in 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011 0013 0014 0015 0016 0017 0018 0019 0020 0021 0022 0023 0024 0025 0026 0027 0028; do
         grep -q "^$i-" "$applied" || bbfatal "r290 patch check: $i not in $applied"
     done
-    bbnote "r290 patch check: $n patches applied (rc7 port incl. r5 aux + 0001-0011 + r289 CIX q3 set + r290 0022-0022)"
+    bbnote "r290 patch check: $n patches applied (rc7 port incl. r5 aux + 0001-0011 + r289 CIX q3 set + r290 0022-0028)"
 }
-R290_EXPECTED_PATCHES = "22"
+R290_EXPECTED_PATCHES = "28"
 do_patch[postfuncs] += "r285_patch_check"
 
 DEPENDS += "pahole-native elfutils-native"
