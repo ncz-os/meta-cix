@@ -346,11 +346,17 @@ CONFIG_SRAM=y
 # so the device has no consumer either way. What this fixes is the kernel side
 # sabotaging its own vendor module.
 #
-# CONFIG_VIDEO_LINLON is deliberately LEFT AS IS despite the same warning: on a
-# real r239 install no in-tree mvx module is produced at all, the only module on
-# disk is updates/dkms/amvx.ko, and the VPU works in both directions (H.264
-# decode 90 frames @45x, encode 60 frames verified). Nothing is shadowed there,
-# so changing it would be a blind edit to a working path.
+# CONFIG_VIDEO_LINLON MUST NOT BE BUILT IN-TREE either (r290). With =m the
+# kernel package ships kernel/drivers/media/platform/cix/amvx.ko under the same
+# module name as the validated DKMS module (cix-vpu-driver ->
+# updates/dkms/amvx.ko). The DKMS module wins only because DKMS moves the
+# in-tree file aside (dkms status: "Original modules exist") and depmod searches
+# updates/ first. If the DKMS build fails, the package is removed, or the kernel
+# package is reinstalled at the same KVER, the unvalidated in-tree copy loads
+# silently. The VPU ships out-of-tree only, like every CIX accelerator.
+# Patch 0022 is needed for this to take effect (cix/Kbuild otherwise falls back
+# to obj-m) and adds CONFIG_VIDEO_LINLON_OOT, which selects the videobuf2 DMA-SG
+# and memops helpers the DKMS module imports (VIDEO_LINLON used to select them).
 # CONFIG_ARMCHINA_NPU is not set
 CONFIG_MD=y
 CONFIG_BLK_DEV_MD=m
@@ -947,7 +953,8 @@ CONFIG_NLS_ISO8859_1=y
 CONFIG_EFI=y
 CONFIG_TMPFS=y
 CONFIG_NVME_CORE=y
-CONFIG_VIDEO_LINLON=m
+# CONFIG_VIDEO_LINLON is not set
+CONFIG_VIDEO_LINLON_OOT=m
 CONFIG_SCSI=y
 CONFIG_BLK_DEV_SD=y
 CONFIG_SQUASHFS=m

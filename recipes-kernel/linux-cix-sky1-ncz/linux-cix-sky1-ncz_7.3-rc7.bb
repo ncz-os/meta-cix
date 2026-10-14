@@ -1,6 +1,15 @@
 # SPDX-FileCopyrightText: Copyright (c) 2026 Jason Perlow
 # SPDX-License-Identifier: Apache-2.0
 #
+# r290 (2026-10-13, PR r3, kernel-dev track): r289 plus
+# - CONFIG_VIDEO_LINLON not set, and 0022 so that the in-tree VPU driver is
+#   really not built (cix/Kbuild otherwise falls back to obj-m): the VPU
+#   driver (amvx) ships only as the cix-vpu-driver DKMS module; an in-tree
+#   amvx.ko with the same name could load in its place without any error
+#   (see config-7.3-rc7.defconfig);
+# The same series is the commit history of linux-cix branch
+# kernel-dev/sky1-7.3.0-rc7-r290 on top of release/sky1-7.3.0-rc7-r289.
+#
 # r289 (2026-10-12): the COMPLETE Sky1 rc7 kernel. This recipe is the r287
 # recipe (fully guarded; RT_GROUP_SCHED=n; 0001-0011 + 0013-0021 CIX q3 sync)
 # ported to the 7.3-rc7 line. It supersedes r288 (fix/sky1-rc7-20261011),
@@ -197,7 +206,7 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/linux-cix-sky1-ncz-7.3-rc7:"
 LINUX_VERSION = "7.3-rc7"
 KERNEL_LOCALVERSION = "-sky1-ncz"
 PV = "7.3-rc7+ncz"
-PR = "r2"
+PR = "r3"
 KBRANCH = "kernel-73rc7-port-20261011"
 KERNEL_PACKAGE_NAME = "kernel-${PN}"
 
@@ -378,6 +387,7 @@ SRC_URI = " \
     file://0019-DRM-cix-dptx-notify-GOP-plug-after-HDCP-init-CIX.patch \
     file://0020-usb-cdns3-Fix-NULL-pointer-dereference-when-comp_des.patch \
     file://0021-typec-rts5453-expose-portX-orientation-node-CIX.patch \
+    file://0022-media-cix-build-the-in-tree-VPU-driver-only-with-CON.patch \
 "
 
 # ---------------------------------------------------------------------------
@@ -461,19 +471,22 @@ r285_patch_check() {
         bbfatal "r289 patch check: 0020 missing (cdnsp comp_desc NULL guards)"
     grep -q "orientation_aware" ${S}/drivers/usb/typec/rts5453.c || \
         bbfatal "r289 patch check: 0021 missing (rts5453 orientation node not wired)"
+    # --- r290 (patches 0022-) ----------------------------------------------
+    grep -qx 'obj-$(CONFIG_VIDEO_LINLON) += cix/' ${S}/drivers/media/platform/Makefile || \
+        bbfatal "r290 patch check: 0022 missing (cix/ VPU driver still built without CONFIG_VIDEO_LINLON)"
     # Count what quilt actually applied, not what SRC_URI intends: the port
     # patch plus 0001-0011, plus aux (0012) and the r287 CIX set (0013-0021).
     applied="${S}/.pc/applied-patches"
     [ -f "$applied" ] || bbfatal "r285 patch check: $applied missing, cannot count applied patches"
     n=$(grep -c . "$applied")
-    [ "$n" -eq "${R289_EXPECTED_PATCHES}" ] || \
-        bbfatal "r289 patch check: quilt applied $n patches, expected ${R289_EXPECTED_PATCHES}"
-    for i in 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011 0013 0014 0015 0016 0017 0018 0019 0020 0021; do
-        grep -q "^$i-" "$applied" || bbfatal "r289 patch check: $i not in $applied"
+    [ "$n" -eq "${R290_EXPECTED_PATCHES}" ] || \
+        bbfatal "r290 patch check: quilt applied $n patches, expected ${R290_EXPECTED_PATCHES}"
+    for i in 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011 0013 0014 0015 0016 0017 0018 0019 0020 0021 0022; do
+        grep -q "^$i-" "$applied" || bbfatal "r290 patch check: $i not in $applied"
     done
-    bbnote "r289 patch check: $n patches applied (rc7 port incl. r5 aux + 0001-0011 + r289 CIX q3 set)"
+    bbnote "r290 patch check: $n patches applied (rc7 port incl. r5 aux + 0001-0011 + r289 CIX q3 set + r290 0022-0022)"
 }
-R289_EXPECTED_PATCHES = "21"
+R290_EXPECTED_PATCHES = "22"
 do_patch[postfuncs] += "r285_patch_check"
 
 DEPENDS += "pahole-native elfutils-native"
@@ -504,7 +517,22 @@ R285_REQUIRED_CONFIG = " \
 R289_REQUIRED_NOT_CONFIG = " \
     CONFIG_RT_GROUP_SCHED \
 "
+# r290: CIX accelerators ship out-of-tree only. An in-tree module with the
+# name of a DKMS module (amvx for the VPU, armchina_npu for the NPU) can load
+# in place of the validated one without any error. Any value but "not set"
+# fails the build ("not set" and absent are both fine).
+R290_REQUIRED_UNSET = " \
+    CONFIG_VIDEO_LINLON \
+    CONFIG_ARMCHINA_NPU \
+"
 do_configure:append() {
+    for sym in ${R290_REQUIRED_UNSET}; do
+        if grep -q "^${sym}=" ${B}/.config; then
+            bbfatal "r290 config check: $(grep "^${sym}=" ${B}/.config) (accelerator drivers ship out-of-tree only)"
+        fi
+    done
+    # the DKMS amvx imports the videobuf2 DMA-SG helpers; VIDEO_LINLON_OOT selects them
+    grep -qE '^CONFIG_VIDEOBUF2_DMA_SG=(m|y)$' ${B}/.config ||         bbfatal "r290 config check: CONFIG_VIDEOBUF2_DMA_SG missing (set CONFIG_VIDEO_LINLON_OOT; the DKMS VPU module cannot load without it)"
     for want in ${R283_REQUIRED_CONFIG}; do
         grep -qxF "$want" ${B}/.config || bbfatal "r283 config check: $want missing from ${B}/.config"
     done
