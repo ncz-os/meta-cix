@@ -492,19 +492,38 @@ r285_patch_check() {
         bbfatal "r289 patch check: 0020 missing (cdnsp comp_desc NULL guards)"
     grep -q "orientation_aware" ${S}/drivers/usb/typec/rts5453.c || \
         bbfatal "r289 patch check: 0021 missing (rts5453 orientation node not wired)"
-    # Count what quilt actually applied, not what SRC_URI intends: the port
-    # patch plus 0001-0011, plus aux (0012) and the r287 CIX set (0013-0021).
+    # --- r290 VPU build guard + TRM-driven fixes (patches 0022-0028) -------
+    grep -q "config VIDEO_LINLON_OOT" ${S}/drivers/media/platform/cix/Kconfig || \
+        bbfatal "r290 patch check: 0022 missing (in-tree VPU driver not guarded by CONFIG_VIDEO_LINLON)"
+    grep -q "dp_pipeline_scanning_out" ${S}/drivers/gpu/drm/cix/linlon-dp/hw/dp_component.c || \
+        bbfatal "r290 patch check: 0023 missing (DPU clocks not kept across firmware takeover)"
+    grep -q "unit software reset did not complete" ${S}/drivers/gpu/drm/cix/linlon-dp/hw/dp_dev.c || \
+        bbfatal "r290 patch check: 0024 missing (unit reset does not wait for completion)"
+    grep -q "linlondp_crtc_recover_work" ${S}/drivers/gpu/drm/cix/linlon-dp/linlondp_crtc.c || \
+        bbfatal "r290 patch check: 0024 missing (no flip-timeout recovery work)"
+    grep -q "need_aclk = linlondp_crtc_get_aclk" ${S}/drivers/gpu/drm/cix/linlon-dp/linlondp_crtc.c || \
+        bbfatal "r290 patch check: 0025 missing (engine clock not set while display inactive)"
+    grep -q "linlondp_pipeline_nth_overlay" ${S}/drivers/gpu/drm/cix/linlon-dp/linlondp_plane.c || \
+        bbfatal "r290 patch check: 0026 missing (overlay planes not spread)"
+    grep -q "rc->vendor_id = 0xffff" ${S}/drivers/pci/controller/cadence/pcie-cadence-host-hpa.c || \
+        bbfatal "r290 patch check: 0027 missing (HPA may program a zero root port ID)"
+    grep -q "PCI_VENDOR_ID_CIX" ${S}/drivers/pci/controller/cadence/pci-sky1-cix.c || \
+        bbfatal "r290 patch check: 0028 missing (sky1-cix does not report the CIX root port ID)"
+    # Count what quilt actually applied, not what SRC_URI intends. Since r290
+    # SRCREV is the kernel-73rc7-port tip, so the rc7 port patch (and the 0012
+    # aux content checked above) is in the tree, not a quilt patch:
+    # 0001-0011, the r287 CIX set (0013-0021) and r290 (0022-0028) = 27.
     applied="${S}/.pc/applied-patches"
     [ -f "$applied" ] || bbfatal "r285 patch check: $applied missing, cannot count applied patches"
     n=$(grep -c . "$applied")
-    [ "$n" -eq "${R289_EXPECTED_PATCHES}" ] || \
-        bbfatal "r289 patch check: quilt applied $n patches, expected ${R289_EXPECTED_PATCHES}"
-    for i in 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011 0013 0014 0015 0016 0017 0018 0019 0020 0021; do
-        grep -q "^$i-" "$applied" || bbfatal "r289 patch check: $i not in $applied"
+    [ "$n" -eq "${R290_EXPECTED_PATCHES}" ] || \
+        bbfatal "r290 patch check: quilt applied $n patches, expected ${R290_EXPECTED_PATCHES}"
+    for i in 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011 0013 0014 0015 0016 0017 0018 0019 0020 0021 0022 0023 0024 0025 0026 0027 0028; do
+        grep -q "^$i-" "$applied" || bbfatal "r290 patch check: $i not in $applied"
     done
-    bbnote "r289 patch check: $n patches applied (rc7 port incl. r5 aux + 0001-0011 + r289 CIX q3 set)"
+    bbnote "r290 patch check: $n patches applied (0001-0011 + r289 CIX q3 set + r290 0022-0028 on the rc7 port tip)"
 }
-R289_EXPECTED_PATCHES = "21"
+R290_EXPECTED_PATCHES = "27"
 do_patch[postfuncs] += "r285_patch_check"
 
 DEPENDS += "pahole-native elfutils-native"
