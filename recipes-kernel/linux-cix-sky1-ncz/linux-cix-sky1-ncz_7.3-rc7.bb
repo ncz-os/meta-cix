@@ -197,7 +197,7 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/linux-cix-sky1-ncz-7.3-rc7:"
 LINUX_VERSION = "7.3-rc7"
 KERNEL_LOCALVERSION = "-sky1-ncz"
 PV = "7.3-rc7+ncz"
-PR = "r2"
+PR = "r3"
 KBRANCH = "kernel-73rc7-port-20261011"
 KERNEL_PACKAGE_NAME = "kernel-${PN}"
 
@@ -378,6 +378,13 @@ SRC_URI = " \
     file://0019-DRM-cix-dptx-notify-GOP-plug-after-HDCP-init-CIX.patch \
     file://0020-usb-cdns3-Fix-NULL-pointer-dereference-when-comp_des.patch \
     file://0021-typec-rts5453-expose-portX-orientation-node-CIX.patch \
+    file://0022-media-cix-build-the-in-tree-VPU-driver-only-with-CON.patch \
+    file://0023-drm-cix-linlondp-keep-clocks-running-across-the-firm.patch \
+    file://0024-drm-cix-linlondp-recover-from-a-flip-timeout-without.patch \
+    file://0025-drm-cix-linlondp-set-the-engine-clock-while-the-disp.patch \
+    file://0026-drm-cix-linlondp-spread-overlay-planes-when-layers-e.patch \
+    file://0027-PCI-cadence-hpa-never-program-a-zero-root-port-ID.patch \
+    file://0028-PCI-sky1-cix-report-the-CIX-root-port-ID-in-native-m.patch \
 "
 
 # ---------------------------------------------------------------------------
@@ -392,6 +399,22 @@ SRC_URI = " \
 #   physical dp->status/MST HPD, eDP-only PSR caps and GOP-plug-after-HDCP;
 #   typec rts5453 portX/orientation. Each carries its upstream commit id.
 # - the DP-AUX-wedge recovery (r286/0012/v2) is folded into sky1-ncz-v7.3-rc7-port.patch.
+# ---------------------------------------------------------------------------
+# r290 (2026-10-17): TRM-driven correctness/robustness series.
+# - 0022: build the in-tree VPU driver only with CONFIG_VIDEO_LINLON.
+# - 0023: keep the DPU clocks running across the firmware takeover -- the reset
+#   is released with ACLK and both pixel clocks already running, GOP is handled
+#   on either pipeline, and the transmitter is re-initialised after the reset.
+# - 0024: recover from a flip timeout with the waiting reset and without
+#   disturbing the other active output on the same display unit.
+# - 0025: change the engine clock only while the display unit is inactive, and
+#   raise it when a second output is added.
+# - 0026: spread overlay planes across display units when the layer count
+#   exceeds the DRM plane limit, instead of starving the last units.
+# - 0027: never program a zero root port ID (Cadence HPA).
+# - 0028: report the CIX root port ID in native mode.
+# Verified: 0001-0028 applied in order onto the patch-0021 state reproduce the
+# kernel-dev/sky1-7.3.0-rc7-r290 tree exactly (same tree object).
 # ---------------------------------------------------------------------------
 COMPATIBLE_MACHINE = "(cixmini)"
 S = "${UNPACKDIR}/${BB_GIT_DEFAULT_DESTSUFFIX}"
