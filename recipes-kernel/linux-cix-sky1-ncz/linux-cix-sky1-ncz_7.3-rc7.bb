@@ -343,7 +343,7 @@ do_shared_workdir:append() {
 # CIXH6070) stays in permanent -EPROBE_DEFER. linlondp-cluster
 # (CIXH50C0) finds no slave mdev, "ACPI cluster: no DPUs", no /dev/dri.
 # See commit a49de0beac8c for the full commit message.
-SRCREV_kernel = "ec8bf8280261294a9b9b4520414b42704c7f9f6b"
+SRCREV_kernel = "e53244fffc0bcea79e6d2ccd357cbb6d06a856d7"
 
 # NOTE: fetches from a LOCAL bare mirror under this build container's workdir mount
 # (the ncz-yocto-y6 podman sandbox has no SSH keys, so it cannot reach the
@@ -357,7 +357,6 @@ SRCREV_kernel = "ec8bf8280261294a9b9b4520414b42704c7f9f6b"
 SRC_URI = " \
     git:///workdir/kernel-mirrors/linux-cix-kernel-73rc7-port.git;protocol=file;branch=${KBRANCH};name=kernel \
     file://config-7.3-rc7.defconfig \
-    file://sky1-ncz-v7.3-rc7-port.patch \
     file://0001-drm-cix-trilin-dp-drop-fwnode_drm_find_panel-use-cou.patch \
     file://0002-PCI-cadence-sky1-cix-restore-ACPI-native-mode-on-v7.3.patch \
     file://0003-PM-runtime-restore-the-CIX-Sky1-early-boot-runtime-P.patch \
@@ -415,6 +414,15 @@ SRC_URI = " \
 # - 0028: report the CIX root port ID in native mode.
 # Verified: 0001-0028 applied in order onto the patch-0021 state reproduce the
 # kernel-dev/sky1-7.3.0-rc7-r290 tree exactly (same tree object).
+#
+# Base change: SRCREV_kernel now points at the kernel-73rc7-port branch tip
+# (e53244fff) and sky1-ncz-v7.3-rc7-port.patch is no longer applied. That patch
+# carries the CIX port delta relative to mainline v7.3-rc7 (ec8bf82), and its
+# content is already present in e53244fff -- checked: it does not apply forward
+# to e53244fff but reverse-applies cleanly. Basing the recipe on the branch tip
+# keeps the build resolvable from the public repo, which is shallow and does not
+# contain the mainline commit. The resulting kernel is unchanged: e53244fff plus
+# 0001-0028 is the same tree as before.
 # ---------------------------------------------------------------------------
 COMPATIBLE_MACHINE = "(cixmini)"
 S = "${UNPACKDIR}/${BB_GIT_DEFAULT_DESTSUFFIX}"
