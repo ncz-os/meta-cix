@@ -75,25 +75,78 @@ verify-overlay-modversions: PASS
 
 ## Code review fixes in this series
 
-1. **`strcpy` in `get_cpuname_by_dmi` (`arch/arm64/kernel/cix_dmi.c`)** --
-   **real defect, fixed.** Buffer sized with `strlen(bp) + 1` but filled with an
-   unbounded `strcpy`. Now `strscpy(cpu_name, bp, strlen(bp) + 1)`.
+1. **DMI string walk in `get_cpuname_by_dmi` (`arch/arm64/kernel/cix_dmi.c`)**
+   -- **real defect, rewritten.** The original opened with an unbounded
+   `strcpy`; the first attempt at fixing it only swapped in `strscpy()` while
+   still computing the length with `strlen()` over DMI table data whose upper
+   bound was never established. `strscpy()` prevents the *write* overflow but
+   does nothing about the *read*: if the record's string area is malformed or
+   not NUL-terminated, `strlen(bp)` walks off the allocated DMI block.
 
-2. **`acpi_clk_recalc_rate` (`drivers/clk/cix/acpi_clk.c`)** -- *no leak, but
-   tightened.* Every exit path reaches `OUT` and the `kfree()` is guarded by
-   `if (buffer.pointer)`. The genuine weakness is that `clk_rate` was
-   uninitialised and only safe by way of the `ret ? 0 : clk_rate` ternary.
-   `clk_rate` is now initialised to 0 with a plain `return clk_rate;`, making
-   the invariant structural. Verified: the build compiles this file and the
-   kernel links.
+   The deeper finding: the helper was a hand-copied duplicate of upstream's
+   `dmi_string_nosave()`, which lives in `drivers/firmware/dmi_scan.c` and is
+   exported via `<linux/dmi.h>`. Rather than re-derive a safe bound here, the
+   copy is deleted and the real helper called:
+
+   ```c
+   bp = dmi_string_nosave(dm, ((const u8 *)dm)[0x10]);
+   if (!bp || !bp[0])
+           return;
+   cpu_name = dmi_alloc(strlen(bp) + 1);
+   if (!cpu_name)
+           return;
+   strscpy(cpu_name, bp, strlen(bp) + 1);
+   get_cpu_flag = true;
+   ```
+
+   `dmi_string_nosave()` performs the identical offset-0x10 walk, applies the
+   same "whitespace-only means empty" rule, and returns a safe empty string --
+   so this also removes the duplicated space-scan loop. The remaining
+   `strlen(bp)` is now on a pointer the core helper has already validated.
+
+2. **`acpi_cix_clk_recalc_rate` (`drivers/clk/cix/acpi_clk.c`)** -- **real
+   defect, fixed: out-of-bounds read.** The function read three u32s out of
+   the returned ACPI buffer with no length check at all. A firmware returning
+   a short `GClK` buffer would be over-read by 12 bytes. Now:
+
+   ```c
+   if (package->buffer.length < sizeof(buf_val)) {
+           dev_err(dev, "ACPI clk[%u] returned short buffer (%u bytes)\n",
+                           aclk_hw->clk_id, package->buffer.length);
+           goto OUT;
+   }
+   ```
+
+   Separate from the bounds issue, `ret` was provably dead: set on every error
+   path and then never read (`-Wunused-but-set-variable` reproduced it), which
+   means all failures were silently reporting rate 0 with no way for a caller
+   to distinguish that from a real 0 Hz. `ret` is removed; `clk_rate` is
+   initialised to 0 and returned directly. `AE_NOT_FOUND` and every other
+   failure now take the same `goto OUT` path with a per-clock `dev_err`, and
+   the buffer is released on all of them.
 
 3. **`kzalloc_obj(*r)` in `acpi_scan_claim_resources` (`drivers/acpi/scan.c`)**
-   -- **not a defect.** `kzalloc_obj(P,...)` expands to `typeof(P)`, so `*r`
-   there is the *pointee type*, not a dereference -- upstream uses the same
-   idiom in the same file (`dep = kzalloc_obj(*dep)`).
+   -- **not a defect; disproved by compiling it.** `kzalloc_obj(P)` is a
+   macro, not a function; `P` appears only in `typeof(P)` and in a cast, both
+   of which are compile-time constructs. `*r` therefore names the pointee
+   *type* and is never evaluated, so there is no dereference of an
+   uninitialised pointer.
+
+   Reproduced standalone and inspected the emitted code -- the only argument
+   passed to `kzalloc` is the constant size, with no load from `r`:
+
+   ```
+   8:  mov x0, #0x20        // sizeof(struct resource)
+   18: bl  kzalloc
+   ```
+
+   Upstream already uses the same idiom in the same function
+   (`dep = kzalloc_obj(*dep)`), so changing it would diverge from upstream
+   style for no benefit. No edit made.
 
 4. **`ncz_beacon` NULL handling** -- **not a defect.** `base` is a stack local
-   re-validated on every call; `ncz_inited` never caches a pointer.
+   re-validated on every call (`base = ncz_map(); if (!base) return;`);
+   `ncz_inited` only gates header initialisation and never caches a pointer.
 
 ## Correction to an earlier note
 
