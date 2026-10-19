@@ -1,0 +1,8 @@
+OK assets/kernel/mali/7.3.0-sky1-ncz/mali_kbase.ko: versions=393 crc_mismatch=0 sibling_overlay=0 unresolved=0
+OK assets/kernel/mali/7.3.0-sky1-ncz/memory_group_manager.ko: versions=25 crc_mismatch=0 sibling_overlay=0 unresolved=0
+OK assets/kernel/mali/7.3.0-sky1-ncz/protected_memory_allocator.ko: versions=21 crc_mismatch=0 sibling_overlay=0 unresolved=0
+OK assets/kernel/vpu/7.3.0-sky1-ncz/amvx.ko: versions=247 crc_mismatch=0 sibling_overlay=0 unresolved=0
+OK assets/kernel/npu/7.3.0-sky1-ncz/aipu.ko: versions=123 crc_mismatch=0 sibling_overlay=0 unresolved=0
+OK assets/kernel/panthor/7.3.0-sky1-ncz/panthor.ko: versions=360 crc_mismatch=0 sibling_overlay=0 unresolved=0
+verify-overlay-modversions: kver=7.3.0-sky1-ncz symvers=/home/jasonperlow/yocto-docker/ybuild-ultra/tmp/work/cixmini-nclawzero-linux/linux-cix-sky1-ncz/7.3+ncz/build/Module.symvers (18771 CRCs) modules=6
+verify-overlay-modversions: PASS

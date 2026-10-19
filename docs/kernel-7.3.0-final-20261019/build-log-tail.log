@@ -1,0 +1,7 @@
+NOTE: recipe linux-cix-sky1-ncz-7.3+ncz-r1: task do_patch: Succeeded
+NOTE: recipe linux-cix-sky1-ncz-7.3+ncz-r1: task do_configure: Succeeded
+NOTE: recipe linux-cix-sky1-ncz-7.3+ncz-r1: task do_compile: Succeeded
+NOTE: recipe linux-cix-sky1-ncz-7.3+ncz-r1: task do_compile_kernelmodules: Succeeded
+NOTE: recipe linux-cix-sky1-ncz-7.3+ncz-r1: task do_install: Succeeded
+NOTE: recipe linux-cix-sky1-ncz-7.3+ncz-r1: task do_package: Succeeded
+NOTE: recipe linux-cix-sky1-ncz-7.3+ncz-r1: task do_deploy: Succeeded
