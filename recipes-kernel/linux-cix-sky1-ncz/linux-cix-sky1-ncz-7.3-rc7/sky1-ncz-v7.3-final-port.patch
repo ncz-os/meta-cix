@@ -39,49 +39,45 @@ index ea66339435bf..d5422dde768e 100644
 +obj-$(CONFIG_NCZ_RESUME_BEACON) += ncz-resume-beacon.o
 diff --git a/arch/arm64/kernel/cix_dmi.c b/arch/arm64/kernel/cix_dmi.c
 new file mode 100644
-index 000000000000..e59f66c77054
+index 000000000..bfcb1dd00
 --- /dev/null
 +++ b/arch/arm64/kernel/cix_dmi.c
-@@ -0,0 +1,54 @@
+@@ -0,0 +1,49 @@
 +/* SPDX-License-Identifier: GPL-2.0-only */
++#include <linux/dmi.h>
++#include <linux/string.h>
 +#include "cix_dmi.h"
 +
 +static char *cpu_name = "Version";
 +static bool get_cpu_flag = false;
++
 +static void get_cpuname_by_dmi(const struct dmi_header *dm, void *data)
 +{
 +        const char *bp;
-+        const u8 *nsp;
-+        char *sm ;
-+        char s;
-+        if(!dm)
++
++        if (!dm)
 +                return;
 +        if (dm->type != DMI_ENTRY_PROCESSOR)
 +                return;
 +
-+        bp = ((u8 *) dm) + dm->length;
-+        sm = (char *)dm;
-+        s = sm[0x10];
++        /*
++         * dmi_string_nosave() performs the same walk this file used to
++         * open-code (offset 0x10 holds the processor-version string index),
++         * but it is the helper the rest of the kernel relies on and it
++         * bounds the walk by the DMI record.  It returns "" for an empty,
++         * whitespace-only or absent string, so no separate space scan or
++         * strlen() over untrusted table data is needed here.
++         */
++        bp = dmi_string_nosave(dm, ((const u8 *)dm)[0x10]);
++        if (!bp || !bp[0])
++                return;
 +
-+        if (s) {
-+                while (--s > 0 && *bp)
-+                        bp += strlen(bp) + 1;
++        cpu_name = dmi_alloc(strlen(bp) + 1);
++        if (!cpu_name)
++                return;
 +
-+                /* Strings containing only spaces are considered empty */
-+                nsp = bp;
-+                while (*nsp == ' ')
-+                        nsp++;
-+                if (*nsp != '\0'){
-+                        cpu_name = dmi_alloc(strlen(bp) + 1);
-+                        if (cpu_name != NULL)
-+                                strscpy(cpu_name, bp, strlen(bp) + 1);
-+
-+                        get_cpu_flag = true;
-+                        return;
-+                }
-+        }
-+
-+        return;
++        strscpy(cpu_name, bp, strlen(bp) + 1);
++        get_cpu_flag = true;
 +}
 +
 +char *get_cpu_name(void)
@@ -96,7 +92,7 @@ index 000000000000..e59f66c77054
 +
 +        return cpu_name;
 +}
-+
+
 diff --git a/arch/arm64/kernel/cix_dmi.h b/arch/arm64/kernel/cix_dmi.h
 new file mode 100644
 index 000000000000..d9da24dda420
@@ -1658,10 +1654,10 @@ index bc612f1d08b2..ee762934a273 100644
 \ No newline at end of file
 diff --git a/drivers/clk/cix/acpi_clk.c b/drivers/clk/cix/acpi_clk.c
 new file mode 100644
-index 000000000000..4aa6783c0083
+index 000000000..88185d240
 --- /dev/null
 +++ b/drivers/clk/cix/acpi_clk.c
-@@ -0,0 +1,561 @@
+@@ -0,0 +1,562 @@
 +// SPDX-License-Identifier: GPL-2.0
 +/*
 + *Copyright 2024 Cix Technology Group Co., Ltd.
@@ -1758,14 +1754,12 @@ index 000000000000..4aa6783c0083
 +	status = acpi_evaluate_object(handle, "CLKC", &arg_list, &buffer);
 +	if (ACPI_FAILURE(status)) {
 +		dev_err(dev, "ACPI evaluation failed\n");
-+		ret = -ENODEV;
 +		goto OUT;
 +	}
 +
 +	package = buffer.pointer;
 +	if (!package || package->type != ACPI_TYPE_BUFFER) {
 +		dev_err(dev, "Couldn't locate correct ACPI buffer\n");
-+		ret = -ENODEV;
 +		goto OUT;
 +	}
 +
@@ -1813,7 +1807,6 @@ index 000000000000..4aa6783c0083
 +	acpi_status status;
 +	unsigned long clk_rate = 0;
 +	u32 buf_val[3] = {0};
-+	int ret = 0;
 +	struct acpi_buffer buffer = { ACPI_ALLOCATE_BUFFER, NULL };
 +	union acpi_object args[] = {
 +		{ .type = ACPI_TYPE_INTEGER, },
@@ -1828,14 +1821,19 @@ index 000000000000..4aa6783c0083
 +	status = acpi_evaluate_object(handle, "GClK", &arg_list, &buffer);
 +	if (ACPI_FAILURE(status)) {
 +		dev_err(dev, "ACPI evaluation failed\n");
-+		ret = -ENODEV;
 +		goto OUT;
 +	}
 +
 +	package = buffer.pointer;
 +	if (!package || package->type != ACPI_TYPE_BUFFER) {
 +		dev_err(dev, "Couldn't locate correct ACPI buffer\n");
-+		ret = -ENODEV;
++		goto OUT;
++	}
++
++	/* GClK returns three u32s; a shorter buffer must not be over-read. */
++	if (package->buffer.length < sizeof(buf_val)) {
++		dev_err(dev, "ACPI clk[%u] returned short buffer (%u bytes)\n",
++					aclk_hw->clk_id, package->buffer.length);
 +		goto OUT;
 +	}
 +
@@ -1845,7 +1843,6 @@ index 000000000000..4aa6783c0083
 +	if (buf_val[0] != SUCCESS) {
 +		dev_err(dev, "ACPI clk[%u] rec rate err:%d\n",
 +					aclk_hw->clk_id, buf_val[0]);
-+		ret = buf_val[0];
 +		goto OUT;
 +	}
 +
@@ -2223,6 +2220,7 @@ index 000000000000..4aa6783c0083
 +MODULE_AUTHOR("Copyright 2024 Cix Technology Group Co., Ltd.");
 +MODULE_DESCRIPTION("Cix acpi clock driver");
 +MODULE_LICENSE("GPL v2");
+
 diff --git a/drivers/clk/cix/acpi_clk.h b/drivers/clk/cix/acpi_clk.h
 new file mode 100644
 index 000000000000..d65d17e91103
