@@ -1,12 +1,26 @@
 # SPDX-FileCopyrightText: Copyright (c) 2026 Jason Perlow
 # SPDX-License-Identifier: Apache-2.0
 #
+# r291 (2026-10-19, kernel 7.3.0 FINAL): the r290 recipe re-pinned from
+# v7.3-rc7 to the upstream v7.3 final tag (Linus's tree, cutoff commit
+# c03c1a14507dfaf8b856c2608f9ac216021fc222, released 2026-10-18 23:14 UTC).
+# The patch series is UNCHANGED: the same 27 numbered patches 0001-0011 +
+# 0013-0028, and the consolidated sky1-ncz-v7.3-final-port.patch (content
+# identical to the rc7 port patch, which the r284-r290 patches expect as
+# their base). The port branch is kernel-73final-port-20261019: the 208
+# kernel-73rc7-port commits replayed on v7.3 final. Rebase verdict: 0
+# conflicts -- the consolidated port patch and all 27 numbered patches apply
+# cleanly (`git apply --check`) to a pristine v7.3 final tree; range-diff
+# against the rc7 series is empty. Because v7.3-rc7 is 32 commits behind the
+# tag, this is a new KVER (7.3.0-sky1-ncz) and the accelerator overlays were
+# verified against the new Module.symvers (see docs/KERNEL-7.3.0-FINAL-PIN-20261019.md).
+#
 # r290 (2026-10-13, PR r3, kernel-dev track): r289 plus
 # - CONFIG_VIDEO_LINLON not set, and 0022 so that the in-tree VPU driver is
 #   really not built (cix/Kbuild otherwise falls back to obj-m): the VPU
 #   driver (amvx) ships only as the cix-vpu-driver DKMS module; an in-tree
 #   amvx.ko with the same name could load in its place without any error
-#   (see config-7.3-rc7.defconfig);
+#   (see config-7.3.0-sky1-ncz.defconfig);
 # - 0023-0026 display fixes (linlondp): clocks running across the firmware
 #   takeover with every firmware pipeline stopped, flip-timeout recovery that
 #   leaves the other output alone and remodesets the affected CRTC, engine
@@ -210,11 +224,11 @@ LIC_FILES_CHKSUM = "file://COPYING;md5=6bc538ed5bd9a7fc9398086aedcd7e46"
 inherit kernel
 FILESEXTRAPATHS:prepend := "${THISDIR}/linux-cix-sky1-ncz-7.3-rc7:"
 
-LINUX_VERSION = "7.3-rc7"
+LINUX_VERSION = "7.3"
 KERNEL_LOCALVERSION = "-sky1-ncz"
-PV = "7.3-rc7+ncz"
-PR = "r3"
-KBRANCH = "kernel-73rc7-port-20261011"
+PV = "7.3+ncz"
+PR = "r1"
+KBRANCH = "kernel-73final-port-20261019"
 KERNEL_PACKAGE_NAME = "kernel-${PN}"
 
 do_shared_workdir:append() {
@@ -359,21 +373,32 @@ do_shared_workdir:append() {
 # CIXH6070) stays in permanent -EPROBE_DEFER. linlondp-cluster
 # (CIXH50C0) finds no slave mdev, "ACPI cluster: no DPUs", no /dev/dri.
 # See commit a49de0beac8c for the full commit message.
-SRCREV_kernel = "ec8bf8280261294a9b9b4520414b42704c7f9f6b"
+SRCREV_kernel = "c03c1a14507dfaf8b856c2608f9ac216021fc222"
 
 # NOTE: fetches from a LOCAL bare mirror under this build container's workdir mount
 # (the ncz-yocto-y6 podman sandbox has no SSH keys, so it cannot reach the
 # ARGONAS ssh:// remote directly). The canonical pushed copies are
 # gitlab.com/ncz-os/linux-cix.git + the ARGONAS bare mirror at
-# /mnt/datapool/git/ncz-os/linux-cix.git, branch kernel-73rc7-port-20261011.
-# Local mirror at ~/yocto-work/kernel-mirrors/linux-cix-kernel-73rc7-port.git
-# was created from ~/linux-port-v7.3-rc7 by cherry-picking all 207
-# kernel-73rc6-port commits onto peeled v7.3-rc7^{} = 24a19b953e2a.
-# Rebuild with `git clone --bare ~/linux-port-v7.3-rc7` if it goes stale again.
+# /mnt/datapool/git/ncz-os/linux-cix.git, branch kernel-73final-port-20261019.
+# SRCREV_kernel is the peeled upstream v7.3 FINAL commit. The build still
+# clones the port branch and pins this exact commit, so it builds the v7.3
+# final tree, not the port tip: branch kernel-73final-port-20261019 has the
+# 208 kernel-73rc7-port commits replayed on top of c03c1a14, so the SRCREV is
+# the base and every port commit arrives as the consolidated port patch
+# (sky1-ncz-v7.3-final-port.patch), exactly as on the rc7 line.
+# Local mirror: ~/yocto-docker/yocto6-ncz-tydeus/kernel-mirrors/
+# linux-cix-kernel-73final-port.git -- mounted at /workdir inside the
+# ncz-yocto-y6 container (y6-run.sh binds yocto6-ncz-tydeus to /workdir).
+# The mirror name matches KBRANCH: kernel-73final-port-20261019 lives in the
+# 73final mirror, NOT in linux-cix-kernel-73rc7-port.git (that one only has
+# the rc7 port branches and stops at v7.3-rc7). Rebuild with
+# `git clone --bare ~/linux-port-v7.3-final
+#  ~/yocto-docker/yocto6-ncz-tydeus/kernel-mirrors/linux-cix-kernel-73final-port.git`
+# if it goes stale.
 SRC_URI = " \
-    git:///workdir/kernel-mirrors/linux-cix-kernel-73rc7-port.git;protocol=file;branch=${KBRANCH};name=kernel \
-    file://config-7.3-rc7.defconfig \
-    file://sky1-ncz-v7.3-rc7-port.patch \
+    git:///workdir/kernel-mirrors/linux-cix-kernel-73final-port.git;protocol=file;branch=${KBRANCH};name=kernel \
+    file://config-7.3.0-sky1-ncz.defconfig \
+    file://sky1-ncz-v7.3-final-port.patch \
     file://0001-drm-cix-trilin-dp-drop-fwnode_drm_find_panel-use-cou.patch \
     file://0002-PCI-cadence-sky1-cix-restore-ACPI-native-mode-on-v7.3.patch \
     file://0003-PM-runtime-restore-the-CIX-Sky1-early-boot-runtime-P.patch \
@@ -423,7 +448,7 @@ PROVIDES = "${PN} virtual/kernel"
 
 do_configure:prepend() {
     cd ${S}
-    cp ${UNPACKDIR}/config-7.3-rc7.defconfig ${B}/.config
+    cp ${UNPACKDIR}/config-7.3.0-sky1-ncz.defconfig ${B}/.config
     oe_runmake ARCH=arm64 O=${B} olddefconfig
 }
 

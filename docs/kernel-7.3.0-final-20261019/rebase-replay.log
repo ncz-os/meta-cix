@@ -1,0 +1,50 @@
+# NCZ Sky1 kernel 7.3.0-final -- rebase replay log
+
+Generated: 2026-10-19T20:40:05Z
+Base tag:  v7.3 (peeled c03c1a14507dfaf8b856c2608f9ac216021fc222)
+Upstream:  git.kernel.org torvalds/linux, fetched fresh (depth 1)
+Method:    pristine checkout of the base tag, then `git apply --check`
+           and `git apply` for each SRC_URI patch, in recipe order.
+
+```
+sky1-ncz-v7.3-final-port.patch                                             OK
+0001-drm-cix-trilin-dp-drop-fwnode_drm_find_panel-use-cou.patch            OK
+0002-PCI-cadence-sky1-cix-restore-ACPI-native-mode-on-v7.3.patch           OK
+0003-PM-runtime-restore-the-CIX-Sky1-early-boot-runtime-P.patch            OK
+0004-PCI-cadence-sky1-cix-native-mode-review-fixes-clocks.patch            OK
+0005-regulator-restore-CIX-Sky1-ACPI-fixed-regulator-supp.patch            OK
+0006-pinctrl-acpi-defer-consumers-until-the-named-pin-con.patch            OK
+0007-usb-cdns3-cdnsp-sky1-hold-the-ACPI-wrapper-active-un.patch            OK
+0008-clk-cix-sky1-audss-resolve-ACPI-parent-clocks-by-con.patch            OK
+0009-backlight-pwm-restore-CIX-Sky1-ACPI-backlight-suppor.patch            OK
+0010-drm-cix-linlondp-don-t-warn-about-DPUs-the-firmware-.patch            OK
+0011-arm64-cpufeature-treat-ID_AA64MMFR1_EL1.SpecSEI-as-n.patch            OK
+0013-ASoC-cix-i2s_mc-mask-all-interrupts-CIX.patch                         OK
+0014-usb-usb-cdns3-Fix-RCU-stall-in-cdnsp_thread_irq_hand.patch            OK
+0015-usb-cdnsp-skip-DISABLE_SLOT-command-if-slot-is-alrea.patch            OK
+0016-dptx-cix-Add-support-for-out-of-bound-hotplug-events.patch            OK
+0017-DRM-cix-dptx-physical-dp-status-and-MST-HPD-handling.patch            OK
+0018-restrict-psr-caps-update-conditions-CIX.patch                         OK
+0019-DRM-cix-dptx-notify-GOP-plug-after-HDCP-init-CIX.patch                OK
+0020-usb-cdns3-Fix-NULL-pointer-dereference-when-comp_des.patch            OK
+0021-typec-rts5453-expose-portX-orientation-node-CIX.patch                 OK
+0022-media-cix-build-the-in-tree-VPU-driver-only-with-CON.patch            OK
+0023-drm-cix-linlondp-keep-clocks-running-across-the-firm.patch            OK
+0024-drm-cix-linlondp-recover-from-a-flip-timeout-without.patch            OK
+0025-drm-cix-linlondp-set-the-engine-clock-while-the-disp.patch            OK
+0026-drm-cix-linlondp-spread-overlay-planes-when-layers-e.patch            OK
+0027-PCI-cadence-hpa-never-program-a-zero-root-port-ID.patch               OK
+0028-PCI-sky1-cix-report-the-CIX-root-port-ID-in-native-m.patch            OK
+applied=28 conflicts=0
+```
+
+Result: 28/28 patches apply cleanly; **0 conflicts, 0 rejects, 0 fuzz**.
+Changeset: 154 modified files + 47 new files, 7929 insertions(+), 1760 deletions(-).
+
+## Cross-check against the rc7 series
+
+The identical series was also replayed onto v7.3-rc7. Comparing the two
+resulting trees, the only differences are the 212 files upstream itself
+changed between v7.3-rc7 and v7.3 -- i.e. every Sky1 port change is carried
+across unchanged, and nothing else moved. No Sky1 file was dropped or
+silently mangled.

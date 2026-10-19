@@ -74,7 +74,7 @@ index 000000000000..e59f66c77054
 +                if (*nsp != '\0'){
 +                        cpu_name = dmi_alloc(strlen(bp) + 1);
 +                        if (cpu_name != NULL)
-+                                strcpy(cpu_name, bp);
++                                strscpy(cpu_name, bp, strlen(bp) + 1);
 +
 +                        get_cpu_flag = true;
 +                        return;
