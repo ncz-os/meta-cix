@@ -1,6 +1,19 @@
 # SPDX-FileCopyrightText: Copyright (c) 2026 Jason Perlow
 # SPDX-License-Identifier: Apache-2.0
 #
+# r292 (2026-10-23, kernel 7.3.0, PR r2): r291 plus five patches adopted from
+# the CIX vendor tree github.com/cixtech/cix-linux-main patches-7.3 (authored
+# by CIX; authorship kept in each patch): 0029 widen the DRM plane mask to 64
+# bits (the 40-plane display cluster no longer truncates), 0030 DMA350
+# suspend-to-RAM, 0031 linlon-dp AFBC 32x8 first in the modifier list, 0032
+# SMMUv3 IRQ setup on resume, 0033 audss RCSU re-arm across suspend. 0029-0033
+# apply cleanly to r291 and the touched subsystems compile with the 7.3.0
+# config. Our 0026 overlay-spread workaround is kept until the wider plane
+# mask is proven on hardware. NOT adopted: the CIX panthor rework (replaces the
+# ACPI bring-up and our shader-harvesting block with raw SMC power-on; needs a
+# hardware decision) and 0072 (fixes a cdns_power_is_lost() ordering that our
+# older cdnsp resume path does not have).
+#
 # r291 (2026-10-19, kernel 7.3.0 FINAL): the r290 recipe re-pinned from
 # v7.3-rc7 to the upstream v7.3 final tag (Linus's tree, cutoff commit
 # c03c1a14507dfaf8b856c2608f9ac216021fc222, released 2026-10-18 23:14 UTC).
@@ -227,7 +240,7 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/linux-cix-sky1-ncz-7.3-rc7:"
 LINUX_VERSION = "7.3"
 KERNEL_LOCALVERSION = "-sky1-ncz"
 PV = "7.3+ncz"
-PR = "r1"
+PR = "r2"
 KBRANCH = "kernel-73final-port-20261019"
 KERNEL_PACKAGE_NAME = "kernel-${PN}"
 
@@ -426,6 +439,11 @@ SRC_URI = " \
     file://0026-drm-cix-linlondp-spread-overlay-planes-when-layers-e.patch \
     file://0027-PCI-cadence-hpa-never-program-a-zero-root-port-ID.patch \
     file://0028-PCI-sky1-cix-report-the-CIX-root-port-ID-in-native-m.patch \
+    file://0029-drm-widen-the-plane-mask-to-64-bits.patch \
+    file://0030-dma350-add-str-support.patch \
+    file://0031-DPTSW-19618-linlon-dp-Set-AFBC-32x8-to-the-highest-p.patch \
+    file://0032-DPTSW-26437-iommu-arm-smmu-v3-fix-IRQ-setup-on-resum.patch \
+    file://0033-clk-cix-audss-fix-str.patch \
 "
 
 # ---------------------------------------------------------------------------
@@ -524,6 +542,17 @@ r285_patch_check() {
         bbfatal "r290 patch check: 0027 missing (hpa can still write a zero root port ID)"
     grep -q "rc->device_id = PCI_DEVICE_ID_CIX_SKY1" ${S}/drivers/pci/controller/cadence/pci-sky1-cix.c || \
         bbfatal "r290 patch check: 0028 missing (vendor driver keeps the 17cd:0100 root port ID)"
+    # --- r292 (patches 0029-0033, CIX patches-7.3 adoption) ------------------
+    grep -q "u64 plane_mask;" ${S}/include/drm/drm_crtc.h || \
+        bbfatal "r292 patch check: 0029 missing (DRM plane mask still u32 (40 planes truncate))"
+    grep -q "d350_system_suspend" ${S}/drivers/dma/arm-dma350.c || \
+        bbfatal "r292 patch check: 0030 missing (dma350 has no system sleep ops)"
+    grep -q "AFBC 32x8 is set to the highest priority" ${S}/drivers/gpu/drm/cix/linlon-dp/linlondp_format_caps.c || \
+        bbfatal "r292 patch check: 0031 missing (linlondp AFBC 32x8 not first in the modifier list)"
+    grep -q "arm_smmu_setup_irqs(struct arm_smmu_device \*smmu, bool resume)" ${S}/drivers/iommu/arm/arm-smmu-v3/arm-smmu-v3.c || \
+        bbfatal "r292 patch check: 0032 missing (SMMUv3 resume still re-requests IRQs)"
+    grep -q "SKY1_AUDSS_RCSU_TIMEOUT_VAL" ${S}/drivers/clk/cix/clk-sky1-audss.c || \
+        bbfatal "r292 patch check: 0033 missing (audss RCSU timeout not re-armed on resume)"
     # Count what quilt actually applied, not what SRC_URI intends: the port
     # patch plus 0001-0011, plus aux (0012) and the r287 CIX set (0013-0021).
     applied="${S}/.pc/applied-patches"
@@ -531,12 +560,12 @@ r285_patch_check() {
     n=$(grep -c . "$applied")
     [ "$n" -eq "${R290_EXPECTED_PATCHES}" ] || \
         bbfatal "r290 patch check: quilt applied $n patches, expected ${R290_EXPECTED_PATCHES}"
-    for i in 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011 0013 0014 0015 0016 0017 0018 0019 0020 0021 0022 0023 0024 0025 0026 0027 0028; do
+    for i in 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011 0013 0014 0015 0016 0017 0018 0019 0020 0021 0022 0023 0024 0025 0026 0027 0028 0029 0030 0031 0032 0033; do
         grep -q "^$i-" "$applied" || bbfatal "r290 patch check: $i not in $applied"
     done
-    bbnote "r290 patch check: $n patches applied (rc7 port incl. r5 aux + 0001-0011 + r289 CIX q3 set + r290 0022-0028)"
+    bbnote "r290 patch check: $n patches applied (rc7 port incl. r5 aux + 0001-0011 + r289 CIX q3 set + r290 0022-0028 + r292 0029-0033)"
 }
-R290_EXPECTED_PATCHES = "28"
+R290_EXPECTED_PATCHES = "33"
 do_patch[postfuncs] += "r285_patch_check"
 
 DEPENDS += "pahole-native elfutils-native"
