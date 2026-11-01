@@ -286,13 +286,20 @@ test_recipe_install_path_matches_invocation() {
 # ---------------------------------------------------------------------------
 test_recipe_declares_coreutils() {
     local recipe="$REPO/recipes-bsp/cixmini-boot/cixmini-boot_1.0.bb"
-    local rdeps
+    local rdeps missing="" dep
     rdeps=$(grep -E '^RDEPENDS:\$\{PN\}' "$recipe")
-    if printf '%s' "$rdeps" | grep -qE '\bbash\b' &&
-        printf '%s' "$rdeps" | grep -qE '\bcoreutils\b'; then
-        pass "packaging: RDEPENDS includes bash and coreutils"
+    # Every external tool the shipped scripts actually call must be declared.
+    # awk in particular is its own package and is NOT part of coreutils, so
+    # an undeclared awk breaks refind.conf parsing at runtime.
+    for dep in bash coreutils awk grep sed; do
+        printf '%s' "$rdeps" | grep -qE "(^|[\"  ])$dep([\"  ]|$)" ||
+            missing="$missing $dep"
+    done
+    if [ -z "$missing" ]; then
+        pass "packaging: RDEPENDS includes bash coreutils awk grep sed"
     else
-        fail "packaging: RDEPENDS includes bash and coreutils" "rdeps=[$rdeps]"
+        fail "packaging: RDEPENDS includes bash coreutils awk grep sed" \
+            "missing:$missing rdeps=[$rdeps]"
     fi
 }
 

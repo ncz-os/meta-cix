@@ -43,9 +43,16 @@ SRC_URI = " \
 S = "${UNPACKDIR}"
 
 # rEFInd itself is provided by the installer image; this package only edits
-# the ESP it creates. bash + coreutils are the script's real dependencies
-# (mkdir/cp/sync/mv/cut/stat/sort come from coreutils).
-RDEPENDS:${PN} = "bash coreutils"
+# the ESP it creates. The scripts' real runtime dependencies:
+#   bash      -- the interpreter
+#   coreutils -- mkdir, cp, mv, rm, sync, touch, readlink, basename, dirname,
+#                wc, sort, cat, date
+#   awk       -- refind.conf parsing (options/title/index extraction); this is
+#                its own package, NOT part of coreutils, so it must be named
+#   grep      -- config validation
+#   sed       -- option stripping
+#   diffutils -- only used by the test harness, not installed on the target
+RDEPENDS:${PN} = "bash coreutils awk grep sed"
 
 # Installed under /usr/local/sbin (not ${sbindir} == /usr/sbin): the wrapper
 # and the postinst invoke /usr/local/sbin/ncz-refind-refresh by absolute path,
