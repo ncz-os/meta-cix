@@ -1,0 +1,609 @@
+#!/bin/bash
+# SPDX-FileCopyrightText: Copyright (c) 2026 Jason Perlow
+# SPDX-License-Identifier: Apache-2.0
+#
+# ncz-refind-refresh -- stage Sky1 kernels on the rEFInd ESP, ADD-ONLY.
+#
+# WHY THIS EXISTS
+# 2026-11-01 (operator decision): O6N is the CIX Sky1 kernel TEST host. It must
+# be able to install a new kernel without ever losing the known-good one. The
+# refresh script that cixmini-boot's postinst runs used to wipe the ESP kernels
+# and refind.conf, point EVERY menuentry (Default, Rescue, Rescue Partition) at
+# the newest kernel and recreate the firmware boot entry with efibootmgr
+# -B/-c -- so installing 7.3.1 silently destroyed the 7.3.0 fallback, and it
+# re-did all of that on every later apt run.
+#
+# MODES (the mode is the DEFAULT; there is no flag that picks it):
+#
+#   add-only (default)   Stage the kernel named by --kver (or the newest one in
+#                        /boot that is not staged yet) as ONE extra menuentry
+#                        whose options are copied verbatim from the Default
+#                        entry. Nothing else is touched: default_selection, the
+#                        Rescue entries, the NCZRESCUE entry, the firmware boot
+#                        entry and every existing kernel file on the ESP stay
+#                        byte-identical. A kernel that is already staged is a
+#                        no-op, so the postinst firing on later apt runs costs
+#                        nothing and re-writes nothing.
+#
+#   --promote KVER       The SEPARATE, explicit operator command that makes an
+#                        already-staged kernel the default. It changes the
+#                        numeric default_selection to that kernel's entry and
+#                        nothing else. It never edits a menuentry, never
+#                        re-stages a file, never touches the firmware boot
+#                        entry. Refused (non-zero, no ESP writes) unless the
+#                        kernel is already staged.
+#
+# PREFLIGHT: the script REFUSES and exits non-zero, before writing anything to
+# the ESP, when the ESP is not mounted, when a required tool is missing, when
+# refind.conf is absent or malformed, or when neither the new kernel nor the
+# known-good kernel it is being staged next to is present in /boot. "Missing
+# old known-good files" is a hard error in BOTH modes: add-only is only worth
+# anything if the fallback it protects actually exists.
+#
+# Nothing here calls efibootmgr, reboots, or writes outside the ESP (plus the
+# two initramfs outputs in /boot). The firmware boot entry is created once, by
+# the install, and is left alone from then on.
+#
+# LOGGING: every decision is logged to stdout and to /var/log/ncz-refind-refresh.log
+# (override with $NCZ_REFIND_LOG; an unwritable log never fails the run).
+#
+# EXIT CODES: 0 = staged/promoted (or already staged), 2 = usage error,
+#             3 = ESP not mounted, 4 = preflight refusal (missing known-good
+#             kernel, missing/malformed refind.conf, missing tool), 5 = write
+#             failed.
+#
+# For the O6N install and rollback steps see docs/KERNEL-SIDE-BY-SIDE.md.
+
+set -o pipefail
+set -u
+
+PROG=ncz-refind-refresh
+
+# Roots. Every one can be redirected, which is what the shell tests use to
+# point the script at a fake ESP + fake /boot; nothing in the tests can see a
+# real filesystem, and there is no efibootmgr call anywhere in this file.
+ESP=${NCZ_ESP_DIR:-/boot/efi}
+BOOT=${NCZ_BOOT_DIR:-/boot}
+LOG=${NCZ_REFIND_LOG:-/var/log/ncz-refind-refresh.log}
+
+MODE=add-only
+KVER=
+NEWEST=0
+DRY_RUN=0
+# Bumped when the on-disk contract changes; recorded in the log so an operator
+# can tell which script staged which entry.
+REFRESH_ABI=2
+
+# The hardcoded name of the firmware fallback entry and the sticky rescue
+# entry. Neither is ever touched, in any mode.
+HARDCODED_NCZRESCUE=NCZRESCUE
+
+usage() {
+    cat <<EOF
+usage: $PROG [--kver KVER | --newest]          # add-only (default)
+       $PROG --promote KVER                    # make KVER the default
+       $PROG --list                           # show staged entries, change nothing
+
+  --kver KVER    stage exactly this kernel (default: newest unstaged kernel)
+  --newest       stage the newest kernel found in $BOOT that is not staged
+  --promote KVER make an already-staged kernel the default (separate command)
+  --list         print the staged kernels and the current default_selection
+  --dry-run      do everything except write to the ESP
+  --esp DIR      ESP mount point (default $ESP)
+  --boot DIR     kernel directory (default $BOOT)
+  -h, --help     this text
+EOF
+}
+
+log() {
+    printf '%s: %s\n' "$PROG" "$*"
+    # A log we cannot write is not a reason to fail the install.
+    if [ -n "$LOG" ]; then
+        if mkdir -p "$(dirname "$LOG")" 2>/dev/null && : >>"$LOG" 2>/dev/null; then
+            printf '%s [%s] %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$MODE" "$*" >>"$LOG" 2>/dev/null || true
+        fi
+    fi
+}
+
+die() {
+    local rc="$1"
+    shift
+    printf '%s: ERROR: %s\n' "$PROG" "$*" >&2
+    log "REFUSED: $*"
+    exit "$rc"
+}
+
+# --- argument parsing -------------------------------------------------------
+PROMOTE_KVER=
+LIST=0
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --kver)
+            [ $# -ge 2 ] || die 2 "--kver needs a kernel version"
+            KVER="$2"
+            shift 2
+            ;;
+        --kver=*)
+            KVER="${1#--kver=}"
+            shift
+            ;;
+        --promote)
+            [ $# -ge 2 ] || die 2 "--promote needs a kernel version"
+            PROMOTE_KVER="$2"
+            MODE=promote
+            shift 2
+            ;;
+        --promote=*)
+            PROMOTE_KVER="${1#--promote=}"
+            MODE=promote
+            shift
+            ;;
+        --list)
+            LIST=1
+            shift
+            ;;
+        --newest)
+            NEWEST=1
+            shift
+            ;;
+        --dry-run)
+            DRY_RUN=1
+            shift
+            ;;
+        --esp)
+            [ $# -ge 2 ] || die 2 "--esp needs a directory"
+            ESP="$2"
+            shift 2
+            ;;
+        --esp=*)
+            ESP="${1#--esp=}"
+            shift
+            ;;
+        --boot)
+            [ $# -ge 2 ] || die 2 "--boot needs a directory"
+            BOOT="$2"
+            shift 2
+            ;;
+        --boot=*)
+            BOOT="${1#--boot=}"
+            shift
+            ;;
+        -h | --help)
+            usage
+            exit 0
+            ;;
+        *)
+            die 2 "unknown argument: $1 (see --help)"
+            ;;
+    esac
+done
+
+if [ "$MODE" = promote ] && [ -z "$PROMOTE_KVER" ]; then
+    die 2 "--promote needs a kernel version"
+fi
+if [ "$MODE" = promote ] && [ "$NEWEST" = 1 ]; then
+    die 2 "--promote and --newest are mutually exclusive"
+fi
+
+ESP_REAL=$(readlink -f "$ESP" 2>/dev/null || printf '%s' "$ESP")
+REFIND_DIR="$ESP_REAL/EFI/refind"
+REFIND_CONF="$REFIND_DIR/refind.conf"
+KERNEL_DIR="$ESP_REAL/EFI/ncz"
+# The kernel lives under EFI/ncz/ncz-<KVER>/ so several versions coexist and no
+# version's files are ever overwritten by another's.
+kernel_stage_dir() { printf '%s/ncz-%s' "$KERNEL_DIR" "$1"; }
+
+# The names a staged kernel is copied to *inside* its own directory. rEFInd
+# resolves entry paths relative to an unchanged prefix, so a rename inside the
+# version directory is safe; it can never shadow another version's files.
+STAGE_VMLINUZ=vmlinuz
+STAGE_INITRD=initrd.img
+STAGE_DTB=sky1-orion-o6.dtb
+
+# --- preflight --------------------------------------------------------------
+check_esp_mounted() {
+    # Test-only escape hatch: honoured solely together with an explicit
+    # NCZ_ESP_DIR override, so it can never relax the check on a real host.
+    if [ "${NCZ_ESP_SKIP_MOUNT_CHECK:-0}" = "1" ] && [ -n "${NCZ_ESP_DIR:-}" ]; then
+        [ -d "$REFIND_DIR" ] || die 4 "no rEFInd on the ESP at $REFIND_DIR (refusing: no ESP writes)"
+        return 0
+    fi
+    local mnt
+    mnt=$(awk -v p="$ESP_REAL" '$2 == p { print $2; exit }' /proc/mounts 2>/dev/null)
+    if [ -z "$mnt" ] && [ -f /proc/mounts ]; then
+        # Fall back to resolving symlinks (a bind mount or a test harness).
+        local cand
+        while read -r _dev cand _rest; do
+            if [ "$(readlink -f "$cand" 2>/dev/null)" = "$ESP_REAL" ]; then
+                mnt=$cand
+                break
+            fi
+        done </proc/mounts
+    fi
+    [ -n "$mnt" ] || die 3 "ESP is not mounted at $ESP_REAL (refusing: no ESP writes)"
+    [ -d "$REFIND_DIR" ] || die 4 "no rEFInd on the ESP at $REFIND_DIR (refusing: no ESP writes)"
+}
+
+# Refuse on a refind.conf we cannot safely edit. Both modes need an intact
+# configuration: add-only appends to it, promote edits one line of it.
+check_refind_conf() {
+    [ -f "$REFIND_CONF" ] || die 4 "$REFIND_CONF missing (refusing: no ESP writes)"
+    [ -r "$REFIND_CONF" ] || die 4 "$REFIND_CONF not readable (refusing: no ESP writes)"
+    # Braces must balance, otherwise a naive append would land inside a block.
+    local opens closes
+    opens=$(grep -o '{' "$REFIND_CONF" | wc -l)
+    closes=$(grep -o '}' "$REFIND_CONF" | wc -l)
+    [ "$opens" = "$closes" ] || die 4 "$REFIND_CONF has unbalanced braces ($opens open, $closes close); refusing"
+    grep -qE '^[[:space:]]*menuentry[[:space:]]' "$REFIND_CONF" || \
+        die 4 "$REFIND_CONF has no menuentry (refusing: not a rEFInd config)"
+}
+
+require_cmd() {
+    command -v "$1" >/dev/null 2>&1 || die 4 "required tool '$1' not found"
+}
+
+# --- /boot side -------------------------------------------------------------
+# The Yocto kernel package installs /boot/Image-<KVER>, not /boot/vmlinuz-<KVER>
+# (see docs/kernel-7.3.0-final-20261019/PARKED-O6N-BOOT-VALIDATION-20261020.md).
+# Accept both, plus the /boot/vmlinuz-<KVER> compat symlink.
+kernel_image() {
+    local kver="$1"
+    local f
+    for f in "$BOOT/vmlinuz-$kver" "$BOOT/Image-$kver"; do
+        if [ -f "$f" ]; then
+            printf '%s\n' "$f"
+            return 0
+        fi
+    done
+    return 1
+}
+
+kernel_initrd() {
+    local kver="$1"
+    local f
+    for f in "$BOOT/initrd.img-$kver" "$BOOT/initrd-$kver"; do
+        if [ -f "$f" ]; then
+            printf '%s\n' "$f"
+            return 0
+        fi
+    done
+    return 1
+}
+
+kernel_dtb() {
+    local kver="$1"
+    local f
+    for f in "$BOOT/cix/sky1-orion-o6.dtb" "$BOOT/dtb-$kver/cix/sky1-orion-o6.dtb"; do
+        if [ -f "$f" ]; then
+            printf '%s\n' "$f"
+            return 0
+        fi
+    done
+    return 1
+}
+
+# Every KVER that has a kernel image in /boot, newest first.
+list_boot_kvers() {
+    local f base
+    for f in "$BOOT"/vmlinuz-* "$BOOT"/Image-*; do
+        [ -e "$f" ] || continue
+        base=$(basename "$f")
+        base=${base#vmlinuz-}
+        base=${base#Image-}
+        printf '%s\n' "$base"
+    done | sort -u -V -r
+}
+
+# Is this KVER already staged, i.e. does it own a version directory with both
+# a kernel image and a menuentry?
+is_staged() {
+    local kver="$1"
+    [ -d "$(kernel_stage_dir "$kver")" ] || return 1
+    grep -qF "ncz/ncz-$kver/" "$REFIND_CONF" || return 1
+    return 0
+}
+
+# The Default entry's option string, verbatim. This is what the new entry
+# inherits, so a new kernel boots with EXACTLY the known-good kernel's
+# parameters -- no drift in cmdline between versions.
+#
+# "Default" is resolved the way rEFInd does: default_selection, which is an
+# entry index (numeric), an entry title, or the keyword "last". The options
+# line is then read from THAT entry only -- never from whichever menuentry
+# happens to come first (the rescue entries come first on O6N).
+default_entry_options() {
+    local sel idx
+    sel=$(current_default_selection)
+    case "$sel" in
+        '' | last)
+            # No explicit default: rEFInd falls back to the first entry.
+            idx=0
+            ;;
+        *[!0-9]*)
+            idx=$(entry_index_for_title "$sel")
+            ;;
+        *)
+            idx=$sel
+            ;;
+    esac
+    [ -n "$idx" ] || return 1
+    entry_options_at_index "$idx"
+}
+
+# Options line of the menuentry at 0-based index $1, verbatim.
+entry_options_at_index() {
+    awk -v want="$1" '
+        /^[[:space:]]*menuentry[[:space:]]/ { depth = 0; in_entry = 1; opened = 0; in_target = (idx == want); idx++; next }
+        in_entry && !opened {
+            o = $0
+            n_open = gsub(/{/, "{", o)
+            o = $0
+            n_close = gsub(/}/, "}", o)
+            opened = 1
+            depth = 1 + n_open - n_close
+            if (in_target && !seen && /^[[:space:]]*options[[:space:]]/) {
+                sub(/^[[:space:]]*options[[:space:]]+/, "")
+                seen = 1
+                opts = $0
+            }
+            next
+        }
+        in_entry {
+            o = $0
+            n_open = gsub(/{/, "{", o)
+            o = $0
+            n_close = gsub(/}/, "}", o)
+            depth += n_open - n_close
+            if (in_target && !seen && /^[[:space:]]*options[[:space:]]/) {
+                sub(/^[[:space:]]*options[[:space:]]+/, "")
+                seen = 1
+                opts = $0
+            }
+            if (depth <= 0) { in_entry = 0; in_target = 0 }
+        }
+        END { if (seen) print opts; else exit 1 }
+    ' "$REFIND_CONF"
+}
+
+# 0-based index of the menuentry whose title is exactly $1.
+entry_index_for_title() {
+    awk -v want="$1" '
+        /^[[:space:]]*menuentry[[:space:]]/ {
+            title = extract_title($0)
+            if (title == want) { print idx; exit }
+            idx++
+        }
+        function extract_title(line,   t) {
+            t = line
+            sub(/^[[:space:]]*menuentry[[:space:]]+/, "", t)
+            gsub(/^"|"[[:space:]]*\{?[[:space:]]*$/, "", t)
+            return t
+        }
+    ' "$REFIND_CONF"
+}
+
+current_default_selection() {
+    awk '
+        /^[[:space:]]*default_selection[[:space:]]/ {
+            v = $0
+            sub(/^[[:space:]]*default_selection[[:space:]]+/, "", v)
+            gsub(/^"|"[[:space:]]*$/, "", v)
+            sub(/[[:space:]].*$/, "", v)
+            print v
+            exit
+        }
+    ' "$REFIND_CONF"
+}
+
+# 0-based index of the "NCZ <KVER>" menuentry (empty when not present).
+entry_index_for_kver() {
+    entry_index_for_title "NCZ $1"
+}
+
+# Title of the menuentry at 0-based index $1 (empty when out of range).
+entry_title_at_index() {
+    awk -v want="$1" '
+        /^[[:space:]]*menuentry[[:space:]]/ {
+            if (idx == want) {
+                t = $0
+                sub(/^[[:space:]]*menuentry[[:space:]]+/, "", t)
+                gsub(/^"|"[[:space:]]*\{?[[:space:]]*$/, "", t)
+                print t
+                exit
+            }
+            idx++
+        }
+    ' "$REFIND_CONF"
+}
+
+# The currently promoted kernel = the kernel named by default_selection. This
+# is the "known-good" kernel that add-only mode must protect. Empty when the
+# default does not resolve to an "NCZ <KVER>" entry.
+default_kver() {
+    local sel title
+    sel=$(current_default_selection)
+    case "$sel" in
+        '' | last)
+            title=$(entry_title_at_index 0)
+            ;;
+        *[!0-9]*)
+            title=$sel
+            ;;
+        *)
+            title=$(entry_title_at_index "$sel")
+            ;;
+    esac
+    case "$title" in
+        "NCZ "*) printf '%s\n' "${title#NCZ }" ;;
+        *) printf '\n' ;;
+    esac
+}
+
+# --- modes ------------------------------------------------------------------
+stage_new_kernel() {
+    local kver="$1" img initrd dtb stage opts
+    img=$(kernel_image "$kver") || die 4 "no kernel image for $kver in $BOOT (/boot/vmlinuz-$kver or /boot/Image-$kver); refusing: no ESP writes"
+    initrd=$(kernel_initrd "$kver") || \
+        die 4 "no initramfs for $kver in $BOOT (run update-initramfs -c -k $kver); refusing: no ESP writes"
+
+    if is_staged "$kver"; then
+        log "$kver is already staged at ncz/ncz-$kver -- nothing to do (add-only)"
+        return 0
+    fi
+
+    local known_good
+    known_good=$(default_kver)
+    if [ -n "$known_good" ]; then
+        local kg_img
+        if ! kg_img=$(kernel_image "$known_good"); then
+            die 4 "known-good kernel $known_good has no image in $BOOT; refusing: the fallback would be lost"
+        fi
+        [ -d "$(kernel_stage_dir "$known_good")" ] || \
+            die 4 "known-good kernel $known_good is not staged on the ESP; refusing: the fallback would be lost"
+        log "known-good kernel $known_good present and staged -- it will not be touched"
+    else
+        log "WARNING: no numeric default_selection resolved to an NCZ kernel; staging $kver without a resolved fallback"
+    fi
+
+    opts=$(default_entry_options) || \
+        die 4 "the Default menuentry in $REFIND_CONF has no options line; refusing: cannot copy its options"
+    log "Default entry options copied verbatim: $opts"
+
+    stage=$(kernel_stage_dir "$kver")
+    if [ "$DRY_RUN" = 1 ]; then
+        log "DRY RUN: would stage $kver from $img -> $stage/$STAGE_VMLINUZ (initrd $initrd)"
+        log "DRY RUN: refind.conf left unchanged"
+        return 0
+    fi
+
+    mkdir -p "$stage" || die 5 "cannot create $stage"
+    cp -f "$img" "$stage/$STAGE_VMLINUZ" || die 5 "cannot copy $img to $stage/$STAGE_VMLINUZ"
+    cp -f "$initrd" "$stage/$STAGE_INITRD" || die 5 "cannot copy $initrd to $stage/$STAGE_INITRD"
+    if dtb=$(kernel_dtb "$kver"); then
+        cp -f "$dtb" "$stage/$STAGE_DTB" || die 5 "cannot copy $dtb to $stage/$STAGE_DTB"
+        log "staged $kver: $(basename "$img"), $(basename "$initrd"), $(basename "$dtb") -> $stage"
+    else
+        log "WARNING: no sky1-orion-o6.dtb for $kver; entry will not set a device tree"
+        log "staged $kver: $(basename "$img"), $(basename "$initrd") -> $stage"
+    fi
+    sync -f "$stage/$STAGE_VMLINUZ" 2>/dev/null || sync
+
+    # APPEND one entry. Never rewrite, never reorder, never touch an existing
+    # entry: refind.conf keeps its existing bytes as a strict prefix.
+    {
+        printf '\n'
+        printf '# --- added by %s: kernel %s, ADD-ONLY (not the default) ---\n' "$PROG" "$kver"
+        printf 'menuentry "NCZ %s" {\n' "$kver"
+        printf '    icon /EFI/refind/icons/os_linux.png\n'
+        printf '    volume ncz\n'
+        printf '    loader /EFI/ncz/ncz-%s/%s\n' "$kver" "$STAGE_VMLINUZ"
+        printf '    initrd /EFI/ncz/ncz-%s/%s\n' "$kver" "$STAGE_INITRD"
+        if [ -f "$stage/$STAGE_DTB" ]; then
+            printf '    devicetree /EFI/ncz/ncz-%s/%s\n' "$kver" "$STAGE_DTB"
+        fi
+        printf '    options %s\n' "$opts"
+        printf '}\n'
+    } >>"$REFIND_CONF" || die 5 "cannot append the $kver menuentry to $REFIND_CONF"
+
+    log "added menuentry \"NCZ $kver\"; default_selection is UNCHANGED ($(current_default_selection))"
+    log "to make it the default run: $PROG --promote $kver"
+}
+
+promote_kernel() {
+    local kver="$1"
+    kernel_image "$kver" >/dev/null || \
+        die 4 "no kernel image for $kver in $BOOT; refusing: will not promote a kernel that is not installed"
+    is_staged "$kver" || \
+        die 4 "$kver is not staged on the ESP; refusing: run '$PROG --kver $kver' first"
+
+    local idx cur
+    idx=$(entry_index_for_kver "$kver")
+    [ -n "$idx" ] || die 4 "no menuentry titled \"NCZ $kver\" in $REFIND_CONF; refusing"
+    cur=$(current_default_selection)
+
+    if [ "$cur" = "$idx" ]; then
+        log "default_selection is already $idx (NCZ $kver) -- nothing to do"
+        return 0
+    fi
+
+    if [ "$DRY_RUN" = 1 ]; then
+        log "DRY RUN: would set default_selection from $cur to $idx (NCZ $kver)"
+        return 0
+    fi
+
+    # Exactly one line changes. Every menuentry, the rescue entries and the
+    # firmware boot entry are untouched.
+    local tmp
+    tmp=$(mktemp "$REFIND_DIR/.refind.conf.XXXXXX") || die 5 "cannot create a temp file in $REFIND_DIR"
+    if awk -v want="$idx" '
+        !done && /^[[:space:]]*default_selection[[:space:]]/ {
+            printf "default_selection %s\n", want
+            done = 1
+            next
+        }
+        { print }
+        END { exit (done ? 0 : 1) }
+    ' "$REFIND_CONF" >"$tmp"; then
+        cat "$tmp" >"$REFIND_CONF" || { rm -f "$tmp"; die 5 "cannot write $REFIND_CONF"; }
+        rm -f "$tmp"
+    else
+        rm -f "$tmp"
+        die 4 "no default_selection line in $REFIND_CONF; refusing (add one by hand first)"
+    fi
+    sync -f "$REFIND_CONF" 2>/dev/null || sync
+    log "PROMOTED $kver: default_selection $cur -> $idx; menuentries, rescue entries and the firmware boot entry unchanged"
+}
+
+list_staged() {
+    local kver
+    log "ESP: $ESP_REAL"
+    log "default_selection: $(current_default_selection)"
+    for kver in $(list_boot_kvers); do
+        if is_staged "$kver"; then
+            log "  $kver  staged (entry $(entry_index_for_kver "$kver"))"
+        else
+            log "  $kver  in $BOOT, not staged"
+        fi
+    done
+}
+
+# --- main -------------------------------------------------------------------
+case "$MODE" in
+    promote)
+        require_cmd awk
+        check_esp_mounted
+        check_refind_conf
+        log "mode: promote ($PROMOTE_KVER)"
+        promote_kernel "$PROMOTE_KVER"
+        ;;
+    *)
+        if [ "$LIST" = 1 ]; then
+            check_esp_mounted
+            check_refind_conf
+            list_staged
+            exit 0
+        fi
+        require_cmd awk
+        require_cmd cp
+        check_esp_mounted
+        check_refind_conf
+        if [ -z "$KVER" ]; then
+            # Newest kernel in /boot that is not staged yet -- that is the one
+            # the package manager just dropped. Already-staged kernels are
+            # skipped, so a later apt run does not re-add an entry.
+            for cand in $(list_boot_kvers); do
+                if ! is_staged "$cand"; then
+                    KVER=$cand
+                    break
+                fi
+            done
+            if [ -z "$KVER" ]; then
+                log "no unstaged kernel in $BOOT -- nothing to do (add-only)"
+                exit 0
+            fi
+            log "no --kver given: picked the newest unstaged kernel $KVER ($NEWEST=$NEWEST)"
+        fi
+        log "mode: add-only ($KVER)"
+        stage_new_kernel "$KVER"
+        ;;
+esac
