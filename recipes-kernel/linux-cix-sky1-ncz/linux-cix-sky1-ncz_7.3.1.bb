@@ -1,6 +1,19 @@
 # SPDX-FileCopyrightText: Copyright (c) 2026 Jason Perlow
 # SPDX-License-Identifier: Apache-2.0
 #
+# r295 (2026-11-01, kernel 7.3.1): the r292 series ported onto upstream stable
+# v7.3.1 (tag object dfc1145bbaa1c5dd626fd25d9ae8fc277864e7bd, peeled commit
+# 79a907609d53d5cd645b42c11550d295d43abf99, linux-stable, Greg Kroah-Hartman,
+# 2026-10-30; signature not verifiable on the build host, key not installed).
+# Patch series UNCHANGED from r292: the consolidated port patch plus the 32
+# numbered patches 0001-0011 + 0013-0033 all apply with no conflict to v7.3.1
+# (strict `git am` without --3way; none dropped, none already upstream). KVER
+# becomes 7.3.1-sky1-ncz, so every accelerator overlay must be rebuilt against
+# the new Module.symvers. The git form of this series is the linux-cix branch
+# kernel-dev/sky1-7.3.1-r295-20261101. Packaging revision r295 (r294 skipped by
+# operator decision). The history below is kept from the 7.3.0 recipe it was
+# derived from.
+#
 # r292 (2026-10-23, kernel 7.3.0, PR r2): r291 plus five patches adopted from
 # the CIX vendor tree github.com/cixtech/cix-linux-main patches-7.3 (authored
 # by CIX; authorship kept in each patch): 0029 widen the DRM plane mask to 64
@@ -33,7 +46,7 @@
 #   really not built (cix/Kbuild otherwise falls back to obj-m): the VPU
 #   driver (amvx) ships only as the cix-vpu-driver DKMS module; an in-tree
 #   amvx.ko with the same name could load in its place without any error
-#   (see config-7.3.0-sky1-ncz.defconfig);
+#   (see config-7.3.1-sky1-ncz.defconfig);
 # - 0023-0026 display fixes (linlondp): clocks running across the firmware
 #   takeover with every firmware pipeline stopped, flip-timeout recovery that
 #   leaves the other output alone and remodesets the affected CRTC, engine
@@ -235,13 +248,12 @@ LICENSE = "GPL-2.0-only"
 LIC_FILES_CHKSUM = "file://COPYING;md5=6bc538ed5bd9a7fc9398086aedcd7e46"
 
 inherit kernel
-FILESEXTRAPATHS:prepend := "${THISDIR}/linux-cix-sky1-ncz-7.3-rc7:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/linux-cix-sky1-ncz-7.3.1:"
 
-LINUX_VERSION = "7.3"
+LINUX_VERSION = "7.3.1"
 KERNEL_LOCALVERSION = "-sky1-ncz"
-PV = "7.3+ncz"
-PR = "r2"
-KBRANCH = "kernel-73final-port-20261019"
+PV = "7.3.1+ncz"
+PR = "r1"
 KERNEL_PACKAGE_NAME = "kernel-${PN}"
 
 do_shared_workdir:append() {
@@ -386,7 +398,7 @@ do_shared_workdir:append() {
 # CIXH6070) stays in permanent -EPROBE_DEFER. linlondp-cluster
 # (CIXH50C0) finds no slave mdev, "ACPI cluster: no DPUs", no /dev/dri.
 # See commit a49de0beac8c for the full commit message.
-SRCREV_kernel = "c03c1a14507dfaf8b856c2608f9ac216021fc222"
+SRCREV_kernel = "79a907609d53d5cd645b42c11550d295d43abf99"
 
 # NOTE: fetches from a LOCAL bare mirror under this build container's workdir mount
 # (the ncz-yocto-y6 podman sandbox has no SSH keys, so it cannot reach the
@@ -409,8 +421,8 @@ SRCREV_kernel = "c03c1a14507dfaf8b856c2608f9ac216021fc222"
 #  ~/yocto-docker/yocto6-ncz-tydeus/kernel-mirrors/linux-cix-kernel-73final-port.git`
 # if it goes stale.
 SRC_URI = " \
-    git:///workdir/kernel-mirrors/linux-cix-kernel-73final-port.git;protocol=file;branch=${KBRANCH};name=kernel \
-    file://config-7.3.0-sky1-ncz.defconfig \
+    git:///workdir/kernel-mirrors/linux-stable.git;protocol=file;nobranch=1;name=kernel \
+    file://config-7.3.1-sky1-ncz.defconfig \
     file://sky1-ncz-v7.3-final-port.patch \
     file://0001-drm-cix-trilin-dp-drop-fwnode_drm_find_panel-use-cou.patch \
     file://0002-PCI-cadence-sky1-cix-restore-ACPI-native-mode-on-v7.3.patch \
@@ -466,7 +478,7 @@ PROVIDES = "${PN} virtual/kernel"
 
 do_configure:prepend() {
     cd ${S}
-    cp ${UNPACKDIR}/config-7.3.0-sky1-ncz.defconfig ${B}/.config
+    cp ${UNPACKDIR}/config-7.3.1-sky1-ncz.defconfig ${B}/.config
     oe_runmake ARCH=arm64 O=${B} olddefconfig
 }
 
