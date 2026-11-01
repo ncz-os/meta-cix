@@ -43,14 +43,21 @@ SRC_URI = " \
 S = "${UNPACKDIR}"
 
 # rEFInd itself is provided by the installer image; this package only edits
-# the ESP it creates. bash + coreutils are the script's real dependencies.
-RDEPENDS:${PN} = "bash"
+# the ESP it creates. bash + coreutils are the script's real dependencies
+# (mkdir/cp/sync/mv/cut/stat/sort come from coreutils).
+RDEPENDS:${PN} = "bash coreutils"
+
+# Installed under /usr/local/sbin (not ${sbindir} == /usr/sbin): the wrapper
+# and the postinst invoke /usr/local/sbin/ncz-refind-refresh by absolute path,
+# and so does the operator documentation. Keeping one canonical location
+# avoids a postinst that silently finds nothing to run.
+CIXMINI_BOOT_SBINDIR = "/usr/local/sbin"
 
 do_install() {
-    install -d -m 0755 ${D}${sbindir}
+    install -d -m 0755 ${D}${CIXMINI_BOOT_SBINDIR}
     install -d -m 0755 ${D}${localstatedir}/log
-    install -m 0755 ${UNPACKDIR}/ncz-refind-refresh ${D}${sbindir}/ncz-refind-refresh
-    install -m 0755 ${UNPACKDIR}/cixmini-boot-refresh ${D}${sbindir}/cixmini-boot-refresh
+    install -m 0755 ${UNPACKDIR}/ncz-refind-refresh ${D}${CIXMINI_BOOT_SBINDIR}/ncz-refind-refresh
+    install -m 0755 ${UNPACKDIR}/cixmini-boot-refresh ${D}${CIXMINI_BOOT_SBINDIR}/cixmini-boot-refresh
 }
 
 # postinst: add-only refresh. Failure is reported but never fails the install
@@ -70,8 +77,8 @@ pkg_postinst:${PN}() {
 }
 
 FILES:${PN} = " \
-    ${sbindir}/ncz-refind-refresh \
-    ${sbindir}/cixmini-boot-refresh \
+    ${CIXMINI_BOOT_SBINDIR}/ncz-refind-refresh \
+    ${CIXMINI_BOOT_SBINDIR}/cixmini-boot-refresh \
 "
 
 # The script is not a device node or an ELF; skip the arch QA scan.
