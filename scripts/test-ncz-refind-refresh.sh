@@ -193,6 +193,110 @@ test_new_options_ignore_rescue_default() {
 }
 
 # ---------------------------------------------------------------------------
+# REGRESSION: with default_selection naming a rescue entry, the fallback must
+# still pick the *highest version* NCZ entry (the known-good kernel), even if
+# the entries are not in version order.
+# ---------------------------------------------------------------------------
+test_fallback_picks_highest_version() {
+    sandbox
+    export NCZ_ESP_SKIP_MOUNT_CHECK=1
+
+    # Six entries, deliberately out of order, default on a rescue entry.
+    cat >"$ESP/EFI/refind/refind.conf" <<'CONF'
+timeout 20
+default_selection 1
+
+menuentry "Rescue" {
+    options ro single ncz_rescue=1
+}
+
+menuentry "NCZ 7.3.10-sky1-ncz" {
+    options FROM-7310 root=UUID=abc rw quiet
+}
+
+menuentry "NCZ 7.3.2-sky1-ncz" {
+    options FROM-732 root=UUID=abc rw quiet
+}
+
+menuentry "NCZ 7.3.9-sky1-ncz" {
+    options FROM-739 root=UUID=abc rw quiet
+}
+CONF
+
+    # The known-good 7.3.10 must exist in /boot AND be staged on the ESP,
+    # otherwise the script correctly refuses (that check is tested elsewhere
+    # and must not mask the option-inheritance behaviour under test here).
+    printf 'BOOT-VMLINUZ-7.3.10\n' >"$BOOT/vmlinuz-7.3.10-sky1-ncz"
+    printf 'BOOT-INITRD-7.3.10\n' >"$BOOT/initrd.img-7.3.10-sky1-ncz"
+    mkdir -p "$ESP/EFI/ncz/ncz-7.3.10-sky1-ncz"
+    printf 'K\n' >"$ESP/EFI/ncz/ncz-7.3.10-sky1-ncz/vmlinuz"
+    printf 'I\n' >"$ESP/EFI/ncz/ncz-7.3.10-sky1-ncz/initrd.img"
+
+    run_refresh --kver 7.3.1-sky1-ncz
+    if [ "$RC" != 0 ]; then
+        fail "version-fallback: exit 0" "rc=$RC ERR=[$(cat "$SBX/err.txt" 2>/dev/null)]"
+        return
+    fi
+    local new_opts
+    new_opts=$(sed -n '/menuentry "NCZ 7.3.1-sky1-ncz" {/,/^}/p' "$ESP/EFI/refind/refind.conf" |
+        sed -n 's/^[[:space:]]*options[[:space:]]*//p')
+    if [ "$new_opts" = "FROM-7310 root=UUID=abc rw quiet" ]; then
+        pass "version-fallback: highest version (7.3.10) is the inherited Default"
+    else
+        fail "version-fallback: highest version (7.3.10) is the inherited Default" \
+            "got=[$new_opts]"
+    fi
+}
+
+# ---------------------------------------------------------------------------
+# REGRESSION: the recipe must install the scripts where the wrapper and the
+# postinst look for them, and must not hardcode a path it does not install to.
+# ---------------------------------------------------------------------------
+test_recipe_install_path_matches_invocation() {
+    local recipe="$REPO/recipes-bsp/cixmini-boot/cixmini-boot_1.0.bb"
+    local wrapper="$REPO/scripts/cixmini-boot-refresh"
+
+    if grep -qE '^CIXMINI_BOOT_SBINDIR[[:space:]]*=[[:space:]]*"/usr/local/sbin"' "$recipe"; then
+        pass "packaging: installs under /usr/local/sbin"
+    else
+        fail "packaging: installs under /usr/local/sbin"
+    fi
+
+    # Nothing may install into ${sbindir} (/usr/sbin) if the callers use
+    # /usr/local/sbin -- that is the mismatch that made the postinst a no-op.
+    if grep -q 'install -m 0755 .*\${sbindir}' "$recipe"; then
+        fail "packaging: does not install into \${sbindir}" \
+            "$(grep -n '\${sbindir}' "$recipe")"
+    else
+        pass "packaging: does not install into \${sbindir}"
+    fi
+
+    # The wrapper's default REFRESH path and the postinst's invocation must
+    # match the install location.
+    if grep -q '/usr/local/sbin/ncz-refind-refresh' "$wrapper" &&
+        grep -q '/usr/local/sbin/cixmini-boot-refresh' "$recipe"; then
+        pass "packaging: invocation path matches install path"
+    else
+        fail "packaging: invocation path matches install path"
+    fi
+}
+
+# ---------------------------------------------------------------------------
+# REGRESSION: the recipe must declare the runtime tools its scripts use.
+# ---------------------------------------------------------------------------
+test_recipe_declares_coreutils() {
+    local recipe="$REPO/recipes-bsp/cixmini-boot/cixmini-boot_1.0.bb"
+    local rdeps
+    rdeps=$(grep -E '^RDEPENDS:\$\{PN\}' "$recipe")
+    if printf '%s' "$rdeps" | grep -qE '\bbash\b' &&
+        printf '%s' "$rdeps" | grep -qE '\bcoreutils\b'; then
+        pass "packaging: RDEPENDS includes bash and coreutils"
+    else
+        fail "packaging: RDEPENDS includes bash and coreutils" "rdeps=[$rdeps]"
+    fi
+}
+
+# ---------------------------------------------------------------------------
 # Test 1 (REQUIRED): add-only mode leaves every pre-existing ESP entry and
 # file byte-identical -- proven with a before/after diff, not by inspection.
 # ---------------------------------------------------------------------------
@@ -691,6 +795,9 @@ main() {
         chmod +x "$REFRESH" 2>/dev/null || true
     fi
     test_new_options_ignore_rescue_default
+    test_fallback_picks_highest_version
+    test_recipe_install_path_matches_invocation
+    test_recipe_declares_coreutils
     test_add_only_preserves_everything_byte_identical
     test_old_version_files_survive_install
     test_promote_changes_only_default_selection
