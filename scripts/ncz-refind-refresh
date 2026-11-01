@@ -307,25 +307,21 @@ is_staged() {
 # inherits, so a new kernel boots with EXACTLY the known-good kernel's
 # parameters -- no drift in cmdline between versions.
 #
-# "Default" is resolved the way rEFInd does: default_selection, which is an
-# entry index (numeric), an entry title, or the keyword "last". The options
-# line is then read from THAT entry only -- never from whichever menuentry
-# happens to come first (the rescue entries come first on O6N).
+# Which entry is "the Default"? NOT simply whatever default_selection names:
+# on O6N default_selection can point at a rescue entry (or be "last"), and
+# inheriting a rescue entry's options (e.g. "ro single ncz_rescue=1") would
+# give the new kernel a rescue cmdline. The Default is therefore the
+# known-good NCZ kernel entry, resolved in this order:
+#
+#   1. an explicit menuentry titled "Default", if the config has one;
+#   2. the NCZ <KVER> entry named by default_selection (via default_kver),
+#      skipping any Rescue / Rescue Partition / NCZRESCUE entry;
+#   3. otherwise: refuse. Never fall back to "the first menuentry" -- on O6N
+#      the first entries ARE the rescue ones.
 default_entry_options() {
-    local sel idx
-    sel=$(current_default_selection)
-    case "$sel" in
-        '' | last)
-            # No explicit default: rEFInd falls back to the first entry.
-            idx=0
-            ;;
-        *[!0-9]*)
-            idx=$(entry_index_for_title "$sel")
-            ;;
-        *)
-            idx=$sel
-            ;;
-    esac
+    local idx
+    idx=$(entry_index_for_title "Default")
+    [ -n "$idx" ] || idx=$(default_kernel_index)
     [ -n "$idx" ] || return 1
     entry_options_at_index "$idx"
 }
@@ -402,6 +398,43 @@ entry_index_for_kver() {
     entry_index_for_title "NCZ $1"
 }
 
+# 0-based index of the entry that carries the "Default kernel" cmdline -- the
+# NCZ kernel the operator is currently booting. default_selection is honoured
+# when it names an NCZ entry, but a *rescue* selection (or "last"/unset) must
+# not defeat the lookup: in that case fall back to the LAST "NCZ <KVER>"
+# menuentry, i.e. the most recently installed kernel, which is the known-good
+# one. Rescue / Rescue Partition / NCZRESCUE entries are never candidates.
+default_kernel_index() {
+    local sel idx title
+    sel=$(current_default_selection)
+    case "$sel" in
+        '' | last) : ;;
+        *[!0-9]*)
+            idx=$(entry_index_for_title "$sel")
+            ;;
+        *)
+            idx=$sel
+            ;;
+    esac
+    if [ -n "$idx" ]; then
+        title=$(entry_title_at_index "$idx")
+        case "$title" in
+            "NCZ "*) printf '%s\n' "$idx"; return 0 ;;
+        esac
+    fi
+    # Fall back to the last NCZ entry present.
+    awk '
+        /^[[:space:]]*menuentry[[:space:]]/ {
+            t = $0
+            sub(/^[[:space:]]*menuentry[[:space:]]+[^"]*"/, "", t)
+            sub(/".*$/, "", t)
+            if (t ~ /^NCZ /) last = idx
+            idx++
+        }
+        END { if (last != "") print last; else exit 1 }
+    ' "$REFIND_CONF"
+}
+
 # Title of the menuentry at 0-based index $1 (empty when out of range).
 entry_title_at_index() {
     awk -v want="$1" '
@@ -423,19 +456,10 @@ entry_title_at_index() {
 # is the "known-good" kernel that add-only mode must protect. Empty when the
 # default does not resolve to an "NCZ <KVER>" entry.
 default_kver() {
-    local sel title
-    sel=$(current_default_selection)
-    case "$sel" in
-        '' | last)
-            title=$(entry_title_at_index 0)
-            ;;
-        *[!0-9]*)
-            title=$sel
-            ;;
-        *)
-            title=$(entry_title_at_index "$sel")
-            ;;
-    esac
+    local idx title
+    idx=$(default_kernel_index) || { printf '\n'; return 0; }
+    [ -n "$idx" ] || { printf '\n'; return 0; }
+    title=$(entry_title_at_index "$idx")
     case "$title" in
         "NCZ "*) printf '%s\n' "${title#NCZ }" ;;
         *) printf '\n' ;;

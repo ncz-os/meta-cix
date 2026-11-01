@@ -130,6 +130,69 @@ run_refresh() {
 }
 
 # ---------------------------------------------------------------------------
+# REGRESSION: the options a new kernel inherits come from the Default kernel
+# entry, NOT from whatever default_selection happens to point at. On O6N the
+# first menuentry is "Rescue Partition" and the second is "Rescue"; if the
+# operator has default_selection pointing at a rescue entry (a perfectly legal
+# rEFInd config), copying "that entry's" options would give the new kernel
+# "ro single ncz_rescue=1" instead of the real cmdline.
+#
+# Before the fix, default_entry_options() resolved default_selection and read
+# the options at that index -- so this test FAILS on the base and PASSES with
+# the fix.
+# ---------------------------------------------------------------------------
+test_new_options_ignore_rescue_default() {
+    sandbox
+    export NCZ_ESP_SKIP_MOUNT_CHECK=1
+
+    # Point default_selection at entry index 1 == "Rescue", whose options are
+    # a rescue cmdline that must never propagate to a normal kernel.
+    sed -i 's/^default_selection 2$/default_selection 1/' \
+        "$ESP/EFI/refind/refind.conf"
+    local rescue_opts
+    rescue_opts=$(sed -n '/menuentry "Rescue" {/,/^}/p' "$ESP/EFI/refind/refind.conf" |
+        sed -n 's/^[[:space:]]*options[[:space:]]*//p')
+    if [ "$rescue_opts" != "ro single ncz_rescue=1" ]; then
+        fail "rescue-default: fixture precondition" "rescue opts=[$rescue_opts]"
+        return
+    fi
+
+    run_refresh --kver 7.3.1-sky1-ncz
+    if [ "$RC" != 0 ]; then
+        fail "rescue-default: exit 0" "rc=$RC$(cat "$SBX/err.txt" 2>/dev/null)"
+        return
+    fi
+
+    local good_opts new_opts
+    good_opts=$(sed -n '/menuentry "NCZ 7.3.0-sky1-ncz" {/,/^}/p' "$ESP/EFI/refind/refind.conf" |
+        sed -n 's/^[[:space:]]*options[[:space:]]*//p')
+    new_opts=$(sed -n '/menuentry "NCZ 7.3.1-sky1-ncz" {/,/^}/p' "$ESP/EFI/refind/refind.conf" |
+        sed -n 's/^[[:space:]]*options[[:space:]]*//p')
+
+    if [ -n "$good_opts" ] && [ "$new_opts" = "$good_opts" ]; then
+        pass "rescue-default: new entry inherits the Default kernel options"
+    else
+        fail "rescue-default: new entry inherits the Default kernel options" \
+            "expected=[$good_opts] got=[$new_opts]"
+    fi
+
+    if [ "$new_opts" != "$rescue_opts" ]; then
+        pass "rescue-default: rescue options NOT copied to the new kernel"
+    else
+        fail "rescue-default: rescue options NOT copied to the new kernel" \
+            "new entry got rescue cmdline [$new_opts]"
+    fi
+
+    # And nothing about the default_selection line moved.
+    if grep -qx 'default_selection 1' "$ESP/EFI/refind/refind.conf"; then
+        pass "rescue-default: default_selection untouched"
+    else
+        fail "rescue-default: default_selection untouched" \
+            "$(grep -n default_selection "$ESP/EFI/refind/refind.conf")"
+    fi
+}
+
+# ---------------------------------------------------------------------------
 # Test 1 (REQUIRED): add-only mode leaves every pre-existing ESP entry and
 # file byte-identical -- proven with a before/after diff, not by inspection.
 # ---------------------------------------------------------------------------
@@ -166,14 +229,25 @@ test_add_only_preserves_everything_byte_identical() {
     # itself necessarily grows (that is the one entry being added) and is
     # checked separately as an append-only strict prefix above; every OTHER
     # pre-existing file -- all kernel payloads -- must be byte-identical.
-    local changed="" f rel
+    local changed="" f rel missing=""
     while IFS= read -r f; do
-        rel=${f#"$SBX/esp.before.tree"}
-        [ "$rel" = "/EFI/refind/refind.conf" ] && continue
-        if ! cmp -s "$f" "$ESP$rel"; then
+        rel=${f#"$SBX/esp.before.tree"/}
+        rel=${rel#./}
+        [ "$rel" = "EFI/refind/refind.conf" ] && continue
+        # The path we build MUST resolve, otherwise the comparison is vacuous
+        # and would "pass" no matter what the script did. Treat an unresolved
+        # path as a hard failure rather than skipping it.
+        if [ ! -e "$ESP/$rel" ]; then
+            missing="$missing $rel"
+        elif ! cmp -s "$f" "$ESP/$rel"; then
             changed="$changed $rel"
         fi
     done < <(find "$SBX/esp.before.tree" -type f)
+    if [ -n "$missing" ]; then
+        fail "add-only: every pre-existing ESP kernel file byte-identical" \
+            "unresolved paths:$missing"
+        return
+    fi
     if [ -z "$changed" ]; then
         pass "add-only: every pre-existing ESP kernel file byte-identical"
     else
@@ -362,13 +436,18 @@ test_promote_changes_only_default_selection() {
     fi
 
     # No kernel file on the ESP changed.
-    local f
+    local f rel
     ok=1
     while IFS= read -r f; do
-        rel=${f#"$SBX/esp.before.tree"}
+        rel=${f#"$SBX/esp.before.tree"/}
+        rel=${rel#./}
         # esp.before.tree predates the 7.3.1 staging, so only compare files
-        # that existed then.
-        if [ -e "$f" ] && [ -e "$ESP$rel" ] && ! cmp -s "$f" "$ESP$rel"; then
+        # that existed then. A path that does not resolve post-promote means
+        # the script DELETED a pre-existing file, which is a failure.
+        if [ ! -e "$ESP/$rel" ]; then
+            ok=0
+            printf '      removed: %s\n' "$rel"
+        elif ! cmp -s "$f" "$ESP/$rel"; then
             ok=0
             printf '      changed: %s\n' "$rel"
         fi
@@ -611,6 +690,7 @@ main() {
     if [ ! -x "$REFRESH" ]; then
         chmod +x "$REFRESH" 2>/dev/null || true
     fi
+    test_new_options_ignore_rescue_default
     test_add_only_preserves_everything_byte_identical
     test_old_version_files_survive_install
     test_promote_changes_only_default_selection
