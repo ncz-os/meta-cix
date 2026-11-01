@@ -472,11 +472,33 @@ test_no_efibootmgr_invocation() {
 # ---------------------------------------------------------------------------
 test_recipe_ships_refresh() {
     local hit
-    hit=$(grep -rl "ncz-refind-refresh" "$REPO/recipes-" 2>/dev/null | head -5)
+    hit=$(grep -rl "ncz-refind-refresh" "$REPO"/recipes-*/ 2>/dev/null | head -5)
     if [ -n "$hit" ]; then
         pass "packaging: a recipe ships ncz-refind-refresh"
     else
         fail "packaging: a recipe ships ncz-refind-refresh"
+    fi
+    # The shipping recipe must be cixmini-boot and must run the refresh from
+    # its postinst (that is where the old wipe-everything behaviour lived).
+    local boot="$REPO/recipes-bsp/cixmini-boot"
+    if [ -d "$boot" ] && grep -rq 'pkg_postinst' "$boot" &&
+        grep -rq 'cixmini-boot-refresh' "$boot"; then
+        pass "packaging: cixmini-boot postinst runs the add-only refresh"
+    else
+        fail "packaging: cixmini-boot postinst runs the add-only refresh"
+    fi
+    # And it must not CALL efibootmgr from the postinst path (comments that
+    # explain the removal are fine; an invocation is not).
+    local efihits
+    efihits=$(grep -rn 'efibootmgr' "$boot" 2>/dev/null |
+        grep -vE '^[^:]+:[0-9]+:[[:space:]]*#' |
+        grep -vE ':[0-9]+:[[:space:]]*#' |
+        grep -E '(^|[^#[:alnum:]_])efibootmgr([[:space:]]+-|$)' |
+        grep -vE '#.*efibootmgr' || true)
+    if [ -n "$efihits" ]; then
+        fail "packaging: cixmini-boot neither clears nor recreates the firmware boot entry" "$efihits"
+    else
+        pass "packaging: cixmini-boot neither clears nor recreates the firmware boot entry"
     fi
 }
 
@@ -491,20 +513,25 @@ test_per_version_package_names() {
         fail "packaging: 7.3.1 recipe exists"
         return
     fi
-    if grep -qE 'linux-image-\$\{KERNEL_VERSION\}|linux-image-\$\{KVER\}|linux-image-\$\{@' "$recipe"; then
+    if grep -qE 'linux-image-\$\{(KERNEL_PKG_VER|KERNEL_VERSION|KVER|@)' "$recipe"; then
         pass "packaging: image package name is per-version"
     else
         fail "packaging: image package name is per-version" "$(grep -n 'linux-image' "$recipe" | head)"
     fi
-    if grep -qE 'linux-headers-\$\{KERNEL_VERSION\}|linux-headers-\$\{KVER\}|linux-headers-\$\{@' "$recipe"; then
+    if grep -qE 'linux-headers-\$\{(KERNEL_PKG_VER|KERNEL_VERSION|KVER|@)' "$recipe"; then
         pass "packaging: headers package name is per-version"
     else
         fail "packaging: headers package name is per-version" "$(grep -n 'linux-headers' "$recipe" | head)"
     fi
-    if grep -q 'RPROVIDES' "$recipe" && grep -qE 'linux-image-cixmini|linux-headers-cixmini' "$recipe"; then
-        pass "packaging: thin meta package provides the legacy 'latest' names"
+    # The "latest" policy lives in a thin, EMPTY metapackage that only names
+    # the legacy single-name packages (linux-image-cixmini / -headers-cixmini).
+    if grep -qE 'PACKAGES.*linux-image-cixmini' "$recipe" &&
+        grep -qE 'PACKAGES.*linux-headers-cixmini' "$recipe" &&
+        grep -qE '^FILES:linux-image-cixmini = ""' "$recipe" &&
+        grep -qE '^FILES:linux-headers-cixmini = ""' "$recipe"; then
+        pass "packaging: thin EMPTY meta package keeps the legacy 'latest' names"
     else
-        fail "packaging: thin meta package provides the legacy 'latest' names"
+        fail "packaging: thin EMPTY meta package keeps the legacy 'latest' names"
     fi
     if grep -q 'ALLOW_EMPTY' "$recipe"; then
         pass "packaging: meta package is empty (ALLOW_EMPTY)"
@@ -541,7 +568,7 @@ test_meta_does_not_evict_old() {
         pass "packaging: no Conflicts/Replaces that evict older kernels"
     fi
     # The thin meta package must depend on the exact current version only.
-    if grep -qE 'RDEPENDS.*\$\{KERNEL_VERSION\}|RDEPENDS.*\$\{KVER\}' "$recipe"; then
+    if grep -qE 'RDEPENDS.*\$\{KERNEL_PKG_VER\}|RDEPENDS.*\$\{KERNEL_VERSION\}|RDEPENDS.*\$\{KVER\}' "$recipe"; then
         pass "packaging: meta package pins by exact current version"
     else
         fail "packaging: meta package pins by exact current version" "$(grep -n RDEPENDS "$recipe")"

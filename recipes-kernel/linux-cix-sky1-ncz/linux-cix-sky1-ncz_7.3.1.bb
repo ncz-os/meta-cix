@@ -256,6 +256,65 @@ PV = "7.3.1+ncz"
 PR = "r1"
 KERNEL_PACKAGE_NAME = "kernel-${PN}"
 
+# ---------------------------------------------------------------------------
+# SIDE-BY-SIDE KERNEL PACKAGING (operator decision 2026-11-01, O6N).
+#
+# O6N is the Sky1 kernel TEST host and must be able to install a new kernel
+# WITHOUT losing the known-good one. The single-name packages this recipe used
+# to emit (linux-image-cixmini / linux-headers-cixmini) made that impossible:
+# upgrading 7.3.0 -> 7.3.1 replaced the same package name, so dpkg removed
+# /boot/vmlinuz-7.3.0*, /usr/lib/modules/7.3.0-sky1-ncz and the 7.3.0 headers
+# tree in the same transaction that installed 7.3.1.
+#
+# Now every KERNEL RELEASE gets its OWN package names, and the old
+# single-name policy packages are thin, EMPTY metapackages that merely depend
+# on the current version. They carry no files, so they cannot remove anything:
+#
+#   linux-image-7.3.1-sky1-ncz        <- the image package (files)
+#   linux-headers-7.3.1-sky1-ncz      <- the headers package (files)
+#   linux-image-cixmini               <- thin meta, RDEPENDS the exact KVER
+#   linux-headers-cixmini             <- thin meta, RDEPENDS the exact KVER
+#
+# Installing linux-image-7.3.1-sky1-ncz therefore leaves linux-image-7.3.0-
+# sky1-ncz (and its /boot and /usr/lib/modules files) installed and usable as
+# the known-good fallback, while the meta package keeps the "latest" policy
+# working for anything that asks for linux-image-cixmini. Promotion to default
+# is a separate, explicit operator command: ncz-refind-refresh --promote KVER.
+#
+# The base class names the per-release package from KERNEL_VERSION, which is
+# KERNELRELEASE (LINUX_VERSION + KERNEL_LOCALVERSION + the build id), e.g.
+# "7.3.1-sky1-ncz". legitimize_package_name() maps any character Debian does
+# not accept in a package name to '-', so the name is always valid metadata.
+# ---------------------------------------------------------------------------
+KERNEL_PKG_VER = "${@legitimize_package_name(d.getVar('KERNEL_VERSION'))}"
+
+# The base class would name the image package "<KERNEL_PACKAGE_NAME>-image-
+# <KERNEL_VERSION>"; override both consumer-facing names to the per-release
+# form so the emitted .deb filenames are unambiguous and stable per kernel.
+# The base class wires the per-imagetype auto-package
+# (<KERNEL_PACKAGE_NAME>-image-image-<ver>, and the -dev/-dtb siblings) so the
+# kernel binary, dtb and headers still land in these renamed packages.
+PKG:${KERNEL_PACKAGE_NAME}-image = "linux-image-${KERNEL_PKG_VER}"
+PKG:${KERNEL_PACKAGE_NAME}-dev = "linux-headers-${KERNEL_PKG_VER}"
+
+# Thin "latest" policy packages. Empty on purpose (ALLOW_EMPTY) and dependent
+# on the EXACT current release, so they never hold an older kernel hostage and
+# can never evict one: removing or upgrading the meta package leaves every
+# per-release package on the system.
+PACKAGES += "linux-image-cixmini linux-headers-cixmini"
+
+ALLOW_EMPTY:linux-image-cixmini = "1"
+ALLOW_EMPTY:linux-headers-cixmini = "1"
+FILES:linux-image-cixmini = ""
+FILES:linux-headers-cixmini = ""
+
+RDEPENDS:linux-image-cixmini = "linux-image-${KERNEL_PKG_VER}"
+RDEPENDS:linux-headers-cixmini = "linux-headers-${KERNEL_PKG_VER}"
+
+# Metapackages are architecture-neutral policy, not build output.
+PACKAGE_ARCH:linux-image-cixmini = "${MACHINE_ARCH}"
+PACKAGE_ARCH:linux-headers-cixmini = "${MACHINE_ARCH}"
+
 do_shared_workdir:append() {
     shared_kernel_dir="${TMPDIR}/work-shared/${MACHINE}"
     install -d "$shared_kernel_dir"

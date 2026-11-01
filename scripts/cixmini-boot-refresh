@@ -1,0 +1,31 @@
+#!/bin/bash
+# SPDX-FileCopyrightText: Copyright (c) 2026 Jason Perlow
+# SPDX-License-Identifier: Apache-2.0
+#
+# cixmini-boot-refresh -- the entry point cixmini-boot's postinst (and the
+# kernel package hooks) call on every install.
+#
+# It is deliberately dumb: it delegates to ncz-refind-refresh, whose DEFAULT
+# mode is add-only. Nothing here wipes the ESP, repoints an existing entry,
+# changes default_selection, or calls efibootmgr. Re-running it is a no-op
+# once every installed kernel is staged, so a later apt run writes nothing.
+#
+# To make a staged kernel the default, run the separate command:
+#     ncz-refind-refresh --promote <KVER>
+#
+# Exit status is the refresh script's, so a caller can tell "nothing to do"
+# (0) from "refused, ESP untouched" (3/4/5).
+
+set -u
+
+REFRESH=${NCZ_REFRESH_BIN:-/usr/local/sbin/ncz-refind-refresh}
+
+if [ ! -x "$REFRESH" ]; then
+    echo "cixmini-boot-refresh: $REFRESH is missing or not executable" >&2
+    exit 5
+fi
+
+# No --kver: the refresh picks the newest kernel in /boot that is not staged
+# yet, which is exactly the one the package manager just installed. Kernels
+# that are already staged are skipped, which is what makes this idempotent.
+exec "$REFRESH" "$@"
