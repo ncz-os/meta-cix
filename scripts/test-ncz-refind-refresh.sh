@@ -322,11 +322,19 @@ test_add_only_preserves_everything_byte_identical() {
 
     # refind.conf must be a strict prefix of the new file: append-only, so
     # every pre-existing byte, entry and ordering is preserved verbatim.
-    if cmp -s -n "$(stat -c %s "$SBX/refind.conf.before")" \
-        "$SBX/refind.conf.before" "$ESP/EFI/refind/refind.conf"; then
+    #
+    # Proven with plain `head -c` (POSIX, no GNU-only `cmp -n` / `stat -c`):
+    # the first N bytes of the new file, N = size of the old file, must be
+    # byte-identical to the whole old file. cmp then always gets exactly two
+    # file operands.
+    local conf_old="$SBX/refind.conf.before" conf_new="$ESP/EFI/refind/refind.conf"
+    local conf_bytes
+    conf_bytes=$(wc -c <"$conf_old" | tr -d '[:space:]')
+    head -c "$conf_bytes" "$conf_new" >"$SBX/refind.conf.newprefix"
+    if cmp -s "$conf_old" "$SBX/refind.conf.newprefix"; then
         pass "add-only: existing refind.conf bytes preserved (strict-prefix, append-only)"
     else
-        fail "add-only: existing refind.conf bytes preserved" "$(diff -u "$SBX/refind.conf.before" "$ESP/EFI/refind/refind.conf" | head -40)"
+        fail "add-only: existing refind.conf bytes preserved" "$(diff -u "$conf_old" "$conf_new" | head -40)"
     fi
 
     # Byte-identical check on the pre-existing ESP *kernel files*. refind.conf
