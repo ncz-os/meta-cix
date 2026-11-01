@@ -18,6 +18,10 @@
 
 set -u
 
+# The worker lives where the recipe installs it. NCZ_REFRESH_BIN is an
+# OPTIONAL override for the test harness only: when it is unset or empty the
+# POSIX default expansion below yields the installed path, so the postinst
+# needs no environment at all.
 REFRESH=${NCZ_REFRESH_BIN:-/usr/local/sbin/ncz-refind-refresh}
 
 if [ ! -x "$REFRESH" ]; then

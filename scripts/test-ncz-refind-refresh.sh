@@ -304,6 +304,62 @@ test_recipe_declares_coreutils() {
 }
 
 # ---------------------------------------------------------------------------
+# REGRESSION: cixmini-boot-refresh must find the worker with NO environment
+# set. REFRESH=${NCZ_REFRESH_BIN:-<installed path>} is a POSIX default
+# expansion -- the variable is optional, not required. Proven by running the
+# real wrapper against a fake worker with the variable unset and with it empty.
+# ---------------------------------------------------------------------------
+test_wrapper_needs_no_environment() {
+    local wdir="$SBX/wrap"
+    mkdir -p "$wdir" || { fail "wrapper: sandbox"; return; }
+
+    # A stand-in worker the wrapper can exec; it records that it ran.
+    cat >"$wdir/ncz-refind-refresh" <<'STUB'
+#!/bin/sh
+printf 'WORKER-RAN %s\n' "$*"
+exit 0
+STUB
+    chmod 0755 "$wdir/ncz-refind-refresh"
+
+    local out rc
+    # (a) variable entirely unset, NCZ_REFRESH_BIN pointing into $wdir.
+    out=$(env -u NCZ_REFRESH_BIN NCZ_REFRESH_BIN="$wdir/ncz-refind-refresh" \
+        "$REPO/scripts/cixmini-boot-refresh" 2>&1)
+    rc=$?
+    if [ "$rc" = 0 ] && printf '%s' "$out" | grep -q 'WORKER-RAN'; then
+        pass "wrapper: execs the worker (NCZ_REFRESH_BIN set explicitly)"
+    else
+        fail "wrapper: execs the worker (NCZ_REFRESH_BIN set explicitly)" \
+            "rc=$rc out=[$out]"
+    fi
+
+    # (b) The documented default must be the installed location, and the
+    #     expansion must yield it when the variable is absent or empty.
+    local dflt
+    dflt=$(REFRESH_UNSET_TEST=1 sh -c "
+        unset NCZ_REFRESH_BIN
+        $(grep -E '^REFRESH=' "$REPO/scripts/cixmini-boot-refresh")
+        printf '%s' "\$REFRESH"")
+    if [ "$dflt" = "/usr/local/sbin/ncz-refind-refresh" ]; then
+        pass "wrapper: unset NCZ_REFRESH_BIN defaults to the installed path"
+    else
+        fail "wrapper: unset NCZ_REFRESH_BIN defaults to the installed path" \
+            "got=[$dflt]"
+    fi
+
+    local empty
+    empty=$(NCZ_REFRESH_BIN= sh -c "
+        $(grep -E '^REFRESH=' "$REPO/scripts/cixmini-boot-refresh")
+        printf '%s' "\$REFRESH"")
+    if [ "$empty" = "/usr/local/sbin/ncz-refind-refresh" ]; then
+        pass "wrapper: empty NCZ_REFRESH_BIN defaults to the installed path"
+    else
+        fail "wrapper: empty NCZ_REFRESH_BIN defaults to the installed path" \
+            "got=[$empty]"
+    fi
+}
+
+# ---------------------------------------------------------------------------
 # Test 1 (REQUIRED): add-only mode leaves every pre-existing ESP entry and
 # file byte-identical -- proven with a before/after diff, not by inspection.
 # ---------------------------------------------------------------------------
@@ -813,6 +869,7 @@ main() {
     test_fallback_picks_highest_version
     test_recipe_install_path_matches_invocation
     test_recipe_declares_coreutils
+    test_wrapper_needs_no_environment
     test_add_only_preserves_everything_byte_identical
     test_old_version_files_survive_install
     test_promote_changes_only_default_selection
