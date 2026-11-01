@@ -368,15 +368,17 @@ entry_options_at_index() {
 # 0-based index of the menuentry whose title is exactly $1.
 entry_index_for_title() {
     awk -v want="$1" '
+        BEGIN { idx = 0 }
         /^[[:space:]]*menuentry[[:space:]]/ {
             title = extract_title($0)
             if (title == want) { print idx; exit }
             idx++
         }
         function extract_title(line,   t) {
+            # menuentry "TITLE" [, "PARAMS"] { ... } -> TITLE
             t = line
-            sub(/^[[:space:]]*menuentry[[:space:]]+/, "", t)
-            gsub(/^"|"[[:space:]]*\{?[[:space:]]*$/, "", t)
+            sub(/^[[:space:]]*menuentry[[:space:]]+[^"]*"/, "", t)
+            sub(/".*$/, "", t)
             return t
         }
     ' "$REFIND_CONF"
@@ -387,8 +389,8 @@ current_default_selection() {
         /^[[:space:]]*default_selection[[:space:]]/ {
             v = $0
             sub(/^[[:space:]]*default_selection[[:space:]]+/, "", v)
-            gsub(/^"|"[[:space:]]*$/, "", v)
-            sub(/[[:space:]].*$/, "", v)
+            if (v ~ /^"/) { sub(/^"/, "", v); sub(/".*$/, "", v) }
+            else { sub(/[[:space:]].*$/, "", v) }
             print v
             exit
         }
@@ -403,11 +405,12 @@ entry_index_for_kver() {
 # Title of the menuentry at 0-based index $1 (empty when out of range).
 entry_title_at_index() {
     awk -v want="$1" '
+        BEGIN { idx = 0 }
         /^[[:space:]]*menuentry[[:space:]]/ {
             if (idx == want) {
                 t = $0
-                sub(/^[[:space:]]*menuentry[[:space:]]+/, "", t)
-                gsub(/^"|"[[:space:]]*\{?[[:space:]]*$/, "", t)
+                sub(/^[[:space:]]*menuentry[[:space:]]+[^"]*"/, "", t)
+                sub(/".*$/, "", t)
                 print t
                 exit
             }
@@ -601,7 +604,7 @@ case "$MODE" in
                 log "no unstaged kernel in $BOOT -- nothing to do (add-only)"
                 exit 0
             fi
-            log "no --kver given: picked the newest unstaged kernel $KVER ($NEWEST=$NEWEST)"
+            log "no --kver given: picked the newest unstaged kernel $KVER"
         fi
         log "mode: add-only ($KVER)"
         stage_new_kernel "$KVER"

@@ -471,30 +471,44 @@ test_no_efibootmgr_invocation() {
 # cixmini-boot.
 # ---------------------------------------------------------------------------
 test_recipe_ships_refresh() {
-    local hit
-    hit=$(grep -rl "ncz-refind-refresh" "$REPO"/recipes-*/ 2>/dev/null | head -5)
-    if [ -n "$hit" ]; then
+    local boot="$REPO/recipes-bsp/cixmini-boot"
+    local recipe
+    recipe=$(ls "$boot"/cixmini-boot_*.bb 2>/dev/null | head -1)
+
+    if [ -n "$recipe" ] && grep -qE 'file://ncz-refind-refresh' "$recipe"; then
         pass "packaging: a recipe ships ncz-refind-refresh"
     else
         fail "packaging: a recipe ships ncz-refind-refresh"
     fi
-    # The shipping recipe must be cixmini-boot and must run the refresh from
-    # its postinst (that is where the old wipe-everything behaviour lived).
-    local boot="$REPO/recipes-bsp/cixmini-boot"
-    if [ -d "$boot" ] && grep -rq 'pkg_postinst' "$boot" &&
-        grep -rq 'cixmini-boot-refresh' "$boot"; then
+
+    # cixmini-boot ships TWO distinct scripts, and both matter:
+    #   ncz-refind-refresh    the worker (add-only / --promote)
+    #   cixmini-boot-refresh  the postinst entry point that delegates to it
+    # The postinst must invoke the wrapper, so a rename of one without the
+    # other is caught here.
+    if [ -n "$recipe" ] && grep -qE 'file://cixmini-boot-refresh' "$recipe" &&
+        grep -qE '^[[:space:]]*/usr/local/sbin/cixmini-boot-refresh' "$recipe"; then
         pass "packaging: cixmini-boot postinst runs the add-only refresh"
     else
         fail "packaging: cixmini-boot postinst runs the add-only refresh"
     fi
-    # And it must not CALL efibootmgr from the postinst path (comments that
-    # explain the removal are fine; an invocation is not).
+
+    # And the wrapper itself must delegate to ncz-refind-refresh -- otherwise
+    # the postinst would run something that is not the add-only worker.
+    local wrapper="$REPO/scripts/cixmini-boot-refresh"
+    if [ -f "$wrapper" ] && grep -q 'ncz-refind-refresh' "$wrapper" &&
+        grep -qE 'exec .*REFRESH' "$wrapper"; then
+        pass "packaging: cixmini-boot-refresh delegates to ncz-refind-refresh"
+    else
+        fail "packaging: cixmini-boot-refresh delegates to ncz-refind-refresh"
+    fi
+
+    # The recipe must not CALL efibootmgr (comments that explain the removal
+    # are fine; an invocation is not). Strip full-line comments only, then look
+    # for the command as a word at the start of a statement.
     local efihits
-    efihits=$(grep -rn 'efibootmgr' "$boot" 2>/dev/null |
-        grep -vE '^[^:]+:[0-9]+:[[:space:]]*#' |
-        grep -vE ':[0-9]+:[[:space:]]*#' |
-        grep -E '(^|[^#[:alnum:]_])efibootmgr([[:space:]]+-|$)' |
-        grep -vE '#.*efibootmgr' || true)
+    efihits=$(sed 's/[[:space:]]*#.*$//' "$recipe" 2>/dev/null |
+        grep -nE '(^|[;&|][[:space:]]*)efibootmgr([[:space:]]|$)' || true)
     if [ -n "$efihits" ]; then
         fail "packaging: cixmini-boot neither clears nor recreates the firmware boot entry" "$efihits"
     else
