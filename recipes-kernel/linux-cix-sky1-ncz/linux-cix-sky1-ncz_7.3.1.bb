@@ -303,6 +303,7 @@ PKG:${KERNEL_PACKAGE_NAME}-dev = "linux-headers-${KERNEL_PKG_VER}"
 # linux-headers-none". Provide the per-release headers name explicitly; at
 # package time KERNEL_VERSION is real, so Provides and Depends both carry the
 # real release.
+RPROVIDES:${KERNEL_PACKAGE_NAME}-image += "linux-image-${KERNEL_PKG_VER}"
 RPROVIDES:${KERNEL_PACKAGE_NAME}-dev += "linux-headers-${KERNEL_PKG_VER}"
 
 # Thin "latest" policy packages. Empty on purpose (ALLOW_EMPTY) and dependent
