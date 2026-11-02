@@ -186,26 +186,106 @@ if [ "$MODE" = promote ] && [ "$NEWEST" = 1 ]; then
 fi
 
 ESP_REAL=$(readlink -f "$ESP" 2>/dev/null || printf '%s' "$ESP")
-REFIND_DIR="$ESP_REAL/EFI/refind"
-REFIND_CONF="$REFIND_DIR/refind.conf"
-KERNEL_DIR="$ESP_REAL/EFI/ncz"
-# The kernel lives under EFI/ncz/ncz-<KVER>/ so several versions coexist and no
-# version's files are ever overwritten by another's.
-kernel_stage_dir() { printf '%s/ncz-%s' "$KERNEL_DIR" "$1"; }
 
-# The names a staged kernel is copied to *inside* its own directory. rEFInd
-# resolves entry paths relative to an unchanged prefix, so a rename inside the
-# version directory is safe; it can never shadow another version's files.
+# --- ESP layout discovery ---------------------------------------------------
+#
+# There are two rEFInd layouts in the field and this script has to handle both.
+# O6N, the Sky1 kernel test host, is the second one:
+#
+#   legacy (installed from an older NCZ image)
+#     refind.conf   $ESP/EFI/refind/refind.conf
+#     kernels       $ESP/EFI/ncz/ncz-<KVER>/{vmlinuz,initrd.img,sky1-orion-o6.dtb}
+#     entries       menuentry "NCZ <KVER>"  (default_selection is an index)
+#
+#   O6N / removable-media BOOT (what the current image installs)
+#     refind.conf   $ESP/EFI/BOOT/refind.conf   (BOOTAA64.EFI, use_nvram false)
+#     kernels       $ESP/vmlinuz-<KVER>, $ESP/initrd.img-<KVER>  (the ESP ROOT)
+#     entries       menuentry "NCZ-OS 26.10 Cygnus  -  7.3 Mali (Default)",
+#                   i.e. a display name, and default_selection is the quoted
+#                   TITLE STRING "7.3 Mali (Default)" -- a substring of the
+#                   menuentry title, not an index and not "NCZ <KVER>".
+#
+# The layout is DISCOVERED from the ESP, never guessed from the kernel name:
+# whichever of EFI/refind/refind.conf or EFI/BOOT/refind.conf exists decides
+# where the config lives and, with it, where the new kernel's files go. A host
+# with both prefers EFI/refind (the older, more explicit install). NCZ_LAYOUT
+# may be pinned to legacy|boot for tests and for a host that has both.
+discover_layout() {
+    local want="${NCZ_LAYOUT:-}" cand
+    for cand in "$ESP_REAL/EFI/refind" "$ESP_REAL/EFI/BOOT"; do
+        [ -f "$cand/refind.conf" ] || continue
+        case "$cand" in
+            */EFI/BOOT)
+                [ "$want" = legacy ] && continue
+                LAYOUT=boot
+                ;;
+            *)
+                [ "$want" = boot ] && continue
+                LAYOUT=legacy
+                ;;
+        esac
+        REFIND_DIR="$cand"
+        return 0
+    done
+    return 1
+}
+
+LAYOUT=
+REFIND_DIR=
+REFIND_CONF=
+KERNEL_DIR=
+if discover_layout; then
+    REFIND_CONF="$REFIND_DIR/refind.conf"
+fi
+# Where the ESP keeps a kernel's files. Legacy: one directory per version, so
+# several versions coexist and no version's files are ever overwritten.
+# O6N: at the ESP root, named after the kernel, exactly like 7.3.0 already is.
+KERNEL_DIR="$ESP_REAL/EFI/ncz"
+kernel_stage_dir() { printf '%s/ncz-%s' "$KERNEL_DIR" "$1"; }
+kernel_files_prefix() {
+    case "${LAYOUT:-legacy}" in
+        boot) printf '%s' "$ESP_REAL" ;;
+        *) printf '%s' "$(kernel_stage_dir "$1")" ;;
+    esac
+}
+# The on-ESP filename of a kernel's vmlinuz / initrd / dtb for this layout.
+esp_kernel_name() {
+    case "${LAYOUT:-legacy}" in
+        boot) printf '%s-%s' "$2" "$1" ;;
+        *) printf '%s' "$2" ;;
+    esac
+}
+
+# The names a staged kernel is copied to. Legacy: renames inside its own
+# version directory (rEFInd resolves those paths relative to an unchanged
+# prefix). The O6N layout uses the same /vmlinuz-<KVER> and /initrd.img-<KVER>
+# names the known-good entry already uses, so the two kernels coexist and a new
+# install can never shadow the running one.
 STAGE_VMLINUZ=vmlinuz
 STAGE_INITRD=initrd.img
 STAGE_DTB=sky1-orion-o6.dtb
 
+# The icon the appended entry uses. O6N's entries use /EFI/BOOT/ncz.png; the
+# legacy layout uses the rEFInd theme icon. Purely cosmetic, but keeping a new
+# entry consistent with its neighbours matters on a graphical boot menu.
+case "${LAYOUT:-legacy}" in
+    boot) entry_icon=/EFI/BOOT/ncz.png ;;
+    *) entry_icon=/EFI/refind/icons/os_linux.png ;;
+esac
+
 # --- preflight --------------------------------------------------------------
+# Refuse when discovery found no rEFInd configuration at all. The message
+# names BOTH supported locations so an operator can see what was looked for.
+check_refind_present() {
+    [ -n "$REFIND_CONF" ] && [ -d "$REFIND_DIR" ] && return 0
+    die 4 "no rEFInd on the ESP (looked for $ESP_REAL/EFI/refind/refind.conf and $ESP_REAL/EFI/BOOT/refind.conf); refusing: no ESP writes"
+}
+
 check_esp_mounted() {
     # Test-only escape hatch: honoured solely together with an explicit
     # NCZ_ESP_DIR override, so it can never relax the check on a real host.
     if [ "${NCZ_ESP_SKIP_MOUNT_CHECK:-0}" = "1" ] && [ -n "${NCZ_ESP_DIR:-}" ]; then
-        [ -d "$REFIND_DIR" ] || die 4 "no rEFInd on the ESP at $REFIND_DIR (refusing: no ESP writes)"
+        check_refind_present
         return 0
     fi
     local mnt
@@ -221,12 +301,13 @@ check_esp_mounted() {
         done </proc/mounts
     fi
     [ -n "$mnt" ] || die 3 "ESP is not mounted at $ESP_REAL (refusing: no ESP writes)"
-    [ -d "$REFIND_DIR" ] || die 4 "no rEFInd on the ESP at $REFIND_DIR (refusing: no ESP writes)"
+    check_refind_present
 }
 
 # Refuse on a refind.conf we cannot safely edit. Both modes need an intact
 # configuration: add-only appends to it, promote edits one line of it.
 check_refind_conf() {
+    check_refind_present
     [ -f "$REFIND_CONF" ] || die 4 "$REFIND_CONF missing (refusing: no ESP writes)"
     [ -r "$REFIND_CONF" ] || die 4 "$REFIND_CONF not readable (refusing: no ESP writes)"
     # Braces must balance, otherwise a naive append would land inside a block.
@@ -294,13 +375,63 @@ list_boot_kvers() {
     done | sort -u -V -r
 }
 
-# Is this KVER already staged, i.e. does it own a version directory with both
-# a kernel image and a menuentry?
+# Is this KVER already staged, i.e. does the ESP hold its kernel files and a
+# menuentry that points at them? "Staged" is layout-specific: legacy wants the
+# version directory plus an "NCZ <KVER>" entry; the O6N layout wants
+# /vmlinuz-<KVER> at the ESP root plus an entry that loads it.
 is_staged() {
     local kver="$1"
-    [ -d "$(kernel_stage_dir "$kver")" ] || return 1
-    grep -qF "ncz/ncz-$kver/" "$REFIND_CONF" || return 1
+    case "${LAYOUT:-legacy}" in
+        boot)
+            [ -f "$ESP_REAL/$(esp_kernel_name "$kver" vmlinuz)" ] || return 1
+            grep -qF "/$(esp_kernel_name "$kver" vmlinuz)" "$REFIND_CONF" || return 1
+            ;;
+        *)
+            [ -d "$(kernel_stage_dir "$kver")" ] || return 1
+            ;;
+    esac
     return 0
+}
+
+# The menuentry title this script uses for a kernel it stages. The O6N layout
+# names entries after the display name (e.g. "... - 7.3 Mali (Default)"), so a
+# new entry gets a self-describing variant of the SAME shape, and
+# default_selection keeps naming a title; the legacy layout keeps "NCZ <KVER>".
+new_entry_title() {
+    local kver="$1"
+    case "${LAYOUT:-legacy}" in
+        boot) printf 'NCZ-OS 26.10 Cygnus  -  %s (Side-by-side)' "$kver" ;;
+        *) printf 'NCZ %s' "$kver" ;;
+    esac
+}
+
+# 0-based index of the menuentry that stages $1 in THIS layout (empty when the
+# kernel is not staged). Legacy matches the "NCZ <KVER>" title; the O6N layout
+# matches the entry that loads /vmlinuz-<KVER>, whatever its display title.
+entry_index_for_staged_kver() {
+    local kver="$1"
+    case "${LAYOUT:-legacy}" in
+        boot)
+            # Walk the entries: an entry "hits" when its loader or initrd line
+            # names this kernel's ESP-root file. The index counts menuentry
+            # lines in file order, the same way rEFInd does.
+            awk -v want="/$(esp_kernel_name "$kver" vmlinuz)" '
+                BEGIN { idx = 0; hit = 0 }
+                /^[[:space:]]*menuentry[[:space:]]/ {
+                    if (hit) { print idx - 1; found = 1; exit }
+                    idx++; hit = 0; next
+                }
+                /^[[:space:]]*}/ { next }
+                $0 ~ ("^[[:space:]]*(loader|initrd)[[:space:]]+" want) { hit = 1 }
+                END {
+                    if (found) exit 0
+                    if (hit) { print idx - 1; exit 0 }
+                    exit 1
+                }
+            ' "$REFIND_CONF"
+            ;;
+        *) entry_index_for_kver "$kver" ;;
+    esac
 }
 
 # The Default entry's option string, verbatim. This is what the new entry
@@ -320,10 +451,99 @@ is_staged() {
 #      the first entries ARE the rescue ones.
 default_entry_options() {
     local idx
-    idx=$(entry_index_for_title "Default")
-    [ -n "$idx" ] || idx=$(default_kernel_index)
+    if [ "${LAYOUT:-legacy}" = boot ]; then
+        idx=$(o6n_default_index)
+    else
+        idx=$(entry_index_for_title "Default")
+        [ -n "$idx" ] || idx=$(default_kernel_index)
+    fi
     [ -n "$idx" ] || return 1
     entry_options_at_index "$idx"
+}
+
+# --- O6N (EFI/BOOT) layout: resolve the Default entry ----------------------
+#
+# In this layout entries are titled after the display name, and
+# default_selection is a TITLE STRING, e.g.
+#
+#     default_selection "7.3 Mali (Default)"
+#     menuentry "NCZ-OS 26.10 Cygnus  -  7.3 Mali (Default)" { ... }
+#
+# rEFInd matches default_selection as a title SUBSTRING, so the selection is
+# the quoted fragment of the menuentry title, not the whole title and not an
+# index. Resolution order for "the Default entry whose options a new kernel
+# inherits":
+#
+#   1. the menuentry whose title CONTAINS the default_selection string;
+#   2. the menuentry whose title contains "(Default)";
+#   3. otherwise: refuse (return non-zero). Never take "the first entry": on
+#      O6N the rescue variants are ordinary entries in the same file, and a
+#      rescue cmdline must never leak into a normal kernel.
+#
+# Rescue variants ("Rescue", "Rescue Partition", "No Accelerators") are skipped
+# at every step even if they are what default_selection happens to name.
+
+# Is the given menuentry title line a rescue variant?
+o6n_title_is_rescue() {
+    case "$1" in
+        *[Rr]escue*) return 0 ;;
+        *NCZRESCUE*) return 0 ;;
+        *"No Accelerators"*) return 0 ;;
+    esac
+    return 1
+}
+
+# 0-based index of the first non-rescue menuentry whose title matches the
+# shell glob-like awk regex $1 (empty output when none matches).
+o6n_entry_index_matching() {
+    awk -v want="$1" '
+        BEGIN { idx = 0 }
+        function title_of(line,   t) {
+            t = line
+            sub(/^[[:space:]]*menuentry[[:space:]]+/, "", t)
+            sub(/^"/, "", t)
+            sub(/".*$/, "", t)
+            return t
+        }
+        /^[[:space:]]*menuentry[[:space:]]/ {
+            t = title_of($0)
+            if (t ~ want) { print idx; exit }
+            idx++
+        }
+    ' "$REFIND_CONF"
+}
+
+o6n_default_index() {
+    local sel rgx idx
+    sel=$(current_default_selection)
+    # 1. Whatever default_selection names, if it names a non-rescue entry.
+    if [ -n "$sel" ] && [ "$sel" != last ] && ! o6n_title_is_rescue "$sel"; then
+        rgx=$(printf '%s' "$sel" | sed 's/[][\\.^$*+?(){}|]/\\&/g')
+        idx=$(o6n_entry_index_matching "$rgx")
+        [ -n "$idx" ] && { printf '%s\n' "$idx"; return 0; }
+    fi
+    # 2. The entry explicitly marked "(Default)".
+    idx=$(o6n_entry_index_matching '\\(Default\\)')
+    [ -n "$idx" ] && { printf '%s\n' "$idx"; return 0; }
+    return 1
+}
+
+# The KVER a staged O6N entry boots: the kernel named in its loader line, e.g.
+# loader /vmlinuz-7.3.0-sky1-ncz -> 7.3.0-sky1-ncz. Empty when the entry's
+# loader is not an ESP-root /vmlinuz-<KVER>.
+o6n_kver_at_index() {
+    awk -v want="$1" '
+        BEGIN { idx = 0 }
+        /^[[:space:]]*menuentry[[:space:]]/ { in_entry = (idx == want); idx++; next }
+        in_entry && /^[[:space:]]*loader[[:space:]]/ {
+            l = $0
+            sub(/^[[:space:]]*loader[[:space:]]+/, "", l)
+            sub(/^"/, "", l); sub(/".*$/, "", l)
+            sub(/^.*\/vmlinuz-/, "", l)
+            print l
+            exit
+        }
+    ' "$REFIND_CONF"
 }
 
 # Options line of the menuentry at 0-based index $1, verbatim.
@@ -487,7 +707,15 @@ entry_title_at_index() {
 # is the "known-good" kernel that add-only mode must protect. Empty when the
 # default does not resolve to an "NCZ <KVER>" entry.
 default_kver() {
-    local idx title
+    local idx title kver
+    if [ "${LAYOUT:-legacy}" = boot ]; then
+        # In this layout the KVER is not in the title; it is in the loader line
+        # (/vmlinuz-<KVER>), which is exactly what the entry boots.
+        idx=$(o6n_default_index) || { printf '\n'; return 0; }
+        [ -n "$idx" ] || { printf '\n'; return 0; }
+        o6n_kver_at_index "$idx" || printf '\n'
+        return 0
+    fi
     idx=$(default_kernel_index) || { printf '\n'; return 0; }
     [ -n "$idx" ] || { printf '\n'; return 0; }
     title=$(entry_title_at_index "$idx")
@@ -505,7 +733,7 @@ stage_new_kernel() {
         die 4 "no initramfs for $kver in $BOOT (run update-initramfs -c -k $kver); refusing: no ESP writes"
 
     if is_staged "$kver"; then
-        log "$kver is already staged at ncz/ncz-$kver -- nothing to do (add-only)"
+        log "$kver is already staged on the ESP -- nothing to do (add-only)"
         return 0
     fi
 
@@ -516,54 +744,70 @@ stage_new_kernel() {
         if ! kg_img=$(kernel_image "$known_good"); then
             die 4 "known-good kernel $known_good has no image in $BOOT; refusing: the fallback would be lost"
         fi
-        [ -d "$(kernel_stage_dir "$known_good")" ] || \
+        is_staged "$known_good" || \
             die 4 "known-good kernel $known_good is not staged on the ESP; refusing: the fallback would be lost"
         log "known-good kernel $known_good present and staged -- it will not be touched"
     else
-        log "WARNING: no numeric default_selection resolved to an NCZ kernel; staging $kver without a resolved fallback"
+        log "WARNING: no default kernel resolved (layout $LAYOUT); staging $kver without a resolved fallback"
     fi
 
     opts=$(default_entry_options) || \
         die 4 "the Default menuentry in $REFIND_CONF has no options line; refusing: cannot copy its options"
     log "Default entry options copied verbatim: $opts"
 
-    stage=$(kernel_stage_dir "$kver")
     if [ "$DRY_RUN" = 1 ]; then
-        log "DRY RUN: would stage $kver from $img -> $stage/$STAGE_VMLINUZ (initrd $initrd)"
+        log "DRY RUN: would stage $kver from $img -> $(kernel_files_prefix "$kver")/$(esp_kernel_name "$kver" vmlinuz) (initrd $initrd)"
         log "DRY RUN: refind.conf left unchanged"
         return 0
     fi
 
-    mkdir -p "$stage" || die 5 "cannot create $stage"
-    cp -f "$img" "$stage/$STAGE_VMLINUZ" || die 5 "cannot copy $img to $stage/$STAGE_VMLINUZ"
-    cp -f "$initrd" "$stage/$STAGE_INITRD" || die 5 "cannot copy $initrd to $stage/$STAGE_INITRD"
+    local dst_v dst_i dst_d title
+    dst_v="$(kernel_files_prefix "$kver")/$(esp_kernel_name "$kver" vmlinuz)"
+    dst_i="$(kernel_files_prefix "$kver")/$(esp_kernel_name "$kver" initrd.img)"
+    dst_d="$(kernel_files_prefix "$kver")/$(esp_kernel_name "$kver" sky1-orion-o6.dtb)"
+    title=$(new_entry_title "$kver")
+
+    # Refuse rather than clobber: if a destination file already exists but the
+    # kernel is not staged (no menuentry), something else owns that name. The
+    # O6N layout writes NEW files only -- vmlinuz-<KVER>/initrd.img-<KVER> for
+    # this KVER -- so an existing one is never the running kernel's.
+    local f
+    for f in "$dst_v" "$dst_i" "$dst_d"; do
+        [ -e "$f" ] && die 5 "$f exists but $kver is not staged; refusing to overwrite an unowned ESP file"
+    done
+
+    if [ "$LAYOUT" != boot ]; then
+        mkdir -p "$(kernel_files_prefix "$kver")" || die 5 "cannot create $(kernel_files_prefix "$kver")"
+    fi
+    cp -f "$img" "$dst_v" || die 5 "cannot copy $img to $dst_v"
+    cp -f "$initrd" "$dst_i" || die 5 "cannot copy $initrd to $dst_i"
     if dtb=$(kernel_dtb "$kver"); then
-        cp -f "$dtb" "$stage/$STAGE_DTB" || die 5 "cannot copy $dtb to $stage/$STAGE_DTB"
-        log "staged $kver: $(basename "$img"), $(basename "$initrd"), $(basename "$dtb") -> $stage"
+        cp -f "$dtb" "$dst_d" || die 5 "cannot copy $dtb to $dst_d"
+        log "staged $kver: $(basename "$img"), $(basename "$initrd"), $(basename "$dtb")"
     else
         log "WARNING: no sky1-orion-o6.dtb for $kver; entry will not set a device tree"
-        log "staged $kver: $(basename "$img"), $(basename "$initrd") -> $stage"
+        log "staged $kver: $(basename "$img"), $(basename "$initrd")"
     fi
-    sync -f "$stage/$STAGE_VMLINUZ" 2>/dev/null || sync
+    sync -f "$dst_v" 2>/dev/null || sync
 
     # APPEND one entry. Never rewrite, never reorder, never touch an existing
     # entry: refind.conf keeps its existing bytes as a strict prefix.
     {
         printf '\n'
         printf '# --- added by %s: kernel %s, ADD-ONLY (not the default) ---\n' "$PROG" "$kver"
-        printf 'menuentry "NCZ %s" {\n' "$kver"
-        printf '    icon /EFI/refind/icons/os_linux.png\n'
+        printf 'menuentry "%s" {\n' "$title"
+        printf '    icon %s\n' "$entry_icon"
         printf '    volume ncz\n'
-        printf '    loader /EFI/ncz/ncz-%s/%s\n' "$kver" "$STAGE_VMLINUZ"
-        printf '    initrd /EFI/ncz/ncz-%s/%s\n' "$kver" "$STAGE_INITRD"
-        if [ -f "$stage/$STAGE_DTB" ]; then
-            printf '    devicetree /EFI/ncz/ncz-%s/%s\n' "$kver" "$STAGE_DTB"
+        printf '    loader %s\n' "${dst_v#"$ESP_REAL"}"
+        printf '    initrd %s\n' "${dst_i#"$ESP_REAL"}"
+        if [ -f "$dst_d" ]; then
+            printf '    devicetree %s\n' "${dst_d#"$ESP_REAL"}"
         fi
         printf '    options %s\n' "$opts"
         printf '}\n'
     } >>"$REFIND_CONF" || die 5 "cannot append the $kver menuentry to $REFIND_CONF"
 
-    log "added menuentry \"NCZ $kver\"; default_selection is UNCHANGED ($(current_default_selection))"
+    log "added menuentry \"$title\"; default_selection is UNCHANGED ($(current_default_selection))"
     log "to make it the default run: $PROG --promote $kver"
 }
 
@@ -574,18 +818,32 @@ promote_kernel() {
     is_staged "$kver" || \
         die 4 "$kver is not staged on the ESP; refusing: run '$PROG --kver $kver' first"
 
-    local idx cur
-    idx=$(entry_index_for_kver "$kver")
-    [ -n "$idx" ] || die 4 "no menuentry titled \"NCZ $kver\" in $REFIND_CONF; refusing"
+    local idx cur new_sel
+    idx=$(entry_index_for_staged_kver "$kver")
+    [ -n "$idx" ] || die 4 "no menuentry in $REFIND_CONF loads $kver; refusing"
     cur=$(current_default_selection)
 
-    if [ "$cur" = "$idx" ]; then
-        log "default_selection is already $idx (NCZ $kver) -- nothing to do"
+    # What default_selection must say. In the O6N layout default_selection is a
+    # quoted TITLE, so promote writes this entry's title (the same syntax the
+    # existing "7.3 Mali (Default)" line uses); a bare index there would be
+    # read by rEFInd as a numeric position, not as this kernel. The legacy
+    # layout keeps the numeric index it has always used.
+    if [ "$LAYOUT" = boot ]; then
+        local t
+        t=$(entry_title_at_index "$idx")
+        [ -n "$t" ] || die 4 "cannot read the title of entry $idx in $REFIND_CONF; refusing"
+        new_sel="\"$t\""
+    else
+        new_sel="$idx"
+    fi
+
+    if [ "$cur" = "$new_sel" ] || { [ "$LAYOUT" = boot ] && [ "\"$cur\"" = "$new_sel" ]; }; then
+        log "default_selection already selects $kver -- nothing to do"
         return 0
     fi
 
     if [ "$DRY_RUN" = 1 ]; then
-        log "DRY RUN: would set default_selection from $cur to $idx (NCZ $kver)"
+        log "DRY RUN: would set default_selection from $cur to $new_sel ($kver)"
         return 0
     fi
 
@@ -593,7 +851,7 @@ promote_kernel() {
     # firmware boot entry are untouched.
     local tmp
     tmp=$(mktemp "$REFIND_DIR/.refind.conf.XXXXXX") || die 5 "cannot create a temp file in $REFIND_DIR"
-    if awk -v want="$idx" '
+    if awk -v want="$new_sel" '
         !done && /^[[:space:]]*default_selection[[:space:]]/ {
             printf "default_selection %s\n", want
             done = 1
@@ -609,16 +867,16 @@ promote_kernel() {
         die 4 "no default_selection line in $REFIND_CONF; refusing (add one by hand first)"
     fi
     sync -f "$REFIND_CONF" 2>/dev/null || sync
-    log "PROMOTED $kver: default_selection $cur -> $idx; menuentries, rescue entries and the firmware boot entry unchanged"
+    log "PROMOTED $kver: default_selection $cur -> $new_sel; menuentries, rescue entries and the firmware boot entry unchanged"
 }
 
 list_staged() {
     local kver
-    log "ESP: $ESP_REAL"
+    log "ESP: $ESP_REAL (layout $LAYOUT, config $REFIND_CONF)"
     log "default_selection: $(current_default_selection)"
     for kver in $(list_boot_kvers); do
         if is_staged "$kver"; then
-            log "  $kver  staged (entry $(entry_index_for_kver "$kver"))"
+            log "  $kver  staged (entry $(entry_index_for_staged_kver "$kver"))"
         else
             log "  $kver  in $BOOT, not staged"
         fi

@@ -932,7 +932,7 @@ test_o6n_layout_finds_refind_in_efi_boot() {
         fail "o6n: refresh succeeds on an EFI/BOOT/refind.conf ESP" \
             "rc=$RC err=$(cat "$SBX/err.txt" 2>/dev/null)"
     fi
-    if grep -q 'ncz-7.3.1-sky1-ncz' "$ESP/EFI/BOOT/refind.conf" 2>/dev/null; then
+    if grep -qE '(^|[^-])/vmlinuz-7\.3\.1-sky1-ncz' "$ESP/EFI/BOOT/refind.conf" 2>/dev/null; then
         pass "o6n: a 7.3.1 entry was added to EFI/BOOT/refind.conf"
     else
         fail "o6n: a 7.3.1 entry was added to EFI/BOOT/refind.conf" \
