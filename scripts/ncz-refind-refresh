@@ -833,13 +833,20 @@ promote_kernel() {
         t=$(entry_title_at_index "$idx")
         [ -n "$t" ] || die 4 "cannot read the title of entry $idx in $REFIND_CONF; refusing"
         new_sel="\"$t\""
+        # current_default_selection() always returns the UNQUOTED title, so
+        # compare unquoted-to-unquoted rather than relying on the quote form of
+        # the existing line. Normalise both sides to the bare title.
+        local cur_unq="${cur#\"}"; cur_unq="${cur_unq%\"}"
+        if [ "$cur_unq" = "$t" ] || [ "$cur" = "$t" ]; then
+            log "default_selection already selects $kver -- nothing to do"
+            return 0
+        fi
     else
         new_sel="$idx"
-    fi
-
-    if [ "$cur" = "$new_sel" ] || { [ "$LAYOUT" = boot ] && [ "\"$cur\"" = "$new_sel" ]; }; then
-        log "default_selection already selects $kver -- nothing to do"
-        return 0
+        if [ "$cur" = "$new_sel" ]; then
+            log "default_selection already selects $kver -- nothing to do"
+            return 0
+        fi
     fi
 
     if [ "$DRY_RUN" = 1 ]; then

@@ -956,8 +956,18 @@ test_o6n_stages_kernel_at_esp_root() {
         fail "o6n: new entry loader/initrd use the ESP-root names" "rc=$RC"
         return
     fi
+    # The ESP-root vmlinuz is a byte-for-byte COPY of the /boot image the
+    # script picks (kernel_image prefers /boot/vmlinuz-<kver>, then
+    # /boot/Image-<kver>). Compare against that same resolved source, not a
+    # hardcoded file, so the assertion holds for either packaging name.
+    local src_img
+    if [ -f "$BOOT/vmlinuz-7.3.1-sky1-ncz" ]; then
+        src_img="$BOOT/vmlinuz-7.3.1-sky1-ncz"
+    else
+        src_img="$BOOT/Image-7.3.1-sky1-ncz"
+    fi
     if [ -f "$ESP/vmlinuz-7.3.1-sky1-ncz" ] &&
-        cmp -s "$ESP/vmlinuz-7.3.1-sky1-ncz" "$BOOT/Image-7.3.1-sky1-ncz"; then
+        cmp -s "$ESP/vmlinuz-7.3.1-sky1-ncz" "$src_img"; then
         pass "o6n: new vmlinuz at the ESP root"
     else
         fail "o6n: new vmlinuz at the ESP root" "$(ls -la "$ESP" 2>/dev/null)"
@@ -1057,9 +1067,12 @@ test_o6n_known_good_untouched() {
             "was=[$before_default] now=[$(grep -n '^default_selection' "$ESP/EFI/BOOT/refind.conf")]"
     fi
     # The pre-existing bytes are still a strict PREFIX of the new file.
+    # cmp takes exactly two files; compare the first N bytes of the ESP copy
+    # against the whole (N-byte) fixture via process substitution.
     local orig_bytes
     orig_bytes=$(wc -c <"$REPO/scripts/fixtures/o6n-refind.conf")
-    if cmp -s -n "$orig_bytes" "$REPO/scripts/fixtures/o6n-refind.conf" "$ESP/EFI/BOOT/refind.conf"; then
+    if cmp -s "$REPO/scripts/fixtures/o6n-refind.conf" \
+        <(head -c "$orig_bytes" "$ESP/EFI/BOOT/refind.conf"); then
         pass "o6n: refind.conf is append-only (original bytes are a prefix)"
     else
         fail "o6n: refind.conf is append-only (original bytes are a prefix)"
@@ -1108,6 +1121,31 @@ test_o6n_promote_uses_title() {
         pass "o6n: promote did not touch the known-good ESP files"
     else
         fail "o6n: promote did not touch the known-good ESP files"
+    fi
+
+    # Promoting the SAME kernel again must take the "already selects" no-op
+    # path: current_default_selection returns the UNQUOTED title while the
+    # written value is quoted, so a comparison that does not normalise both
+    # sides fails to see it as promoted. Assert BOTH that the file is
+    # byte-identical AND that the script logged the no-op (not a rewrite).
+    local before_second after_second
+    before_second=$(cat "$ESP/EFI/BOOT/refind.conf")
+    run_refresh --promote 7.3.1-sky1-ncz
+    if [ "$RC" != 0 ]; then
+        fail "o6n: re-promote is a no-op" "rc=$RC err=$(cat "$SBX/err.txt" 2>/dev/null)"
+        return
+    fi
+    after_second=$(cat "$ESP/EFI/BOOT/refind.conf")
+    if [ "$before_second" = "$after_second" ]; then
+        pass "o6n: re-promote leaves refind.conf unchanged"
+    else
+        fail "o6n: re-promote leaves refind.conf unchanged" "refind.conf changed on the second promote"
+    fi
+    if grep -q "already selects" "$SBX/out.txt" "$SBX/err.txt" 2>/dev/null; then
+        pass "o6n: re-promote takes the already-selected path"
+    else
+        fail "o6n: re-promote takes the already-selected path" \
+            "out=$(cat "$SBX/out.txt" 2>/dev/null)"
     fi
 }
 
