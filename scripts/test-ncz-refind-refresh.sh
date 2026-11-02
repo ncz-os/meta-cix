@@ -1220,6 +1220,242 @@ test_legacy_layout_still_works() {
     fi
 }
 
+# ===========================================================================
+# REWORK 2026-11-02 -- regressions for the Muse review of the O6N branch.
+# Each test below FAILS on hv/k73b-sky1-install-packaging-20261031 and PASSES
+# with the corresponding fix in scripts/ncz-refind-refresh (or the fixture).
+# ===========================================================================
+
+# ---------------------------------------------------------------------------
+# REGRESSION 9: no duplicate module names in any module_blacklist in the O6N
+# fixture. The Rescue / No Accelerators entry used to carry
+# "module_blacklist=typec_rts5453,rts5453,...,typec_rts5453,rts5453" (the same
+# pair at both ends). Kernel parsing tolerates it, but the duplicate is a
+# generation bug and makes byte-comparison of the cmdline ambiguous.
+#   base: the duplicated pair is present -> FAILS.
+# ---------------------------------------------------------------------------
+test_fixture_blacklist_deduplicated() {
+    local conf="$REPO/scripts/fixtures/o6n-refind.conf" dupes val
+    if [ ! -f "$conf" ]; then
+        fail "fixture: module_blacklist has no duplicates" "missing $conf"
+        return
+    fi
+    # Check EACH module_blacklist value for a name that occurs twice in that
+    # same value. Names recurring across DIFFERENT entries are fine (each
+    # entry's cmdline is independent); a repeat inside one value is the bug
+    # the review reported. Any hit is collected and reported.
+    dupes="$(
+        grep -o 'module_blacklist=[^ "]*' "$conf" | sed 's/^module_blacklist=//' |
+            while IFS= read -r val; do
+                printf '%s\n' "$val" | tr ',' '\n' | sort | uniq -d
+            done | sort -u
+    )"
+    if [ -z "$dupes" ]; then
+        pass "fixture: module_blacklist has no duplicates"
+    else
+        fail "fixture: module_blacklist has no duplicates" \
+            "duplicated within one value: $(printf '%s' "$dupes" | tr '\n' ' ')"
+    fi
+}
+
+# ---------------------------------------------------------------------------
+# REGRESSION 10 (high): legacy is_staged() must still verify a menuentry, not
+# just a version directory. The header contract says a legacy kernel is staged
+# when "the version directory plus an NCZ <KVER> entry" exist.
+#
+# Two observations prove the entry is really checked:
+#   * a directory-only kernel is NOT reported "already staged" (base does);
+#   * with the entry present, the same kernel IS reported staged, and staging
+#     it is the no-op the contract promises.
+# A directory with no entry that ALSO has files on the ESP is refused as
+# "unowned" rather than overwritten -- the point under test is that it is no
+# longer silently treated as a completed stage.
+#   base: the script logs "already staged" and exits 0 for the entryless case.
+# ---------------------------------------------------------------------------
+test_legacy_staged_requires_menuentry() {
+    sandbox
+    export NCZ_ESP_SKIP_MOUNT_CHECK=1
+    # Pre-stage 7.3.1 files on the ESP by hand, but add NO menuentry for it.
+    mkdir -p "$ESP/EFI/ncz/ncz-7.3.1-sky1-ncz"
+    printf 'STAGED-BUT-ENTRYLESS-VMLINUZ\n' >"$ESP/EFI/ncz/ncz-7.3.1-sky1-ncz/vmlinuz"
+    printf 'STAGED-BUT-ENTRYLESS-INITRD\n' >"$ESP/EFI/ncz/ncz-7.3.1-sky1-ncz/initrd.img"
+    if grep -q "NCZ 7.3.1-sky1-ncz" "$ESP/EFI/refind/refind.conf"; then
+        fail "legacy: entryless staging is not 'staged'" "fixture precondition"
+        return
+    fi
+    run_refresh --kver 7.3.1-sky1-ncz
+    if grep -q "already staged" "$SBX/out.txt" "$SBX/err.txt" 2>/dev/null; then
+        fail "legacy: entryless staging is not 'staged'" \
+            "reported already staged with no menuentry: $(grep 'already staged' "$SBX/out.txt" "$SBX/err.txt")"
+        return
+    fi
+    if [ "$RC" = 5 ] && grep -q "unowned ESP file" "$SBX/err.txt" 2>/dev/null; then
+        pass "legacy: entryless staging is not 'staged'"
+    else
+        fail "legacy: entryless staging is not 'staged'" \
+            "rc=$RC err=$(cat "$SBX/err.txt" 2>/dev/null)"
+    fi
+
+    # And with the entry present the SAME state must report as staged, so the
+    # stricter check does not make a genuinely staged kernel re-stage.
+    cat >>"$ESP/EFI/refind/refind.conf" <<'CONF'
+
+menuentry "NCZ 7.3.1-sky1-ncz" {
+    icon /EFI/refind/icons/os_linux.png
+    volume ncz
+    loader /EFI/ncz/ncz-7.3.1-sky1-ncz/vmlinuz
+    initrd /EFI/ncz/ncz-7.3.1-sky1-ncz/initrd.img
+    options root=UUID=abc rw quiet
+}
+CONF
+    run_refresh --kver 7.3.1-sky1-ncz
+    if [ "$RC" = 0 ] && grep -q "already staged" "$SBX/out.txt" 2>/dev/null; then
+        pass "legacy: a kernel with its entry still reports staged"
+    else
+        fail "legacy: a kernel with its entry still reports staged" \
+            "rc=$RC out=$(cat "$SBX/out.txt" 2>/dev/null)"
+    fi
+}
+
+# ---------------------------------------------------------------------------
+# REGRESSION 11 (medium): entry_index_for_staged_kver() must compare the
+# loader/initrd path as a FIXED STRING, not as an awk regex. KVERs contain
+# dots, so "$0 ~ (".../vmlinuz-7.3.1-sky1-ncz")" also matches a ghost entry
+# loading /vmlinuz-7x3y1-sky1-ncz -- a WRONG index, which promote would then
+# use to name a different kernel's title.
+#   base: the regex over-matches and returns the ghost entry's index (0).
+# ---------------------------------------------------------------------------
+test_o6n_loader_match_is_fixed_string() {
+    local esp
+    o6n_sandbox
+    esp="$ESP/EFI/BOOT/refind.conf"
+    export NCZ_ESP_SKIP_MOUNT_CHECK=1
+
+    # Entry 0 is a ghost kernel whose name only matches 7.3.1 as a REGEX
+    # ("7x3y1" against "7.3.1"). Entry 1 is the real 7.3.1. No ESP files for
+    # the ghost: it is not a kernel this host staged.
+    printf 'x' >"$ESP/vmlinuz-7.3.1-sky1-ncz"
+    printf 'x' >"$ESP/initrd.img-7.3.1-sky1-ncz"
+    # Append the ghost entry AFTER the fixture entries and the real 7.3.1 by
+    # rewriting the config: ghost first, then the real one, to prove the walk
+    # does not stop at the first regex hit.
+    {
+        printf 'timeout 10\n'
+        printf 'default_selection last\n'
+        printf 'menuentry "NCZ-OS Ghost 7x3y1" {\n'
+        printf '    loader  /vmlinuz-7x3y1-sky1-ncz\n'
+        printf '    initrd  /initrd.img-7x3y1-sky1-ncz\n'
+        printf '    options "root=UUID=ghost rw"\n'
+        printf '}\n'
+        printf 'menuentry "NCZ-OS Real 7.3.1 (Side-by-side)" {\n'
+        printf '    loader  /vmlinuz-7.3.1-sky1-ncz\n'
+        printf '    initrd  /initrd.img-7.3.1-sky1-ncz\n'
+        printf '    options "root=UUID=real rw quiet"\n'
+        printf '}\n'
+    } >"$esp"
+
+    run_refresh --list
+    if [ "$RC" != 0 ]; then
+        fail "o6n: loader match is a fixed string" \
+            "rc=$RC err=$(cat "$SBX/err.txt" 2>/dev/null)"
+        return
+    fi
+    # The real 7.3.1 is entry index 1, NOT the ghost at index 0.
+    if grep -qE '7\.3\.1-sky1-ncz *staged \(entry 1\)|7\.3\.1-sky1-ncz +staged \(entry 1\)' \
+        "$SBX/out.txt"; then
+        pass "o6n: loader match is a fixed string"
+    else
+        fail "o6n: loader match is a fixed string" \
+            "expected 'staged (entry 1)'; got: $(grep '7\.3\.1-sky1-ncz' "$SBX/out.txt")"
+    fi
+}
+
+# ---------------------------------------------------------------------------
+# REGRESSION 12 (high): rescue entries must be skipped during O6N index
+# matching. o6n_default_index() step 2 matches the "(Default)" substring with
+# no rescue check, so a RESCUE entry titled "... Rescue (Default)" is picked
+# as the Default and its rescue cmdline ("ro single ncz_rescue=1") leaks into
+# the newly staged normal kernel.
+#   base: the rescue entry's options are copied to the new 7.3.1 entry.
+# ---------------------------------------------------------------------------
+test_o6n_rescue_default_not_used() {
+    o6n_sandbox
+    export NCZ_ESP_SKIP_MOUNT_CHECK=1
+    # A rescue entry carrying "(Default)" comes FIRST, then the real Default
+    # kernel entry. The (Default) search must skip the rescue one and land on
+    # the real one -- picking the rescue entry would copy its rescue cmdline
+    # into the newly staged normal kernel.
+    {
+        printf 'timeout 10\n'
+        printf 'default_selection last\n'
+        printf 'menuentry "NCZ-OS 26.10 Cygnus  -  7.3 Rescue (Default)" {\n'
+        printf '    loader  /vmlinuz-7.3.0-sky1-ncz\n'
+        printf '    initrd  /initrd.img-7.3.0-sky1-ncz\n'
+        printf '    options "root=UUID=abc ro single ncz_rescue=1"\n'
+        printf '}\n'
+        printf 'menuentry "NCZ-OS 26.10 Cygnus  -  7.3 Mali (Default)" {\n'
+        printf '    loader  /vmlinuz-7.3.0-sky1-ncz\n'
+        printf '    initrd  /initrd.img-7.3.0-sky1-ncz\n'
+        printf '    options "root=UUID=abc rw quiet sky1.gpu=vendor"\n'
+        printf '}\n'
+    } >"$ESP/EFI/BOOT/refind.conf"
+
+    run_refresh --kver 7.3.1-sky1-ncz
+    if [ "$RC" != 0 ]; then
+        fail "o6n: rescue '(Default)' entry is not the Default" \
+            "rc=$RC err=$(cat "$SBX/err.txt" 2>/dev/null)"
+        return
+    fi
+    local got
+    got=$(sed -n '/vmlinuz-7\.3\.1-sky1-ncz/,/^}/p' "$ESP/EFI/BOOT/refind.conf" |
+        sed -n 's/^[[:space:]]*options[[:space:]]*//p' | sed 's/^"//; s/"$//')
+    case "$got" in
+        *ncz_rescue* | *"ro single"*)
+            fail "o6n: rescue '(Default)' entry is not the Default" "got=[$got]"
+            ;;
+        *"sky1.gpu=vendor"*)
+            pass "o6n: rescue '(Default)' entry is not the Default"
+            ;;
+        *)
+            fail "o6n: rescue '(Default)' entry is not the Default" \
+                "expected the non-rescue Mali options; got=[$got]"
+            ;;
+    esac
+}
+
+# ---------------------------------------------------------------------------
+# REGRESSION 13 (high): o6n_kver_at_index() must print NOTHING when an entry's
+# loader is not an ESP-root /vmlinuz-<KVER>. The old code ran sub(...) and
+# printed the result unconditionally: on a non-matching loader (e.g.
+# /EFI/ncz/ncz-7.3.0-sky1-ncz/vmlinuz) sub() is a no-op and the FULL PATH was
+# printed, so default_kver() returned "/EFI/ncz/.../vmlinuz" instead of a
+# KVER and the known-good check mis-resolved.
+#   base: logs "known-good kernel /EFI/ncz/ncz-7.3.0-sky1-ncz/vmlinuz ...".
+# ---------------------------------------------------------------------------
+test_o6n_kver_at_index_empty_for_non_esp_root_loader() {
+    o6n_sandbox
+    export NCZ_ESP_SKIP_MOUNT_CHECK=1
+    {
+        printf 'timeout 10\n'
+        printf 'default_selection "7.3 Mali (Default)"\n'
+        printf 'menuentry "NCZ-OS 26.10 Cygnus  -  7.3 Mali (Default)" {\n'
+        printf '    loader  /EFI/ncz/ncz-7.3.0-sky1-ncz/vmlinuz\n'
+        printf '    initrd  /EFI/ncz/ncz-7.3.0-sky1-ncz/initrd.img\n'
+        printf '    options "root=UUID=abc rw quiet"\n'
+        printf '}\n'
+    } >"$ESP/EFI/BOOT/refind.conf"
+
+    run_refresh --kver 7.3.1-sky1-ncz --dry-run
+    # With no ESP-root loader there is no resolvable known-good KVER; the
+    # script must never present the loader PATH as a kernel version.
+    if grep -q 'known-good kernel /' "$SBX/out.txt"; then
+        fail "o6n: non-ESP-root loader yields no KVER" \
+            "$(grep 'known-good kernel' "$SBX/out.txt")"
+        return
+    fi
+    pass "o6n: non-ESP-root loader yields no KVER"
+}
+
 # ---------------------------------------------------------------------------
 main() {
     if [ ! -x "$REFRESH" ]; then
@@ -1248,6 +1484,13 @@ main() {
     test_o6n_promote_uses_title
     test_o6n_promote_preserves_title_bytes
     test_legacy_layout_still_works
+
+    # Rework regressions (Muse review of hv/k73b-sky1-install-packaging-*).
+    test_fixture_blacklist_deduplicated
+    test_legacy_staged_requires_menuentry
+    test_o6n_loader_match_is_fixed_string
+    test_o6n_rescue_default_not_used
+    test_o6n_kver_at_index_empty_for_non_esp_root_loader
 
     printf '\n%d passed, %d failed\n' "$PASS" "$FAIL"
     if [ "$FAIL" -ne 0 ]; then

@@ -388,6 +388,10 @@ is_staged() {
             ;;
         *)
             [ -d "$(kernel_stage_dir "$kver")" ] || return 1
+            # The directory alone is not enough: an entry whose menuentry was
+            # deleted would report as staged and never be re-added. Require the
+            # "NCZ <KVER>" entry too, exactly as the header documents.
+            [ -n "$(entry_index_for_kver "$kver")" ] || return 1
             ;;
     esac
     return 0
@@ -415,14 +419,28 @@ entry_index_for_staged_kver() {
             # Walk the entries: an entry "hits" when its loader or initrd line
             # names this kernel's ESP-root file. The index counts menuentry
             # lines in file order, the same way rEFInd does.
+            #
+            # The match is a FIXED-STRING comparison, not a regex: a KVER
+            # contains dots, so `$0 ~ (".../vmlinuz-" want)` would treat them
+            # as wildcards and let 6.8.0 match 6x8y0 (a wrong entry index).
+            # `substr` against the exact length of "loader <path>" keeps the
+            # directive boundary while comparing bytes literally.
             awk -v want="/$(esp_kernel_name "$kver" vmlinuz)" '
                 BEGIN { idx = 0; hit = 0 }
+                function is_ours(line,   p) {
+                    if (match(line, /^[[:space:]]*(loader|initrd)[[:space:]]+/)) {
+                        p = substr(line, RLENGTH + 1)
+                        sub(/^"/, "", p); sub(/".*$/, "", p)
+                        return p == want
+                    }
+                    return 0
+                }
                 /^[[:space:]]*menuentry[[:space:]]/ {
                     if (hit) { print idx - 1; found = 1; exit }
                     idx++; hit = 0; next
                 }
                 /^[[:space:]]*}/ { next }
-                $0 ~ ("^[[:space:]]*(loader|initrd)[[:space:]]+" want) { hit = 1 }
+                is_ours($0) { hit = 1 }
                 END {
                     if (found) exit 0
                     if (hit) { print idx - 1; exit 0 }
@@ -495,6 +513,12 @@ o6n_title_is_rescue() {
 
 # 0-based index of the first non-rescue menuentry whose title matches the
 # shell glob-like awk regex $1 (empty output when none matches).
+#
+# Rescue variants are skipped HERE, not only at the call sites: the matching
+# helpers are what the "(Default)" search walks, and a rescue entry whose
+# title merely contains the substring being looked for must never be returned
+# -- a rescue cmdline leaking into a normal kernel is the exact failure this
+# whole section exists to prevent.
 o6n_entry_index_matching() {
     awk -v want="$1" '
         BEGIN { idx = 0 }
@@ -505,9 +529,12 @@ o6n_entry_index_matching() {
             sub(/".*$/, "", t)
             return t
         }
+        function is_rescue(t) {
+            return (t ~ /[Rr]escue/) || (t ~ /NCZRESCUE/) || (t ~ /No Accelerators/)
+        }
         /^[[:space:]]*menuentry[[:space:]]/ {
             t = title_of($0)
-            if (t ~ want) { print idx; exit }
+            if (!is_rescue(t) && t ~ want) { print idx; exit }
             idx++
         }
     ' "$REFIND_CONF"
@@ -529,8 +556,9 @@ o6n_default_index() {
 }
 
 # The KVER a staged O6N entry boots: the kernel named in its loader line, e.g.
-# loader /vmlinuz-7.3.0-sky1-ncz -> 7.3.0-sky1-ncz. Empty when the entry's
-# loader is not an ESP-root /vmlinuz-<KVER>.
+# loader /vmlinuz-7.3.0-sky1-ncz -> 7.3.0-sky1-ncz. Prints NOTHING when the
+# entry's loader is not an ESP-root /vmlinuz-<KVER> -- the caller must see an
+# empty result, never a loader path passed off as a kernel version.
 o6n_kver_at_index() {
     awk -v want="$1" '
         BEGIN { idx = 0 }
@@ -539,8 +567,9 @@ o6n_kver_at_index() {
             l = $0
             sub(/^[[:space:]]*loader[[:space:]]+/, "", l)
             sub(/^"/, "", l); sub(/".*$/, "", l)
-            sub(/^.*\/vmlinuz-/, "", l)
-            print l
+            # Only an ESP-root /vmlinuz-<KVER> names a kernel version. Anything
+            # else (a nested path, a different name) yields no KVER at all.
+            if (sub(/^\/vmlinuz-/, "", l)) print l
             exit
         }
     ' "$REFIND_CONF"
