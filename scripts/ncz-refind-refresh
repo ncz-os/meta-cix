@@ -423,17 +423,19 @@ entry_index_for_staged_kver() {
             # The match is a FIXED-STRING comparison, not a regex: a KVER
             # contains dots, so `$0 ~ (".../vmlinuz-" want)` would treat them
             # as wildcards and let 6.8.0 match 6x8y0 (a wrong entry index).
-            # `substr` against the exact length of "loader <path>" keeps the
-            # directive boundary while comparing bytes literally.
+            # The path is the FIRST token after the directive (rEFInd allows
+            # further parameters on the same line), optionally quoted, and it
+            # is compared byte-for-byte.
             awk -v want="/$(esp_kernel_name "$kver" vmlinuz)" '
                 BEGIN { idx = 0; hit = 0 }
                 function is_ours(line,   p) {
-                    if (match(line, /^[[:space:]]*(loader|initrd)[[:space:]]+/)) {
-                        p = substr(line, RLENGTH + 1)
-                        sub(/^"/, "", p); sub(/".*$/, "", p)
-                        return p == want
-                    }
-                    return 0
+                    if (!match(line, /^[[:space:]]*(loader|initrd)[[:space:]]+/))
+                        return 0
+                    p = substr(line, RLENGTH + 1)
+                    sub(/^"/, "", p)
+                    sub(/".*$/, "", p)
+                    sub(/[[:space:]].*$/, "", p)
+                    return p == want
                 }
                 /^[[:space:]]*menuentry[[:space:]]/ {
                     if (hit) { print idx - 1; found = 1; exit }

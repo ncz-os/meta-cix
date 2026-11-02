@@ -1368,6 +1368,26 @@ test_o6n_loader_match_is_fixed_string() {
         fail "o6n: loader match is a fixed string" \
             "expected 'staged (entry 1)'; got: $(grep '7\.3\.1-sky1-ncz' "$SBX/out.txt")"
     fi
+
+    # A loader line may carry parameters after the path (rEFInd allows it) and
+    # may be quoted. The fixed-string match must take the FIRST token only, so
+    # both forms still resolve to the right index.
+    {
+        printf 'timeout 10\n'
+        printf 'default_selection last\n'
+        printf 'menuentry "NCZ-OS Quoted 7.3.1" {\n'
+        printf '    loader  "/vmlinuz-7.3.1-sky1-ncz" root=UUID=x\n'
+        printf '    initrd  /initrd.img-7.3.1-sky1-ncz\n'
+        printf '    options "root=UUID=real rw"\n'
+        printf '}\n'
+    } >"$esp"
+    run_refresh --list
+    if grep -qE '7\.3\.1-sky1-ncz +staged \(entry 0\)' "$SBX/out.txt"; then
+        pass "o6n: loader match tolerates a quoted path with trailing args"
+    else
+        fail "o6n: loader match tolerates a quoted path with trailing args" \
+            "got: $(grep '7\.3\.1-sky1-ncz' "$SBX/out.txt")"
+    fi
 }
 
 # ---------------------------------------------------------------------------
