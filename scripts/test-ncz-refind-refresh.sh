@@ -1391,6 +1391,61 @@ test_o6n_loader_match_is_fixed_string() {
 }
 
 # ---------------------------------------------------------------------------
+# The awk block in entry_index_for_staged_kver must PARSE and must return the
+# right answer for a hit and for a miss. A syntax error makes awk exit
+# non-zero, which --list surfaces as a wrong rc; a mis-parsed pattern-action
+# rule that always (or never) fires shows up as the wrong staged state.
+#   A bare `is_ours($0) { hit = 1 }` and `if (is_ours($0)) { hit = 1 }` are
+#   both valid POSIX awk; this test pins whichever form ships and would catch a
+#   real syntax error in either.
+# ---------------------------------------------------------------------------
+test_o6n_loader_match_awk_parses() {
+    local esp
+    o6n_sandbox
+    esp="$ESP/EFI/BOOT/refind.conf"
+    export NCZ_ESP_SKIP_MOUNT_CHECK=1
+
+    # HIT: one entry loads the kernel at the ESP root.
+    printf 'x' >"$ESP/vmlinuz-7.3.1-sky1-ncz"
+    printf 'x' >"$ESP/initrd.img-7.3.1-sky1-ncz"
+    {
+        printf 'timeout 10\n'
+        printf 'default_selection last\n'
+        printf 'menuentry "NCZ-OS Real 7.3.1" {\n'
+        printf '    loader  /vmlinuz-7.3.1-sky1-ncz\n'
+        printf '    initrd  /initrd.img-7.3.1-sky1-ncz\n'
+        printf '    options "root=UUID=real rw"\n'
+        printf '}\n'
+    } >"$esp"
+    run_refresh --list
+    if [ "$RC" = 0 ] && grep -qE '7\.3\.1-sky1-ncz +staged \(entry 0\)' "$SBX/out.txt"; then
+        pass "o6n: loader-match awk parses and finds an existing entry"
+    else
+        fail "o6n: loader-match awk parses and finds an existing entry" \
+            "rc=$RC out=$(grep '7\.3\.1-sky1-ncz' "$SBX/out.txt") err=$(cat "$SBX/err.txt" 2>/dev/null)"
+    fi
+
+    # MISS: a config with no entry for the kernel. A rule that always fired
+    # would wrongly report staged; a syntax error would exit non-zero.
+    {
+        printf 'timeout 10\n'
+        printf 'default_selection last\n'
+        printf 'menuentry "NCZ-OS Other" {\n'
+        printf '    loader  /vmlinuz-9.9.9-other\n'
+        printf '    initrd  /initrd.img-9.9.9-other\n'
+        printf '    options "root=UUID=x rw"\n'
+        printf '}\n'
+    } >"$esp"
+    run_refresh --list
+    if [ "$RC" = 0 ] && grep -qE '7\.3\.1-sky1-ncz +in .*not staged' "$SBX/out.txt"; then
+        pass "o6n: loader-match awk parses and reports no hit on a miss"
+    else
+        fail "o6n: loader-match awk parses and reports no hit on a miss" \
+            "rc=$RC out=$(grep '7\.3\.1-sky1-ncz' "$SBX/out.txt") err=$(cat "$SBX/err.txt" 2>/dev/null)"
+    fi
+}
+
+# ---------------------------------------------------------------------------
 # REGRESSION 12 (high): rescue entries must be skipped during O6N index
 # matching. o6n_default_index() step 2 matches the "(Default)" substring with
 # no rescue check, so a RESCUE entry titled "... Rescue (Default)" is picked
@@ -1509,6 +1564,7 @@ main() {
     test_fixture_blacklist_deduplicated
     test_legacy_staged_requires_menuentry
     test_o6n_loader_match_is_fixed_string
+    test_o6n_loader_match_awk_parses
     test_o6n_rescue_default_not_used
     test_o6n_kver_at_index_empty_for_non_esp_root_loader
 

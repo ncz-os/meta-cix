@@ -442,7 +442,7 @@ entry_index_for_staged_kver() {
                     idx++; hit = 0; next
                 }
                 /^[[:space:]]*}/ { next }
-                is_ours($0) { hit = 1 }
+                { if (is_ours($0)) hit = 1 }
                 END {
                     if (found) exit 0
                     if (hit) { print idx - 1; exit 0 }
