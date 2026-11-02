@@ -861,6 +861,8 @@ promote_kernel() {
     # rather than `awk -v`: -v interprets backslash escapes (\t -> tab, \n ->
     # newline) in the value, which would corrupt a title containing one. A
     # title is opaque text and must be written back byte-for-byte.
+    # NCZ_PROMOTE_SEL=... awk is a prefix assignment: it reaches the command's
+    # environment without `export` (POSIX), so ENVIRON sees it.
     local tmp
     tmp=$(mktemp "$REFIND_DIR/.refind.conf.XXXXXX") || die 5 "cannot create a temp file in $REFIND_DIR"
     if NCZ_PROMOTE_SEL="$new_sel" awk '

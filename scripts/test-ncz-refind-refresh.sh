@@ -1174,6 +1174,9 @@ test_o6n_promote_preserves_title_bytes() {
     # the original bytes. The fix passes the value via ENVIRON, which does no
     # escape processing, and writes it back verbatim.
     local esc_title='NCZ 7.3.1-sky1-ncz \tproof'
+    # NCZ_T=... awk: a prefix assignment on a simple command is placed in that
+    # command's environment without `export` (POSIX), so awk's ENVIRON["NCZ_T"]
+    # sees the value. Exporting is unnecessary and a needless global.
     NCZ_T="$esc_title" awk '
         BEGIN { want = ENVIRON["NCZ_T"] }
         /^[[:space:]]*menuentry[[:space:]]/ && !done && $0 ~ /7\.3\.1-sky1-ncz/ {
