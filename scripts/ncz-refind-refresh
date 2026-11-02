@@ -412,6 +412,11 @@ new_entry_title() {
 # 0-based index of the menuentry that stages $1 in THIS layout (empty when the
 # kernel is not staged). Legacy matches the "NCZ <KVER>" title; the O6N layout
 # matches the entry that loads /vmlinuz-<KVER>, whatever its display title.
+#
+# For legacy this DELEGATES to entry_index_for_kver() (the legacy title
+# matcher) below, so calling either one from a legacy code path yields the
+# same index. Callers that are layout-agnostic use this dispatcher; the legacy
+# branch of is_staged() calls entry_index_for_kver() directly.
 entry_index_for_staged_kver() {
     local kver="$1"
     case "${LAYOUT:-legacy}" in
@@ -645,6 +650,16 @@ current_default_selection() {
 }
 
 # 0-based index of the "NCZ <KVER>" menuentry (empty when not present).
+#
+# This is the LEGACY helper and it is deliberately a separate function from
+# entry_index_for_staged_kver() above. The two are NOT duplicates:
+#   entry_index_for_kver()         -- legacy only; matches the title "NCZ <KVER>".
+#   entry_index_for_staged_kver()  -- dispatcher; for legacy it delegates HERE,
+#                                     for the O6N layout it walks loader lines.
+# is_staged()'s legacy branch calls this helper on purpose, because the legacy
+# contract is "the version directory plus an NCZ <KVER> entry". Renaming that
+# call to the dispatcher would be equivalent for legacy (it delegates back
+# here) but would lose the distinction for readers.
 entry_index_for_kver() {
     entry_index_for_title "NCZ $1"
 }

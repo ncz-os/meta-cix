@@ -1259,7 +1259,48 @@ test_fixture_blacklist_deduplicated() {
 }
 
 # ---------------------------------------------------------------------------
-# REGRESSION 10 (high): legacy is_staged() must still verify a menuentry, not
+# Every helper the script calls must actually be defined in the script.
+#
+# Review repeatedly reported is_staged() calling an "undefined"
+# entry_index_for_kver(). It IS defined -- but the underlying worry (a call to
+# a helper that does not exist) is worth a mechanical guard, so this test
+# statically extracts every `entry_index_for_*` / `o6n_*` style helper name
+# invoked as a command and asserts a definition exists for each.
+#
+# This passes today; it fails the moment a genuine typo like
+# entry_index_for_kverr() or entry_index_for_staged_kvr() is introduced, which
+# is the defect class the review was reaching for.
+# ---------------------------------------------------------------------------
+test_every_called_helper_is_defined() {
+    local script="$REFRESH" missing="" name
+    # Called names: an identifier followed by an argument or closing paren,
+    # appearing in a command position ($(...) or at the start of a statement).
+    local called defined
+    called=$(grep -oE '\$\([a-z_][a-z0-9_]*|^[[:space:]]+[a-z_][a-z0-9_]*' "$script" \
+        | sed -E 's/^\$\(//; s/^[[:space:]]+//' \
+        | grep -E '^(entry_index_for_|o6n_|kernel_|esp_|default_|check_|requirement_)' \
+        | sort -u)
+    defined=$(grep -oE '^[a-z_][a-z0-9_]*\(\)' "$script" | sed 's/()$//' | sort -u)
+    for name in $called; do
+        printf '%s\n' "$defined" | grep -qxF "$name" || missing="$missing $name"
+    done
+    if [ -z "$missing" ]; then
+        pass "script: every called helper is defined"
+    else
+        fail "script: every called helper is defined" "undefined:$missing"
+    fi
+
+    # And the two helpers the review conflated must BOTH exist -- so neither a
+    # rename nor a deletion can silently satisfy this file.
+    for name in entry_index_for_kver entry_index_for_staged_kver; do
+        if printf '%s\n' "$defined" | grep -qxF "$name"; then
+            pass "script: $name is defined"
+        else
+            fail "script: $name is defined" "helper missing from $script"
+        fi
+    done
+}
+
 # just a version directory. The header contract says a legacy kernel is staged
 # when "the version directory plus an NCZ <KVER> entry" exist.
 #
@@ -1563,6 +1604,7 @@ main() {
     # Rework regressions (Muse review of hv/k73b-sky1-install-packaging-*).
     test_fixture_blacklist_deduplicated
     test_legacy_staged_requires_menuentry
+    test_every_called_helper_is_defined
     test_o6n_loader_match_is_fixed_string
     test_o6n_loader_match_awk_parses
     test_o6n_rescue_default_not_used
