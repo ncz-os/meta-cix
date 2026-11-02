@@ -860,6 +860,273 @@ test_docs_exist() {
     fi
 }
 
+# ===========================================================================
+# O6N LAYOUT (2026-11-02). Everything above this line uses the LEGACY layout
+# the script was written for: refind.conf at $ESP/EFI/refind/refind.conf,
+# kernels staged under $ESP/EFI/ncz/ncz-<KVER>/, and menuentries titled
+# "NCZ <KVER>".
+#
+# O6N's real ESP is different in three ways, all visible in the fixture
+# scripts/fixtures/o6n-refind.conf (byte-identical copy of the live
+# /boot/efi/EFI/BOOT/refind.conf, sha256 0de3effd...):
+#
+#   * rEFInd lives in $ESP/EFI/BOOT/ (installed as the removable-media
+#     BOOTAA64.EFI), NOT $ESP/EFI/refind/;
+#   * kernels and initrds sit at the ESP ROOT as /vmlinuz-<KVER> and
+#     /initrd.img-<KVER>, not under a version directory;
+#   * menuentries are titled after the DISPLAY NAME, e.g.
+#     "NCZ-OS 26.10 Cygnus  -  7.3 Mali (Default)", and default_selection is
+#     the quoted TITLE STRING "7.3 Mali (Default)" -- a substring of that
+#     title -- never an index and never "NCZ <KVER>".
+#
+# On the base branch the script only knew the legacy layout, so every one of
+# these tests FAILS there: it exits 4 with "no rEFInd on the ESP at
+# .../EFI/refind" before writing anything.
+# ===========================================================================
+
+# A sandbox shaped exactly like O6N: refind under EFI/BOOT, kernels at the
+# ESP root, title-named menuentries. Returns nothing; sets ESP/BOOT/SBX.
+o6n_sandbox() {
+    SBX=$(mktemp -d "${TMPDIR:-/var/tmp}/ncz-refind-o6n.XXXXXX") || exit 1
+    ESP="$SBX/esp"
+    BOOT="$SBX/boot"
+    mkdir -p "$ESP/EFI/BOOT/icons" "$BOOT"
+
+    cp "$REPO/scripts/fixtures/o6n-refind.conf" "$ESP/EFI/BOOT/refind.conf"
+    : >"$ESP/EFI/BOOT/icons/os_linux.png"
+
+    # The known-good 7.3.0 payload at the ESP root, byte-identical to what a
+    # good install leaves behind. The install of 7.3.1 must not touch these.
+    printf 'O6N-ESP-VMLINUZ-7.3.0\n' >"$ESP/vmlinuz-7.3.0-sky1-ncz"
+    printf 'O6N-ESP-INITRD-7.3.0\n' >"$ESP/initrd.img-7.3.0-sky1-ncz"
+
+    # The same known-good kernel in /boot (the script's fallback check).
+    printf 'O6N-BOOT-IMAGE-7.3.0\n' >"$BOOT/Image-7.3.0-sky1-ncz"
+    printf 'O6N-BOOT-INITRD-7.3.0\n' >"$BOOT/initrd.img-7.3.0-sky1-ncz"
+
+    # The new 7.3.1 kernel, dropped by the package manager into /boot only.
+    printf 'O6N-BOOT-IMAGE-7.3.1\n' >"$BOOT/Image-7.3.1-sky1-ncz"
+    printf 'O6N-BOOT-INITRD-7.3.1\n' >"$BOOT/initrd.img-7.3.1-sky1-ncz"
+
+    LOGFILE="$SBX/refresh.log"
+}
+
+# The options the real "7.3 Mali (Default)" entry carries, quoted form.
+o6n_default_options() {
+    sed -n '/menuentry "NCZ-OS 26.10 Cygnus  -  7\.3 Mali (Default)"/,/^}/p' \
+        "$ESP/EFI/BOOT/refind.conf" | sed -n 's/^[[:space:]]*options[[:space:]]*//p'
+}
+
+# ---------------------------------------------------------------------------
+# REGRESSION 1: the script finds refind.conf under EFI/BOOT, not just
+# EFI/refind, and stages 7.3.1 on a real O6N ESP.
+#   base: exit 4 ("no rEFInd on the ESP at .../EFI/refind"), no staging.
+# ---------------------------------------------------------------------------
+test_o6n_layout_finds_refind_in_efi_boot() {
+    o6n_sandbox
+    export NCZ_ESP_SKIP_MOUNT_CHECK=1
+    run_refresh --kver 7.3.1-sky1-ncz
+    if [ "$RC" = 0 ]; then
+        pass "o6n: refresh succeeds on an EFI/BOOT/refind.conf ESP"
+    else
+        fail "o6n: refresh succeeds on an EFI/BOOT/refind.conf ESP" \
+            "rc=$RC err=$(cat "$SBX/err.txt" 2>/dev/null)"
+    fi
+    if grep -q 'ncz-7.3.1-sky1-ncz' "$ESP/EFI/BOOT/refind.conf" 2>/dev/null; then
+        pass "o6n: a 7.3.1 entry was added to EFI/BOOT/refind.conf"
+    else
+        fail "o6n: a 7.3.1 entry was added to EFI/BOOT/refind.conf" \
+            "$(tail -20 "$ESP/EFI/BOOT/refind.conf" 2>/dev/null)"
+    fi
+}
+
+# ---------------------------------------------------------------------------
+# REGRESSION 2: kernels are staged AT THE ESP ROOT (/vmlinuz-<KVER> and
+# /initrd.img-<KVER>), matching the layout the existing entries use, and the
+# new entry's loader/initrd point there.
+#   base: never gets this far (exit 4), so both checks fail.
+# ---------------------------------------------------------------------------
+test_o6n_stages_kernel_at_esp_root() {
+    o6n_sandbox
+    export NCZ_ESP_SKIP_MOUNT_CHECK=1
+    run_refresh --kver 7.3.1-sky1-ncz
+    if [ "$RC" != 0 ]; then
+        fail "o6n: new vmlinuz at the ESP root" "rc=$RC err=$(cat "$SBX/err.txt" 2>/dev/null)"
+        fail "o6n: new initrd at the ESP root" "rc=$RC"
+        fail "o6n: new entry loader/initrd use the ESP-root names" "rc=$RC"
+        return
+    fi
+    if [ -f "$ESP/vmlinuz-7.3.1-sky1-ncz" ] &&
+        cmp -s "$ESP/vmlinuz-7.3.1-sky1-ncz" "$BOOT/Image-7.3.1-sky1-ncz"; then
+        pass "o6n: new vmlinuz at the ESP root"
+    else
+        fail "o6n: new vmlinuz at the ESP root" "$(ls -la "$ESP" 2>/dev/null)"
+    fi
+    if [ -f "$ESP/initrd.img-7.3.1-sky1-ncz" ] &&
+        cmp -s "$ESP/initrd.img-7.3.1-sky1-ncz" "$BOOT/initrd.img-7.3.1-sky1-ncz"; then
+        pass "o6n: new initrd at the ESP root"
+    else
+        fail "o6n: new initrd at the ESP root" "$(ls -la "$ESP" 2>/dev/null)"
+    fi
+    local entry
+    entry=$(sed -n '/vmlinuz-7\.3\.1-sky1-ncz/,/^}/p' "$ESP/EFI/BOOT/refind.conf")
+    if printf '%s' "$entry" | grep -qE 'loader[[:space:]]+/vmlinuz-7\.3\.1-sky1-ncz' &&
+        printf '%s' "$entry" | grep -qE 'initrd[[:space:]]+/initrd\.img-7\.3\.1-sky1-ncz'; then
+        pass "o6n: new entry loader/initrd use the ESP-root names"
+    else
+        fail "o6n: new entry loader/initrd use the ESP-root names" "$entry"
+    fi
+}
+
+# ---------------------------------------------------------------------------
+# REGRESSION 3: the new entry inherits the options of the entry named by the
+# quoted TITLE STRING in default_selection ("7.3 Mali (Default)"), and the
+# rescue variants' cmdlines are NOT copied.
+#   base: never gets this far.
+# ---------------------------------------------------------------------------
+test_o6n_title_default_options_inherited() {
+    o6n_sandbox
+    export NCZ_ESP_SKIP_MOUNT_CHECK=1
+    local want
+    want=$(o6n_default_options)
+    run_refresh --kver 7.3.1-sky1-ncz
+    if [ "$RC" != 0 ]; then
+        fail "o6n: new entry inherits the Milan/Default options" \
+            "rc=$RC err=$(cat "$SBX/err.txt" 2>/dev/null)"
+        return
+    fi
+    local got
+    got=$(sed -n '/vmlinuz-7\.3\.1-sky1-ncz/,/^}/p' "$ESP/EFI/BOOT/refind.conf" |
+        sed -n 's/^[[:space:]]*options[[:space:]]*//p' | sed 's/^"//; s/"$//')
+    want=$(printf '%s' "$want" | sed 's/^"//; s/"$//')
+    if [ -n "$want" ] && [ "$got" = "$want" ]; then
+        pass "o6n: new entry inherits the displayed Default options"
+    else
+        fail "o6n: new entry inherits the displayed Default options" \
+            "expected=[$want] got=[$got]"
+    fi
+    case "$got" in
+        *ncz_rescue* | *"ro single"*)
+            fail "o6n: rescue cmdline not copied" "got=[$got]"
+            ;;
+        *)
+            pass "o6n: rescue cmdline not copied"
+            ;;
+    esac
+}
+
+# ---------------------------------------------------------------------------
+# REGRESSION 4 (the safety property that matters most on O6N): installing
+# 7.3.1 leaves the known-good 7.3.0 files BYTE-IDENTICAL -- both at the ESP
+# root and in /boot -- and does not rewrite default_selection.
+#   base: exit 4, nothing staged (so the "staged" precondition fails), and if
+#   it ever did run it would have overwritten the root vmlinuz/initrd.
+# ---------------------------------------------------------------------------
+test_o6n_known_good_untouched() {
+    o6n_sandbox
+    export NCZ_ESP_SKIP_MOUNT_CHECK=1
+    local before_default kg_v kg_i b_v b_i
+    before_default=$(grep -n '^default_selection' "$ESP/EFI/BOOT/refind.conf")
+    kg_v=$(sha256sum "$ESP/vmlinuz-7.3.0-sky1-ncz" | cut -d' ' -f1)
+    kg_i=$(sha256sum "$ESP/initrd.img-7.3.0-sky1-ncz" | cut -d' ' -f1)
+    b_v=$(sha256sum "$BOOT/Image-7.3.0-sky1-ncz" | cut -d' ' -f1)
+    b_i=$(sha256sum "$BOOT/initrd.img-7.3.0-sky1-ncz" | cut -d' ' -f1)
+
+    run_refresh --kver 7.3.1-sky1-ncz
+    if [ "$RC" != 0 ]; then
+        fail "o6n: install succeeds (precondition for the no-touch checks)" \
+            "rc=$RC err=$(cat "$SBX/err.txt" 2>/dev/null)"
+    fi
+
+    if [ "$(sha256sum "$ESP/vmlinuz-7.3.0-sky1-ncz" | cut -d' ' -f1)" = "$kg_v" ] &&
+        [ "$(sha256sum "$ESP/initrd.img-7.3.0-sky1-ncz" | cut -d' ' -f1)" = "$kg_i" ]; then
+        pass "o6n: known-good ESP-root vmlinuz and initrd untouched"
+    else
+        fail "o6n: known-good ESP-root vmlinuz and initrd untouched"
+    fi
+    if [ "$(sha256sum "$BOOT/Image-7.3.0-sky1-ncz" | cut -d' ' -f1)" = "$b_v" ] &&
+        [ "$(sha256sum "$BOOT/initrd.img-7.3.0-sky1-ncz" | cut -d' ' -f1)" = "$b_i" ]; then
+        pass "o6n: known-good /boot image and initrd untouched"
+    else
+        fail "o6n: known-good /boot image and initrd untouched"
+    fi
+    if [ "$(grep -n '^default_selection' "$ESP/EFI/BOOT/refind.conf")" = "$before_default" ]; then
+        pass "o6n: default_selection title unchanged"
+    else
+        fail "o6n: default_selection title unchanged" \
+            "was=[$before_default] now=[$(grep -n '^default_selection' "$ESP/EFI/BOOT/refind.conf")]"
+    fi
+    # The pre-existing bytes are still a strict PREFIX of the new file.
+    local orig_bytes
+    orig_bytes=$(wc -c <"$REPO/scripts/fixtures/o6n-refind.conf")
+    if cmp -s -n "$orig_bytes" "$REPO/scripts/fixtures/o6n-refind.conf" "$ESP/EFI/BOOT/refind.conf"; then
+        pass "o6n: refind.conf is append-only (original bytes are a prefix)"
+    else
+        fail "o6n: refind.conf is append-only (original bytes are a prefix)"
+    fi
+}
+
+# ---------------------------------------------------------------------------
+# REGRESSION 5: --promote on the title-named layout sets default_selection to
+# the new entry's TITLE (a title string, like the one already there), not to a
+# bare index that rEFInd would misread as a numeric position.
+#   base: never gets this far.
+# ---------------------------------------------------------------------------
+test_o6n_promote_uses_title() {
+    o6n_sandbox
+    export NCZ_ESP_SKIP_MOUNT_CHECK=1
+    run_refresh --kver 7.3.1-sky1-ncz
+    if [ "$RC" != 0 ]; then
+        fail "o6n: promote switches default to the new title" "stage rc=$RC"
+        return
+    fi
+    run_refresh --promote 7.3.1-sky1-ncz
+    if [ "$RC" != 0 ]; then
+        fail "o6n: promote switches default to the new title" \
+            "rc=$RC err=$(cat "$SBX/err.txt" 2>/dev/null)"
+        return
+    fi
+    local sel
+    sel=$(grep '^default_selection' "$ESP/EFI/BOOT/refind.conf")
+    # The new default must name the 7.3.1 entry by title, and that title must
+    # actually exist in the file.
+    local title
+    title=$(sed -n "/^default_selection/ s/^[^ ]*[[:space:]]*\"\(.*\)\"/\1/p" \
+        "$ESP/EFI/BOOT/refind.conf")
+    if [ -n "$title" ] && grep -qF "menuentry \"$title\"" "$ESP/EFI/BOOT/refind.conf"; then
+        pass "o6n: promote sets a title that names a real menuentry"
+    else
+        fail "o6n: promote sets a title that names a real menuentry" \
+            "sel=[$sel] title=[$title]"
+    fi
+    case "$title" in
+        *7.3.1*) pass "o6n: promoted title names 7.3.1" ;;
+        *) fail "o6n: promoted title names 7.3.1" "sel=[$sel]" ;;
+    esac
+    # And the known-good payload files are still untouched by promote.
+    if cmp -s <(printf 'O6N-ESP-VMLINUZ-7.3.0\n') "$ESP/vmlinuz-7.3.0-sky1-ncz"; then
+        pass "o6n: promote did not touch the known-good ESP files"
+    else
+        fail "o6n: promote did not touch the known-good ESP files"
+    fi
+}
+
+# ---------------------------------------------------------------------------
+# REGRESSION 6: a pre-existing legacy ESP (EFI/refind + EFI/ncz/ncz-<KVER>)
+# still works. The O6N fix must not regress the layout the earlier tests use.
+# ---------------------------------------------------------------------------
+test_legacy_layout_still_works() {
+    sandbox
+    export NCZ_ESP_SKIP_MOUNT_CHECK=1
+    run_refresh --kver 7.3.1-sky1-ncz
+    if [ "$RC" = 0 ] && [ -f "$ESP/EFI/ncz/ncz-7.3.1-sky1-ncz/vmlinuz" ]; then
+        pass "legacy: EFI/refind + EFI/ncz layout still stages"
+    else
+        fail "legacy: EFI/refind + EFI/ncz layout still stages" \
+            "rc=$RC err=$(cat "$SBX/err.txt" 2>/dev/null)"
+    fi
+}
+
 # ---------------------------------------------------------------------------
 main() {
     if [ ! -x "$REFRESH" ]; then
@@ -881,6 +1148,12 @@ main() {
     test_per_version_package_names
     test_meta_does_not_evict_old
     test_docs_exist
+    test_o6n_layout_finds_refind_in_efi_boot
+    test_o6n_stages_kernel_at_esp_root
+    test_o6n_title_default_options_inherited
+    test_o6n_known_good_untouched
+    test_o6n_promote_uses_title
+    test_legacy_layout_still_works
 
     printf '\n%d passed, %d failed\n' "$PASS" "$FAIL"
     if [ "$FAIL" -ne 0 ]; then
