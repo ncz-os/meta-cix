@@ -297,6 +297,14 @@ KERNEL_PKG_VER = "${@legitimize_package_name(d.getVar('KERNEL_VERSION'))}"
 PKG:${KERNEL_PACKAGE_NAME}-image = "linux-image-${KERNEL_PKG_VER}"
 PKG:${KERNEL_PACKAGE_NAME}-dev = "linux-headers-${KERNEL_PKG_VER}"
 
+# Build-time fix (kb-sky1-20261102): on a cold tree KERNEL_VERSION is not known
+# at parse time ("none"), so RDEPENDS:linux-headers-cixmini below names
+# linux-headers-none and bitbake refuses with "Nothing RPROVIDES
+# linux-headers-none". Provide the per-release headers name explicitly; at
+# package time KERNEL_VERSION is real, so Provides and Depends both carry the
+# real release.
+RPROVIDES:${KERNEL_PACKAGE_NAME}-dev += "linux-headers-${KERNEL_PKG_VER}"
+
 # Thin "latest" policy packages. Empty on purpose (ALLOW_EMPTY) and dependent
 # on the EXACT current release, so they never hold an older kernel hostage and
 # can never evict one: removing or upgrading the meta package leaves every
