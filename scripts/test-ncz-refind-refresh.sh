@@ -1150,7 +1150,59 @@ test_o6n_promote_uses_title() {
 }
 
 # ---------------------------------------------------------------------------
-# REGRESSION 6: a pre-existing legacy ESP (EFI/refind + EFI/ncz/ncz-<KVER>)
+# REGRESSION 7: promote writes the new default_selection value back
+# BYTE-FOR-BYTE. The value is passed to awk through the environment, not via
+# `awk -v`, because -v interprets backslash escapes in the value: a title
+# containing a backslash would be silently rewritten (e.g. "\t" -> TAB).
+#   a naive `awk -v want=...` mangles the title; the fix writes it verbatim.
+# ---------------------------------------------------------------------------
+test_o6n_promote_preserves_title_bytes() {
+    o6n_sandbox
+    export NCZ_ESP_SKIP_MOUNT_CHECK=1
+    run_refresh --kver 7.3.1-sky1-ncz
+    if [ "$RC" != 0 ]; then
+        fail "o6n: promote preserves title bytes" "stage rc=$RC"
+        return
+    fi
+    # Give the new 7.3.1 entry a title that contains a backslash escape.
+    # rEFInd titles are opaque text; promote must copy them unchanged.
+    # The script appends the 7.3.1 entry with a known title; rename exactly
+    # that line so the backslash lives in the title promote must preserve.
+    # The title must contain a LITERAL backslash-t (two bytes: \ and t).
+    # awk -v interprets that as a TAB when the value is threaded through -v,
+    # so a promote implemented with `awk -v want=...` writes a TAB instead of
+    # the original bytes. The fix passes the value via ENVIRON, which does no
+    # escape processing, and writes it back verbatim.
+    local esc_title='NCZ 7.3.1-sky1-ncz \tproof'
+    NCZ_T="$esc_title" awk '
+        BEGIN { want = ENVIRON["NCZ_T"] }
+        /^[[:space:]]*menuentry[[:space:]]/ && !done && $0 ~ /7\.3\.1-sky1-ncz/ {
+            printf "menuentry \"%s\" {\n", want; done = 1; next
+        }
+        { print }
+    ' "$ESP/EFI/BOOT/refind.conf" >"$ESP/EFI/BOOT/refind.conf.new" &&
+        mv "$ESP/EFI/BOOT/refind.conf.new" "$ESP/EFI/BOOT/refind.conf"
+    if ! grep -qF 'menuentry "'"$esc_title"'" {' "$ESP/EFI/BOOT/refind.conf"; then
+        fail "o6n: promote preserves title bytes" "could not install the escape title"
+        return
+    fi
+    run_refresh --promote 7.3.1-sky1-ncz
+    if [ "$RC" != 0 ]; then
+        fail "o6n: promote preserves title bytes" "promote rc=$RC"
+        return
+    fi
+    local written
+    written=$(sed -n 's/^default_selection[[:space:]]*//p' "$ESP/EFI/BOOT/refind.conf")
+    if [ "$written" = "\"$esc_title\"" ]; then
+        pass "o6n: promote preserves title bytes"
+    else
+        fail "o6n: promote preserves title bytes" \
+            "want=[\"$esc_title\"] got=[$written]"
+    fi
+}
+
+# ---------------------------------------------------------------------------
+# REGRESSION 8: a pre-existing legacy ESP (EFI/refind + EFI/ncz/ncz-<KVER>)
 # still works. The O6N fix must not regress the layout the earlier tests use.
 # ---------------------------------------------------------------------------
 test_legacy_layout_still_works() {
@@ -1191,6 +1243,7 @@ main() {
     test_o6n_title_default_options_inherited
     test_o6n_known_good_untouched
     test_o6n_promote_uses_title
+    test_o6n_promote_preserves_title_bytes
     test_legacy_layout_still_works
 
     printf '\n%d passed, %d failed\n' "$PASS" "$FAIL"

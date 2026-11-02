@@ -856,9 +856,15 @@ promote_kernel() {
 
     # Exactly one line changes. Every menuentry, the rescue entries and the
     # firmware boot entry are untouched.
+    #
+    # The value is passed through the ENVIRONMENT and read with ENVIRON[]
+    # rather than `awk -v`: -v interprets backslash escapes (\t -> tab, \n ->
+    # newline) in the value, which would corrupt a title containing one. A
+    # title is opaque text and must be written back byte-for-byte.
     local tmp
     tmp=$(mktemp "$REFIND_DIR/.refind.conf.XXXXXX") || die 5 "cannot create a temp file in $REFIND_DIR"
-    if awk -v want="$new_sel" '
+    if NCZ_PROMOTE_SEL="$new_sel" awk '
+        BEGIN { want = ENVIRON["NCZ_PROMOTE_SEL"] }
         !done && /^[[:space:]]*default_selection[[:space:]]/ {
             printf "default_selection %s\n", want
             done = 1
