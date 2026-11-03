@@ -1,0 +1,25 @@
+#!/bin/bash
+# cixmini-update-bootloader (cixmini-boot >= 1.7): ADD-ONLY.
+#
+# cixmini-boot 1.6 and earlier, plus the rEFInd redirect that the installer
+# (post-install/11-fix-cixmini-boot.sh) put here and that its apt
+# DPkg::Post-Invoke hook (91-ncz-fix-cixmini-boot) restores after every dpkg
+# run, picked the newest kernel and REGENERATED refind.conf and the ESP for it:
+# installing a second kernel repointed every entry, Default and Rescue
+# included. This wrapper only ever delegates to the add-only
+# ncz-refind-refresh: it stages one kernel (the one named, or the newest one
+# not staged yet) as one extra entry and changes nothing else.
+#
+# It never fails its caller: a refusal (no initramfs yet, ESP not mounted)
+# leaves the ESP untouched and is only reported.
+set -u
+REFRESH=/usr/local/sbin/ncz-refind-refresh
+[ -x "$REFRESH" ] || { echo "cixmini-update-bootloader: $REFRESH missing, nothing staged"; exit 0; }
+rc=0
+if [ -n "${1:-}" ]; then
+    "$REFRESH" --kver "$1" || rc=$?
+else
+    "$REFRESH" || rc=$?
+fi
+[ "$rc" = 0 ] || echo "cixmini-update-bootloader: ncz-refind-refresh exited $rc (ESP unchanged)"
+exit 0

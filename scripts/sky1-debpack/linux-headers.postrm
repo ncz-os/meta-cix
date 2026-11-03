@@ -1,0 +1,13 @@
+#!/bin/sh
+# linux-headers-__KVER__ postrm: drop the files the postinst generated in the
+# build tree (host tools, localversion pin) once dpkg removed its own.
+set -e
+KVER="__KVER__"
+[ -n "$KVER" ] || exit 0
+case "$1" in
+    remove|purge)
+        rm -rf "/usr/lib/modules/$KVER/build"
+        rmdir "/usr/lib/modules/$KVER" 2>/dev/null || true
+        ;;
+esac
+exit 0

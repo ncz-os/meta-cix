@@ -1,0 +1,29 @@
+#!/bin/sh
+# cixmini-boot (>= 1.7) postinst: replace the wipe-and-regenerate generator
+# everywhere a caller can reach it, and run nothing.
+#
+#   /usr/local/sbin/ncz-refind-refresh            <- add-only tool
+#   /usr/local/sbin/cixmini-boot-refresh          <- add-only entry point
+#   /usr/local/sbin/.ncz-cixmini-update-bootloader <- add-only wrapper. The
+#       installer's apt hook /etc/apt/apt.conf.d/91-ncz-fix-cixmini-boot
+#       copies THIS file over /usr/lib/cixmini/cixmini-update-bootloader and
+#       runs it after every dpkg run; on 1.6 hosts it held the regenerating
+#       wrapper. Replacing it here makes that hook add-only too (it then stages
+#       nothing that is already staged).
+#
+# The postinst does not call the refresh itself: kernels are staged by their
+# own package (linux-image-<KVER> postinst), and the ESP is never touched by
+# a cixmini-boot upgrade.
+set -e
+[ "$1" = configure ] || exit 0
+put() {
+    # atomic install of $1 to $2
+    mkdir -p "$(dirname "$2")"
+    install -m 0755 "$1" "$2.ncz-new"
+    mv -f "$2.ncz-new" "$2"
+}
+put /usr/lib/cixmini/ncz-refind-refresh /usr/local/sbin/ncz-refind-refresh
+put /usr/lib/cixmini/cixmini-boot-refresh /usr/local/sbin/cixmini-boot-refresh
+put /usr/lib/cixmini/cixmini-update-bootloader /usr/local/sbin/.ncz-cixmini-update-bootloader
+echo "cixmini-boot: add-only rEFInd staging installed; ESP not touched"
+exit 0

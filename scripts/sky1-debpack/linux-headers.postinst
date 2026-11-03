@@ -1,0 +1,59 @@
+#!/bin/sh
+# linux-headers-__KVER__ postinst: make the shipped build tree usable for DKMS
+# on this host. The host tools in the tree (fixdep, modpost, ...) were built on
+# the bitbake build host, so they are rebuilt natively here (same sequence as
+# linux-headers-cixmini r256+, proven on O6N). Scoped to THIS release only; it
+# does not build DKMS modules or initramfs (linux-image-__KVER__ does).
+set -e
+PATH="/usr/sbin:/sbin:/usr/local/sbin:/usr/local/bin:/usr/bin:/bin${PATH:+:$PATH}"
+export PATH
+KVER="__KVER__"
+[ -n "$KVER" ] || { echo "linux-headers: empty KVER" >&2; exit 1; }
+[ "$1" = configure ] || exit 0
+B="/usr/lib/modules/$KVER/build"
+log() { echo "linux-headers-$KVER: $*"; }
+warn() { echo "linux-headers-$KVER: WARNING: $*" >&2; }
+
+for f in Makefile .config Module.symvers; do
+    [ -f "$B/$f" ] || { echo "linux-headers-$KVER: FATAL: $B/$f missing" >&2; exit 1; }
+done
+
+# Pin the local version so an external build stamps vermagic with $KVER.
+if [ "$(cat "$B/localversion-ncz" 2>/dev/null)" != "-sky1-ncz" ]; then
+    printf '%s\n' "-sky1-ncz" >"$B/localversion-ncz"
+fi
+
+tool_usable() {
+    [ -x "$1" ] || return 1
+    "$1" --version >/dev/null 2>&1
+    case $? in 126|127) return 1 ;; esac
+    return 0
+}
+need=0
+for t in scripts/basic/fixdep scripts/mod/modpost; do
+    tool_usable "$B/$t" || need=1
+done
+if [ "$need" = 1 ]; then
+    LOG="/var/log/ncz-headers-$KVER-modules_prepare.log"
+    log "rebuilding host tools natively (log: $LOG)"
+    SEL="$B/scripts/selinux/Makefile"
+    SELBAK=""
+    if [ -f "$SEL" ]; then
+        SELBAK=$(mktemp)
+        cp -a "$SEL" "$SELBAK"
+        : >"$SEL"
+    fi
+    make -C "$B" -j"$(nproc 2>/dev/null || echo 2)" modules_prepare >"$LOG" 2>&1 ||
+        log "modules_prepare returned non-zero (expected: some generated sources are not shipped)"
+    if [ -n "$SELBAK" ]; then
+        cp -a "$SELBAK" "$SEL"
+        rm -f "$SELBAK"
+    fi
+fi
+for t in scripts/basic/fixdep scripts/mod/modpost; do
+    tool_usable "$B/$t" || { echo "linux-headers-$KVER: FATAL: $t not usable after rebuild" >&2; exit 1; }
+done
+REL=$(cat "$B/include/config/kernel.release" 2>/dev/null || true)
+[ "$REL" = "$KVER" ] || { echo "linux-headers-$KVER: FATAL: tree reports release '$REL'" >&2; exit 1; }
+log "build tree ready ($REL)"
+exit 0

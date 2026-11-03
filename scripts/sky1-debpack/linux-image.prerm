@@ -1,0 +1,13 @@
+#!/bin/sh
+# linux-image-__KVER__ prerm: never remove the kernel that is running.
+set -e
+KVER="__KVER__"
+case "$1" in
+    remove|purge)
+        if [ "$(uname -r 2>/dev/null || true)" = "$KVER" ]; then
+            echo "linux-image-$KVER: refusing to remove the running kernel" >&2
+            exit 1
+        fi
+        ;;
+esac
+exit 0

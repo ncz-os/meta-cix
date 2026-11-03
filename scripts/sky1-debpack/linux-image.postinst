@@ -1,0 +1,80 @@
+#!/bin/sh
+# linux-image-__KVER__ postinst (scripts/sky1-debpack in meta-cix).
+#
+# Everything here is scoped to THIS kernel release. Nothing reads `uname -r`
+# except the guard that refuses to rebuild the running kernel's initramfs, and
+# /etc/kernel/postinst.d is deliberately NOT run: on hosts installed before
+# cixmini-boot 1.7 that directory holds the wipe-and-regenerate rEFInd hook.
+set -e
+PATH="/usr/sbin:/sbin:/usr/local/sbin:/usr/local/bin:/usr/bin:/bin${PATH:+:$PATH}"
+export PATH
+KVER="__KVER__"
+[ -n "$KVER" ] || { echo "linux-image: empty KVER" >&2; exit 1; }
+
+log() { echo "linux-image-$KVER: $*"; }
+warn() { echo "linux-image-$KVER: WARNING: $*" >&2; }
+
+[ "$1" = configure ] || exit 0
+
+RUNNING=$(uname -r 2>/dev/null || true)
+B="/usr/lib/modules/$KVER/build"
+
+depmod -a "$KVER"
+
+# 1. DKMS: build and install every registered module for THIS release.
+#    DKMS package versions do not change with the kernel, so force the build
+#    (same reasoning as linux-headers-cixmini r256+).
+if command -v dkms >/dev/null 2>&1; then
+    [ -f "$B/Makefile" ] && [ -f "$B/.config" ] && [ -f "$B/Module.symvers" ] || {
+        echo "linux-image-$KVER: FATAL: $B is incomplete; install linux-headers-$KVER" >&2
+        exit 1
+    }
+    DKMS_LOG="/var/log/ncz-dkms-$KVER.log"
+    : >"$DKMS_LOG"
+    failed=""
+    for pv in $(dkms status 2>/dev/null | awk -F'[,:]' '{ sub(/[ \t]+$/, "", $1); if ($1 ~ /\//) print $1 }' | sort -u); do
+        m=${pv%%/*}
+        v=${pv#*/}
+        log "dkms $m/$v for $KVER"
+        if dkms build -m "$m" -v "$v" -k "$KVER" --force >>"$DKMS_LOG" 2>&1 &&
+            dkms install -m "$m" -v "$v" -k "$KVER" --force >>"$DKMS_LOG" 2>&1; then
+            log "  $m/$v OK"
+        else
+            failed="$failed $m/$v"
+        fi
+    done
+    if [ -n "$failed" ]; then
+        echo "linux-image-$KVER: FATAL: DKMS build failed for:$failed (see $DKMS_LOG)" >&2
+        tail -25 "$DKMS_LOG" >&2 || true
+        exit 1
+    fi
+    depmod -a "$KVER"
+else
+    warn "dkms is not installed: only the prebuilt GPU modules are present for $KVER"
+fi
+
+# 2. initramfs for THIS release only. Never the running kernel's: that one
+#    backs the default boot entry and is not this package's to rewrite.
+if [ "$KVER" = "$RUNNING" ]; then
+    warn "$KVER is the running kernel: its initramfs is left as it is"
+elif command -v dracut >/dev/null 2>&1; then
+    log "dracut --kver $KVER -> /boot/initrd.img-$KVER"
+    dracut --force --kver "$KVER" "/boot/initrd.img-$KVER"
+elif command -v update-initramfs >/dev/null 2>&1; then
+    update-initramfs -c -k "$KVER" || update-initramfs -u -k "$KVER"
+else
+    echo "linux-image-$KVER: FATAL: no initramfs builder (dracut)" >&2
+    exit 1
+fi
+
+# 3. Stage as ONE extra rEFInd entry (add-only, default unchanged).
+#    A refusal (ESP not mounted, no rEFInd) does not fail the install; the
+#    operator can re-run it.
+if [ "$KVER" != "$RUNNING" ] && [ -x /usr/local/sbin/ncz-refind-refresh ]; then
+    rc=0
+    /usr/local/sbin/ncz-refind-refresh --kver "$KVER" || rc=$?
+    [ "$rc" = 0 ] || warn "ncz-refind-refresh --kver $KVER exited $rc; not staged (re-run it by hand)"
+fi
+log "installed next to the running kernel ${RUNNING:-?}; default boot entry unchanged"
+log "to boot it by default: ncz-refind-refresh --promote $KVER"
+exit 0
