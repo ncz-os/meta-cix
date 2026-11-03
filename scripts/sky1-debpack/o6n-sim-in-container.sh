@@ -42,6 +42,11 @@ dpkg -i cix-gpu-kmd-dkms_1.0+ncz3_all.deb panthor-cix-dkms_7.2.0+ncz3_all.deb \
 # container `uname -r` is the build host's kernel, so build them for 7.3.0
 # explicitly, then rebuild the 7.3.0 initramfs as O6N has it.
 dkms autoinstall -k "$OLDK" >"$OUT/baseline-dkms.log" 2>&1 || true
+# r293 bakes the GPU modules into updates/, so autoinstall stops at "built";
+# O6N shows it "installed (Original modules exist)": install it the same way.
+for pv in $(dkms status -k "$OLDK" | awk -F'[,:]' '/: built/ { print $1 }'); do
+    dkms install -m "${pv%%/*}" -v "${pv#*/}" -k "$OLDK" --force >>"$OUT/baseline-dkms.log" 2>&1 || true
+done
 dkms status | tee "$OUT/baseline-dkms-status.txt"
 dracut --force --kver "$OLDK" "/boot/initrd.img-$OLDK" >"$OUT/baseline-dracut.log" 2>&1 ||
     { tail -20 "$OUT/baseline-dracut.log"; exit 2; }
@@ -136,7 +141,9 @@ dkms status | tee "$OUT/after-dkms-status.txt"
 [ "$(grep -c "$OLDK.*installed" "$OUT/after-dkms-status.txt")" = 4 ] && ok "dkms status: 4 modules still installed for $OLDK" ||
     no "dkms status for $OLDK changed"
 lsinitrd "/boot/initrd.img-$NEWK" >"$OUT/lsinitrd-new.txt" 2>&1 || true
-grep -q "mali_kbase" "$OUT/lsinitrd-new.txt" && ok "new initrd contains mali_kbase" || echo "INFO  new initrd has no mali_kbase (dracut module selection)" | tee -a "$OUT/results.txt"
+lsinitrd "/boot/initrd.img-$OLDK" >"$OUT/lsinitrd-old.txt" 2>&1 || true
+[ "$(grep -c mali_kbase "$OUT/lsinitrd-new.txt")" = "$(grep -c mali_kbase "$OUT/lsinitrd-old.txt")" ] &&
+    ok "new initrd has the same mali_kbase inclusion as the 7.3.0 one (dracut config parity)" || no "initrd mali_kbase inclusion differs"
 for p in "linux-image-cixmini 7.3.0-sky1-ncz+r293" "linux-headers-cixmini 7.3.0-sky1-ncz+r293"; do
     grep -q "^$p install ok installed" "$OUT/after-dpkg.txt" && ok "$p still installed" || no "$p not installed any more"
 done
@@ -146,8 +153,8 @@ cmp -s /usr/local/sbin/ncz-refind-refresh /usr/lib/cixmini/ncz-refind-refresh &&
 cmp -s /usr/local/sbin/.ncz-cixmini-update-bootloader /usr/lib/cixmini/cixmini-update-bootloader &&
     cmp -s /usr/lib/cixmini/cixmini-update-bootloader /usr/local/sbin/.ncz-cixmini-update-bootloader &&
     ok "Post-Invoke restore source is the add-only wrapper" || no "Post-Invoke restore source is not the add-only wrapper"
-grep -q "already staged" /var/log/ncz-refind-refresh.log && ok "apt Post-Invoke re-run was a no-op (already staged)" ||
-    echo "INFO  no 'already staged' line from the Post-Invoke run" | tee -a "$OUT/results.txt"
+tail -1 /var/log/ncz-refind-refresh.log | grep -qE "nothing to do|already staged" &&
+    ok "apt Post-Invoke re-run (add-only wrapper) was a no-op" || no "Post-Invoke run did something: $(tail -3 /var/log/ncz-refind-refresh.log)"
 
 echo "== 5. idempotence: another apt run (Post-Invoke fires again) changes nothing"
 cp -a "$CONF" "$OUT/refind.conf.after1"
