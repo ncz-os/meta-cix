@@ -32,7 +32,7 @@ EVID=$(cd "$EVID" && pwd)
 
 echo "== A. apt-get -s against O6N's dpkg status"
 mkdir -p "$EVID/sim-o6n-status"
-podman run --rm --network=host --cpus=2 \
+podman run --rm --security-opt label=disable --network=host --cpus=2 \
     -v "$NEW:/in/new:ro" -v "$BASE:/in/baseline:ro" -v "$EVID/sim-o6n-status:/out" \
     "$IMG" bash -c '
 set -u
@@ -57,7 +57,7 @@ extra=$(grep -E "^Inst " "$S" | grep -vE "^Inst (cixmini-boot|linux-headers-$NEW
 echo "== B. throwaway O6N-shaped container, real install"
 mkdir -p "$EVID/container" "$EVID/esp-mnt"
 set +e
-podman run --rm --network=host --cpus=4 \
+podman run --rm --security-opt label=disable --network=host --cpus=2 \
     -e NEWK="$NEWK" \
     -v "$NEW:/in/new:ro" -v "$BASE:/in/baseline:ro" -v "$EVID/container:/out" \
     -v "$EVID/esp-mnt:/boot/efi" -v "$HERE/o6n-sim-in-container.sh:/in/run.sh:ro" \
