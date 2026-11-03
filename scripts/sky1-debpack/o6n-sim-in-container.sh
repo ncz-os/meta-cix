@@ -30,7 +30,7 @@ apt-get install -y -qq --no-install-recommends dkms dracut dracut-core build-ess
 dpkg -l dkms dracut gcc | tail -3
 
 echo "== 1. O6N 7.3.0 baseline from the published r293 packages"
-cd /in/baseline
+cd /in/baseline || exit 2
 dpkg -i ncz-usb-recovery_1.3_arm64.deb >"$OUT/baseline-dpkg.log" 2>&1
 dpkg -i cixmini-boot_1.6+r293_arm64.deb linux-headers-cixmini_7.3.0-sky1-ncz+r293_arm64.deb \
     linux-image-cixmini_7.3.0-sky1-ncz+r293_arm64.deb >>"$OUT/baseline-dpkg.log" 2>&1 ||
@@ -62,16 +62,16 @@ grep -q " /boot/efi " /proc/mounts && ok "ESP is a mount point in the sandbox" |
 snap() {
     {
         sha256sum /boot/vmlinuz-"$OLDK" /boot/initrd.img-"$OLDK" /boot/config-"$OLDK"
-        (cd /boot/efi && find . -type f -print0 | sort -z | xargs -0 sha256sum)
+        (cd /boot/efi && find . -type f -print0 | sort -z | xargs -0 -r sha256sum)
     } >"$OUT/$1-sha.txt"
     dpkg-query -W -f='${Package} ${Version} ${Status}\n' | sort >"$OUT/$1-dpkg.txt"
     dkms status | sort >"$OUT/$1-dkms.txt"
-    find "/usr/lib/modules/$OLDK" -type f -print0 | sort -z | xargs -0 sha256sum >"$OUT/$1-oldmods-sha.txt"
+    find "/usr/lib/modules/$OLDK" -type f -print0 | sort -z | xargs -0 -r sha256sum >"$OUT/$1-oldmods-sha.txt"
 }
 snap before
 
 echo "== 2. simulate"
-cd /in/new
+cd /in/new || exit 2
 apt-get install -s ./cixmini-boot_*.deb ./linux-headers-"$NEWK"_*.deb ./linux-image-"$NEWK"_*.deb \
     >"$OUT/apt-simulate.txt" 2>&1
 cat "$OUT/apt-simulate.txt" | grep -E "^(Inst|Remv|Conf)|newly installed|upgraded" | tee "$OUT/apt-simulate-summary.txt"
@@ -124,7 +124,7 @@ echo "$NEWENT" | grep -qE "loader /vmlinuz-$NEWK" && echo "$NEWENT" | grep -qE "
 echo "$NEWENT" | grep -qE "^[[:space:]]*(volume|devicetree)[[:space:]]" && no "new entry has volume/devicetree" ||
     ok "new entry has no volume/devicetree line (boots like the Default)"
 DEFOPTS=$(sed -n '/7.3 Mali (Default)"/,/^}/p' "$OUT/refind.conf.before" | sed -n 's/^[[:space:]]*options[[:space:]]*//p')
-echo "$NEWENT" | grep -qF "$DEFOPTS" && ok "new entry options == Default entry options" || no "new entry options differ"
+[ -n "$DEFOPTS" ] && echo "$NEWENT" | grep -qF "$DEFOPTS" && ok "new entry options == Default entry options" || no "new entry options differ"
 cmp -s "/boot/vmlinuz-$NEWK" "/boot/efi/vmlinuz-$NEWK" && cmp -s "/boot/initrd.img-$NEWK" "/boot/efi/initrd.img-$NEWK" &&
     ok "ESP-root vmlinuz/initrd of $NEWK == /boot copies" || no "ESP copies of $NEWK missing or differ"
 for m in mali_kbase memory_group_manager protected_memory_allocator amvx aipu panthor; do
@@ -147,7 +147,7 @@ lsinitrd "/boot/initrd.img-$OLDK" >"$OUT/lsinitrd-old.txt" 2>&1 || true
 for p in "linux-image-cixmini 7.3.0-sky1-ncz+r293" "linux-headers-cixmini 7.3.0-sky1-ncz+r293"; do
     grep -q "^$p install ok installed" "$OUT/after-dpkg.txt" && ok "$p still installed" || no "$p not installed any more"
 done
-comm -23 <(awk '{print $1}' "$OUT/before-dpkg.txt") <(awk '{print $1}' "$OUT/after-dpkg.txt") >"$OUT/removed-pkgs.txt"
+comm -23 <(awk '{print $1}' "$OUT/before-dpkg.txt" | LC_ALL=C sort -u) <(awk '{print $1}' "$OUT/after-dpkg.txt" | LC_ALL=C sort -u) >"$OUT/removed-pkgs.txt"
 [ -s "$OUT/removed-pkgs.txt" ] && no "packages removed: $(cat "$OUT/removed-pkgs.txt")" || ok "no package removed by the real install"
 cmp -s /usr/local/sbin/ncz-refind-refresh /usr/lib/cixmini/ncz-refind-refresh && ok "/usr/local/sbin/ncz-refind-refresh is the add-only tool" || no "old refresh tool still in place"
 cmp -s /usr/local/sbin/.ncz-cixmini-update-bootloader /usr/lib/cixmini/cixmini-update-bootloader &&

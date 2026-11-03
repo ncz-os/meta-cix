@@ -103,7 +103,7 @@ one() {
     # exactly one file matching the glob, else die
     local n
     n=$(find "$YOCTO" -maxdepth 1 -name "$1" | wc -l)
-    [ "$n" = 1 ] || die "expected exactly one $1 in $YOCTO, found $n"
+    [ "$n" -eq 1 ] || die "expected exactly one $1 in $YOCTO, found $n"
     find "$YOCTO" -maxdepth 1 -name "$1"
 }
 
