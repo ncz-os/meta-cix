@@ -817,17 +817,30 @@ stage_new_kernel() {
     # kernel is not staged (no menuentry), something else owns that name. The
     # O6N layout writes NEW files only -- vmlinuz-<KVER>/initrd.img-<KVER> for
     # this KVER -- so an existing one is never the running kernel's.
+    # The O6N layout boots ACPI (acpi=force) and none of its known-good entries
+    # loads a device tree, so the new entry must not either: it has to boot the
+    # same way the Default does, differing only in the kernel and initramfs.
+    # Its entries carry no "volume" line either (rEFInd uses the volume it was
+    # started from); naming a volume label the ESP may not have would make the
+    # new entry unbootable.
+    local stage_dtb=1
+    [ "$LAYOUT" = boot ] && stage_dtb=0
     local f
-    for f in "$dst_v" "$dst_i" "$dst_d"; do
+    for f in "$dst_v" "$dst_i"; do
         [ -e "$f" ] && die 5 "$f exists but $kver is not staged; refusing to overwrite an unowned ESP file"
     done
+    if [ "$stage_dtb" = 1 ] && [ -e "$dst_d" ]; then
+        die 5 "$dst_d exists but $kver is not staged; refusing to overwrite an unowned ESP file"
+    fi
 
     if [ "$LAYOUT" != boot ]; then
         mkdir -p "$(kernel_files_prefix "$kver")" || die 5 "cannot create $(kernel_files_prefix "$kver")"
     fi
     cp -f "$img" "$dst_v" || die 5 "cannot copy $img to $dst_v"
     cp -f "$initrd" "$dst_i" || die 5 "cannot copy $initrd to $dst_i"
-    if dtb=$(kernel_dtb "$kver"); then
+    if [ "$stage_dtb" = 0 ]; then
+        log "staged $kver: $(basename "$img"), $(basename "$initrd") (ACPI layout: no device tree, like the Default entry)"
+    elif dtb=$(kernel_dtb "$kver"); then
         cp -f "$dtb" "$dst_d" || die 5 "cannot copy $dtb to $dst_d"
         log "staged $kver: $(basename "$img"), $(basename "$initrd"), $(basename "$dtb")"
     else
@@ -843,10 +856,12 @@ stage_new_kernel() {
         printf '# --- added by %s: kernel %s, ADD-ONLY (not the default) ---\n' "$PROG" "$kver"
         printf 'menuentry "%s" {\n' "$title"
         printf '    icon %s\n' "$entry_icon"
-        printf '    volume ncz\n'
+        if [ "$LAYOUT" != boot ]; then
+            printf '    volume ncz\n'
+        fi
         printf '    loader %s\n' "${dst_v#"$ESP_REAL"}"
         printf '    initrd %s\n' "${dst_i#"$ESP_REAL"}"
-        if [ -f "$dst_d" ]; then
+        if [ "$stage_dtb" = 1 ] && [ -f "$dst_d" ]; then
             printf '    devicetree %s\n' "${dst_d#"$ESP_REAL"}"
         fi
         printf '    options %s\n' "$opts"

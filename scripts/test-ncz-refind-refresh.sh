@@ -1573,6 +1573,37 @@ test_o6n_kver_at_index_empty_for_non_esp_root_loader() {
 }
 
 # ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# REGRESSION (2026-11-02 packaging review): on the O6N layout the new entry
+# must boot exactly like the Default one. The Default entries carry no
+# "volume" line and no "devicetree" line (ACPI boot, acpi=force); the base
+# appended "volume ncz" (an ESP label O6N need not have, which makes the entry
+# unbootable) and a devicetree line whenever a dtb sat in /boot.
+#   base: both checks fail (volume ncz + devicetree present).
+# ---------------------------------------------------------------------------
+test_o6n_entry_has_no_volume_or_devicetree() {
+    o6n_sandbox
+    export NCZ_ESP_SKIP_MOUNT_CHECK=1
+    mkdir -p "$BOOT/dtb-7.3.1-sky1-ncz/cix"
+    printf 'DTB-7.3.1\n' >"$BOOT/dtb-7.3.1-sky1-ncz/cix/sky1-orion-o6.dtb"
+    run_refresh --kver 7.3.1-sky1-ncz
+    local entry
+    entry=$(sed -n '/added by ncz-refind-refresh: kernel 7\.3\.1-sky1-ncz/,/^}/p' "$ESP/EFI/BOOT/refind.conf")
+    if [ "$RC" = 0 ] && [ -n "$entry" ] &&
+        ! printf '%s' "$entry" | grep -qE '^[[:space:]]*volume[[:space:]]'; then
+        pass "o6n: new entry has no volume line"
+    else
+        fail "o6n: new entry has no volume line" "rc=$RC entry=$entry"
+    fi
+    if [ "$RC" = 0 ] && [ -n "$entry" ] &&
+        ! printf '%s' "$entry" | grep -qE '^[[:space:]]*devicetree[[:space:]]' &&
+        [ ! -e "$ESP/sky1-orion-o6.dtb-7.3.1-sky1-ncz" ]; then
+        pass "o6n: new entry loads no device tree (ACPI, like the Default)"
+    else
+        fail "o6n: new entry loads no device tree (ACPI, like the Default)" "rc=$RC entry=$entry"
+    fi
+}
+
 main() {
     if [ ! -x "$REFRESH" ]; then
         chmod +x "$REFRESH" 2>/dev/null || true
@@ -1609,6 +1640,7 @@ main() {
     test_o6n_loader_match_awk_parses
     test_o6n_rescue_default_not_used
     test_o6n_kver_at_index_empty_for_non_esp_root_loader
+    test_o6n_entry_has_no_volume_or_devicetree
 
     printf '\n%d passed, %d failed\n' "$PASS" "$FAIL"
     if [ "$FAIL" -ne 0 ]; then
