@@ -167,10 +167,13 @@ done
 log "inputs OK: Image + $nko modules + headers tree + $ngpu GPU modules, all $KVER"
 
 EPOCH=$(stat -c %Y "$X/boot/Image-$KVER")
+# dpkg-deb clamps member and archive timestamps to SOURCE_DATE_EPOCH, which
+# makes two runs over the same inputs byte-identical.
+export SOURCE_DATE_EPOCH=$EPOCH
 
 finalize() {
     # deterministic modes/mtimes; dpkg-deb --root-owner-group sets root:root
-    find "$1" -path "$1/DEBIAN" -prune -o -exec touch -h -d "@$EPOCH" {} +
+    find "$1" -exec touch -h -d "@$EPOCH" {} +
 }
 isize() { du -sk --exclude=DEBIAN "$1" | awk '{print $1}'; }
 
