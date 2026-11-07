@@ -37,7 +37,7 @@ if [ -f "$NEW" ]; then
         '! grep -vE "^\s*#" "$NEW" | grep -q "7\.3\.1"'
     check "SRC_URI patch list equals the 7.3.1 list, same order" \
         '[ "$(patches "$NEW")" = "$(patches "$OLD")" ]'
-    n=$(patches "$NEW" | wc -l)
+    n=$(patches "$NEW" | grep -c .)   # grep -c: BSD wc -l pads its count
     check "R290_EXPECTED_PATCHES equals the $n SRC_URI patches" \
         'grep -qx "R290_EXPECTED_PATCHES = \"$n\"" "$NEW"'
 fi
