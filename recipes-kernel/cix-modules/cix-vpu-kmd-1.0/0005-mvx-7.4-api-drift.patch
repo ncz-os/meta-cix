@@ -1,0 +1,241 @@
+diff --git a/driver/dev/mvx_dev.c b/driver/dev/mvx_dev.c
+index ab335e8..78d4153 100755
+--- a/driver/dev/mvx_dev.c
++++ b/driver/dev/mvx_dev.c
+@@ -948,13 +948,13 @@ static int mvx_pdev_probe(struct platform_device *pdev)
+     return mvx_dev_probe(&pdev->dev, rcsu_res, res, irq);
+ }
+ 
+-static int mvx_pdev_remove(struct platform_device *pdev)
++static void mvx_pdev_remove(struct platform_device *pdev)
+ {
+     struct mvx_dev_ctx *ctx = platform_get_drvdata(pdev);
+ 
+     MVX_LOG_PRINT(&mvx_log_dev, MVX_LOG_INFO, "pdev remove");
+ 
+-    return mvx_dev_remove(ctx);
++    mvx_dev_remove(ctx);
+ }
+ 
+ static int mvx_hw_init(struct device *dev)
+diff --git a/driver/if/mvx_session.c b/driver/if/mvx_session.c
+index 26d4516..e1bc52e 100755
+--- a/driver/if/mvx_session.c
++++ b/driver/if/mvx_session.c
+@@ -39,6 +39,8 @@
+ #include <linux/module.h>
+ #include <linux/poll.h>
+ #include <linux/sched.h>
++#include <linux/timer.h>
++#include <linux/vmalloc.h>
+ #include <linux/version.h>
+ #include <linux/dma-buf.h>
+ #include <linux/rtc.h>
+@@ -507,7 +509,7 @@ static void watchdog_stop(struct mvx_session *session)
+ {
+     int ret;
+ 
+-    ret = del_timer_sync(&session->watchdog_timer);
++    ret = timer_delete_sync(&session->watchdog_timer);
+ 
+     /* ret: 0=watchdog expired, 1=watchdog still running */
+     MVX_SESSION_DEBUG(session, "Watchdog stop. ret=%d", ret);
+diff --git a/driver/if/v4l2/mvx_ext_v4l2.c b/driver/if/v4l2/mvx_ext_v4l2.c
+index 26ece11..50a61bd 100755
+--- a/driver/if/v4l2/mvx_ext_v4l2.c
++++ b/driver/if/v4l2/mvx_ext_v4l2.c
+@@ -35,6 +35,7 @@
+ 
+ #include <linux/debugfs.h>
+ #include <linux/device.h>
++#include <linux/string.h>
+ #include <linux/err.h>
+ #include <linux/slab.h>
+ #include <linux/videodev2.h>
+@@ -120,7 +121,7 @@ int mvx_ext_if_register_device(struct mvx_ext_if *ext,
+                 V4L2_CAP_VIDEO_M2M_MPLANE |
+                 V4L2_CAP_EXT_PIX_FORMAT |
+                 V4L2_CAP_STREAMING;
+-    strncpy(ext->vdev.name, name, sizeof(ext->vdev.name));
++    strscpy_pad(ext->vdev.name, name, sizeof(ext->vdev.name));
+ 
+     video_set_drvdata(&ext->vdev, ext);
+ 
+diff --git a/driver/if/v4l2/mvx_v4l2_ctrls.c b/driver/if/v4l2/mvx_v4l2_ctrls.c
+index 1036f68..536605c 100755
+--- a/driver/if/v4l2/mvx_v4l2_ctrls.c
++++ b/driver/if/v4l2/mvx_v4l2_ctrls.c
+@@ -1080,14 +1080,16 @@ static int mvx_v4l2_ctrls_init_hdr10(struct v4l2_ctrl_handler *hnd,
+ 
+     ctrl = v4l2_ctrl_new_std_compound(
+         hnd, &ctrl_ops, V4L2_CID_COLORIMETRY_HDR10_CLL_INFO,
+-        v4l2_ctrl_ptr_create((void *)NULL));
++        v4l2_ctrl_ptr_create((void *)NULL),
++        v4l2_ctrl_ptr_create(NULL), v4l2_ctrl_ptr_create(NULL));
+     if (ctrl == NULL)
+         return -EINVAL;
+     ctrl->flags |= flags;
+ 
+     ctrl = v4l2_ctrl_new_std_compound(
+         hnd, &ctrl_ops, V4L2_CID_COLORIMETRY_HDR10_MASTERING_DISPLAY,
+-        v4l2_ctrl_ptr_create((void *)NULL));
++        v4l2_ctrl_ptr_create((void *)NULL),
++        v4l2_ctrl_ptr_create(NULL), v4l2_ctrl_ptr_create(NULL));
+     if (ctrl == NULL)
+         return -EINVAL;
+     ctrl->flags |= flags;
+diff --git a/driver/if/v4l2/mvx_v4l2_fops.c b/driver/if/v4l2/mvx_v4l2_fops.c
+index 2c31a15..c5122ee 100755
+--- a/driver/if/v4l2/mvx_v4l2_fops.c
++++ b/driver/if/v4l2/mvx_v4l2_fops.c
+@@ -67,7 +67,7 @@ int mvx_v4l2_open(struct file *file)
+ 
+     file->private_data = &session->fh;
+     v4l2_fh_init(&session->fh, &ctx->vdev);
+-    v4l2_fh_add(&session->fh);
++    v4l2_fh_add(&session->fh, file);
+ 
+     /* Set default port formats. */
+     fmt.type = V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE;
+@@ -103,7 +103,7 @@ put_session:
+     mvx_session_put(&session->session);
+     if (!wait_for_completion_timeout(&session->cmp, msecs_to_jiffies(3000)))
+         MVX_SESSION_ERR(&session->session, "Wait destroy session complete timeout.");
+-    v4l2_fh_del(&session->fh);
++    v4l2_fh_del(&session->fh, file);
+     v4l2_fh_exit(&session->fh);
+ 
+ free_session:
+@@ -149,7 +149,7 @@ int mvx_v4l2_release(struct file *file)
+     }
+ 
+     file->private_data = NULL;
+-    v4l2_fh_del(&vsession->fh);
++    v4l2_fh_del(&vsession->fh, file);
+     v4l2_fh_exit(&vsession->fh);
+ 
+     MVX_SESSION_INFO(&vsession->session, "v4l2: Release exit.");
+diff --git a/driver/if/v4l2/mvx_v4l2_session.c b/driver/if/v4l2/mvx_v4l2_session.c
+index f96e993..9fa69be 100755
+--- a/driver/if/v4l2/mvx_v4l2_session.c
++++ b/driver/if/v4l2/mvx_v4l2_session.c
+@@ -214,10 +214,10 @@ static void v4l2_port_show(struct mvx_v4l2_port *port,
+     mvx_seq_printf(s, "vb2_queue", 1, "\n");
+     mvx_seq_printf(s, "memory", 2, "%u\n",
+                port->vb2_queue.memory);
+-    mvx_seq_printf(s, "min_buffers_needed", 2, "%u\n",
+-               port->vb2_queue.min_buffers_needed);
++    mvx_seq_printf(s, "min_queued_buffers", 2, "%u\n",
++               port->vb2_queue.min_queued_buffers);
+     mvx_seq_printf(s, "num_buffers", 2, "%u\n",
+-               port->vb2_queue.num_buffers);
++               vb2_get_num_buffers(&port->vb2_queue));
+     mvx_seq_printf(s, "queued_count", 2, "%u\n",
+                port->vb2_queue.queued_count);
+     mvx_seq_printf(s, "streaming", 2, "%u\n",
+diff --git a/driver/if/v4l2/mvx_v4l2_vidioc.c b/driver/if/v4l2/mvx_v4l2_vidioc.c
+index fd4144f..c5872ef 100755
+--- a/driver/if/v4l2/mvx_v4l2_vidioc.c
++++ b/driver/if/v4l2/mvx_v4l2_vidioc.c
+@@ -466,7 +466,7 @@ static int start_streaming(struct vb2_queue *q,
+     if (ret != 0 && atomic_read(&q->owned_by_drv_count) > 0) {
+         int i;
+ 
+-        for (i = 0; i < q->num_buffers; ++i)
++        for (i = 0; i < vb2_get_num_buffers(q); ++i)
+             if (q->bufs[i]->state == VB2_BUF_STATE_ACTIVE)
+                 vb2_buffer_done(q->bufs[i],
+                         VB2_BUF_STATE_QUEUED);
+@@ -506,7 +506,7 @@ static void stop_streaming(struct vb2_queue *q)
+     if (atomic_read(&q->owned_by_drv_count) > 0) {
+         int i;
+ 
+-        for (i = 0; i < q->num_buffers; ++i)
++        for (i = 0; i < vb2_get_num_buffers(q); ++i)
+             if (q->bufs[i]->state == VB2_BUF_STATE_ACTIVE)
+                 vb2_buffer_done(q->bufs[i],
+                         VB2_BUF_STATE_ERROR);
+@@ -610,7 +610,7 @@ static void buf_finish(struct vb2_buffer *vb)
+  *
+  * This is unused for now and will be called from Vb2.
+  */
+-static void wait_prepare(struct vb2_queue *q)
++__maybe_unused static void wait_prepare(struct vb2_queue *q)
+ {
+     struct mvx_v4l2_port *vport = vb2_get_drv_priv(q);
+     struct mvx_v4l2_session *vsession = vport->vsession;
+@@ -629,7 +629,7 @@ static void wait_prepare(struct vb2_queue *q)
+  *
+  * This is unused for now and will be called from Vb2.
+  */
+-static void wait_finish(struct vb2_queue *q)
++__maybe_unused static void wait_finish(struct vb2_queue *q)
+ {
+     struct mvx_v4l2_port *vport = vb2_get_drv_priv(q);
+     struct mvx_v4l2_session *vsession = vport->vsession;
+@@ -657,9 +657,7 @@ const struct vb2_ops mvx_vb2_ops = {
+     .buf_cleanup     = buf_cleanup,
+     .start_streaming = start_streaming,
+     .stop_streaming  = stop_streaming,
+-    .buf_queue       = buf_queue,
+-    .wait_prepare    = wait_prepare,
+-    .wait_finish     = wait_finish
++    .buf_queue       = buf_queue
+ };
+ 
+ /**
+@@ -684,9 +682,9 @@ static int setup_vb2_queue(struct mvx_v4l2_port *vport)
+     q->timestamp_flags = V4L2_BUF_FLAG_TIMESTAMP_COPY;
+     q->allow_zero_bytesused = true;
+     if (vport->dir == MVX_DIR_OUTPUT && mvx_is_frame(vport->port->format))
+-        q->min_buffers_needed = 0;
++        q->min_queued_buffers = 0;
+     else
+-        q->min_buffers_needed = 1;
++        q->min_queued_buffers = 1;
+ 
+     /* Let Vb2 handle mvx_v4l2_buffer allocations. */
+     q->buf_struct_size = sizeof(struct mvx_v4l2_buffer);
+diff --git a/driver/mvx_seq.h b/driver/mvx_seq.h
+index 3713621..5f21917 100755
+--- a/driver/mvx_seq.h
++++ b/driver/mvx_seq.h
+@@ -32,6 +32,38 @@
+ #ifndef _MVX_SEQ_H_
+ #define _MVX_SEQ_H_
+ 
++/* Compatibility for colorspace/xfer/ycbcr constants not in mainline V4L2 */
++#ifndef V4L2_COLORSPACE_GENERIC_FILM
++#define V4L2_COLORSPACE_GENERIC_FILM V4L2_MVX_COLORIMETRY_UNSUPPORTED
++#endif
++#ifndef V4L2_COLORSPACE_ST428
++#define V4L2_COLORSPACE_ST428 V4L2_MVX_COLORIMETRY_UNSUPPORTED
++#endif
++#ifndef V4L2_XFER_FUNC_GAMMA22
++#define V4L2_XFER_FUNC_GAMMA22 V4L2_MVX_COLORIMETRY_UNSUPPORTED
++#endif
++#ifndef V4L2_XFER_FUNC_GAMMA28
++#define V4L2_XFER_FUNC_GAMMA28 V4L2_MVX_COLORIMETRY_UNSUPPORTED
++#endif
++#ifndef V4L2_XFER_FUNC_BT1361
++#define V4L2_XFER_FUNC_BT1361 V4L2_MVX_COLORIMETRY_UNSUPPORTED
++#endif
++#ifndef V4L2_XFER_FUNC_BT2020_10
++#define V4L2_XFER_FUNC_BT2020_10 V4L2_MVX_COLORIMETRY_UNSUPPORTED
++#endif
++#ifndef V4L2_XFER_FUNC_BT2020_12
++#define V4L2_XFER_FUNC_BT2020_12 V4L2_MVX_COLORIMETRY_UNSUPPORTED
++#endif
++#ifndef V4L2_XFER_FUNC_ST428
++#define V4L2_XFER_FUNC_ST428 V4L2_MVX_COLORIMETRY_UNSUPPORTED
++#endif
++#ifndef V4L2_XFER_FUNC_HLG
++#define V4L2_XFER_FUNC_HLG V4L2_MVX_COLORIMETRY_UNSUPPORTED
++#endif
++#ifndef V4L2_YCBCR_ENC_BT470_6M
++#define V4L2_YCBCR_ENC_BT470_6M V4L2_MVX_COLORIMETRY_UNSUPPORTED
++#endif
++
+ /****************************************************************************
+  * Defines
+  ****************************************************************************/

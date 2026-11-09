@@ -31,6 +31,7 @@ SRC_URI = " \
     file://0013-mali-kbase-shmem-file-setup-vma-flags-t.patch \
     file://0014-mali-kbase-mmap-non-ack-vma-search.patch \
     file://0015-mali-kbase-ipa-null-model-guard.patch \
+    file://0016-mali-kbase-page-private-7.4-folio-port.patch \
 "
 SRCREV_FORMAT = "gpukmd"
 

@@ -23,6 +23,7 @@ SRC_URI = " \
     file://0002-mvx-strlcpy-to-strscpy.patch \
     file://0003-mvx-log-dentry-hlist.patch \
     file://0004-mvx-quote-module-import-ns.patch \
+    file://0005-mvx-7.4-api-drift.patch \
     git://github.com/minisforum-cix-p1-repo/cix_opensource__vpu_driver.git;protocol=https;branch=a0fb5/5cf6e/cix_p1_mg_dev;name=vpukmd \
 "
 SRCREV_FORMAT = "vpukmd"
