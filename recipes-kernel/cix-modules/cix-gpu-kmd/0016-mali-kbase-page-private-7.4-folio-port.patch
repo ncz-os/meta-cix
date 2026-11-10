@@ -23,7 +23,7 @@ index a67576d..475c053 100644
  
  static inline struct kbase_page_metadata *kbase_page_private(struct page *p)
 diff --git a/drivers/gpu/arm/midgard/mali_kbase_mem_migrate.c b/drivers/gpu/arm/midgard/mali_kbase_mem_migrate.c
-index de8f825..8f194e8 100644
+index 2a7dc3d..23e3101 100644
 --- a/drivers/gpu/arm/midgard/mali_kbase_mem_migrate.c
 +++ b/drivers/gpu/arm/midgard/mali_kbase_mem_migrate.c
 @@ -70,7 +70,7 @@ bool kbase_alloc_page_metadata(struct kbase_device *kbdev, struct page *p, dma_a
@@ -51,19 +51,21 @@ index de8f825..8f194e8 100644
  		put_page(old_page);
  
  #if (KERNEL_VERSION(6, 0, 0) <= LINUX_VERSION_CODE)
-@@ -246,7 +244,6 @@ static int kbasep_migrate_page_pt_mapped(struct page *old_page, struct page *new
+@@ -246,7 +244,7 @@ static int kbasep_migrate_page_pt_mapped(struct page *old_page, struct page *new
  			page_md->status = PAGE_MOVABLE_SET(page_md->status);
  		}
  #endif
 -		SetPagePrivate(new_page);
++		set_page_private(new_page, (unsigned long)page_md);
  		get_page(new_page);
  	} else
  		dma_unmap_page(kbdev->dev, new_dma_addr, PAGE_SIZE, DMA_BIDIRECTIONAL);
-@@ -317,11 +314,9 @@ static int kbasep_migrate_page_allocated_mapped(struct page *old_page, struct pa
+@@ -317,11 +315,10 @@ static int kbasep_migrate_page_allocated_mapped(struct page *old_page, struct pa
  	if (ret == 0) {
  		dma_unmap_page(kbdev->dev, old_dma_addr, PAGE_SIZE, DMA_BIDIRECTIONAL);
  
 -		SetPagePrivate(new_page);
++		set_page_private(new_page, (unsigned long)page_md);
  		get_page(new_page);
  
  		/* Clear PG_movable from the old page and release reference. */
