@@ -1,0 +1,48 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jason Perlow <jperlow@gmail.com>
+Date: Wed, 11 Nov 2026 15:35:00 -0500
+Subject: [PATCH] firmware: arm_scmi: drop the mboxes reference in
+ mailbox_chan_available
+
+The fwnode conversion (sky1-ncz-v7.3-final-port.patch) replaced
+of_parse_phandle_with_args(..., NULL) - which releases the node it looks
+up internally - with fwnode_property_get_reference_args() storing the
+result in a local fwnode_reference_args, and nothing ever released that
+reference: every channel availability check leaked one reference to the
+mboxes node.
+
+ACPI fwnodes carry no refcount so only a DT boot is affected, but this is
+an upstream driver and adding ACPI support must not regress the DT path.
+
+Put the reference before returning. Same fix as cix-linux-main
+0ed9fc938c60 ("scmi: release the mboxes reference taken by
+mailbox_chan_available") and linux-cix 1b2eec81 fix #2 - independent
+discovery on all three sides.
+
+---
+ drivers/firmware/arm_scmi/transports/mailbox.c | 9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/firmware/arm_scmi/transports/mailbox.c b/drivers/firmware/arm_scmi/transports/mailbox.c
+index 111111111111..222222222222 100644
+--- a/drivers/firmware/arm_scmi/transports/mailbox.c
++++ b/drivers/firmware/arm_scmi/transports/mailbox.c
+@@ -93,8 +93,13 @@ static bool mailbox_chan_available(struct fwnode_handle *fwnode, int idx)
+ 	if (num_mb == 3 && idx == 1)
+ 		idx = 2;
+ 
+-	return !fwnode_property_get_reference_args(fwnode, "mboxes",
+-					   "#mbox-cells", 1, idx, &fwnode_args);
++	if (fwnode_property_get_reference_args(fwnode, "mboxes", "#mbox-cells",
++					       1, idx, &fwnode_args))
++		return false;
++
++	/* fwnode_property_get_reference_args() took a reference; drop it. */
++	fwnode_handle_put(fwnode_args.fwnode);
++	return true;
+ }
+ 
+ /**
+-- 
+2.43.0
+
