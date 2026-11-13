@@ -35,8 +35,14 @@ if [ -f "$NEW" ]; then
         'grep -q "config-7.3.3-sky1-ncz.defconfig .{B}/.config" "$NEW"'
     check "no 7.3.1 file reference left outside comments" \
         '! grep -vE "^\s*#" "$NEW" | grep -q "7\.3\.1"'
-    check "SRC_URI patch list equals the 7.3.1 list, same order" \
-        '[ "$(patches "$NEW")" = "$(patches "$OLD")" ]'
+    # 7.3.3-only patches (added after the r298 verbatim copy of the 7.3.1
+    # series) must be an explicit, documented exception; everything else
+    # must stay byte- and order-identical to the 7.3.1 list. PR r2 (2026-11-11)
+    # added exactly one: 0034 (scmi mboxes reference drop).
+    ONLY33="0034-firmware-arm_scmi-drop-the-mboxes-reference-in-mailbo.patch"
+    check "SRC_URI patch list = 7.3.1 list + 7.3.3-only 0034, same order" \
+        '[ "$(patches "$NEW" | grep -vx "$ONLY33")" = "$(patches "$OLD")" ] && \
+         [ "$(patches "$NEW" | grep -cx "$ONLY33")" = "1" ]'
     n=$(patches "$NEW" | grep -c .)   # grep -c: BSD wc -l pads its count
     check "R290_EXPECTED_PATCHES equals the $n SRC_URI patches" \
         'grep -qx "R290_EXPECTED_PATCHES = \"$n\"" "$NEW"'

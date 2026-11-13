@@ -1,6 +1,21 @@
 # SPDX-FileCopyrightText: Copyright (c) 2026 Jason Perlow
 # SPDX-License-Identifier: Apache-2.0
 #
+# ---------------------------------------------------------------------------
+# PR r2 (2026-11-11, operator "quick 7.3.3 port" order 20:10Z): 0034 adopted
+# (r299 line). The fwnode conversion in sky1-ncz-v7.3-final-port.patch left
+# mailbox_chan_available() leaking the reference that
+# fwnode_property_get_reference_args() takes on every channel availability
+# check. 0034 drops it (ACPI fwnodes carry no refcount; only DT boots leak,
+# but the upstream driver must not regress the DT path). Same fix as
+# cix-linux-main 0ed9fc938c60 and linux-cix 1b2eec81 fix #2 (independent
+# discovery). NOT ported here: the 1b2eec81 fix #1 Base-channel alias guard
+# (needs the 7.4-rc2 mailbox_chan_available(fwnode, prot_id, idx) shape; the
+# 'mailbox not free' failure mode requires ACPI SCMI enabled and all 7.3.x
+# image entries boot with acpi_scmi_en=off). Deferred until ACPI SCMI is
+# enabled on the 7.3.x line.
+# ---------------------------------------------------------------------------
+#
 # r298 (2026-11-07, kernel 7.3.3): the r295/r297 7.3.1 series moved to
 # upstream stable v7.3.3 (tag v7.3.3, peeled commit
 # d50d994bffa3c7c6db2d8bc4c5f0c55e3f46b0cd, linux-stable, 2026-11-06), the
@@ -271,7 +286,7 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/linux-cix-sky1-ncz-7.3.3:"
 LINUX_VERSION = "7.3.3"
 KERNEL_LOCALVERSION = "-sky1-ncz"
 PV = "7.3.3+ncz"
-PR = "r1"
+PR = "r2"
 KERNEL_PACKAGE_NAME = "kernel-${PN}"
 
 # ---------------------------------------------------------------------------
@@ -542,6 +557,7 @@ SRC_URI = " \
     file://0031-DPTSW-19618-linlon-dp-Set-AFBC-32x8-to-the-highest-p.patch \
     file://0032-DPTSW-26437-iommu-arm-smmu-v3-fix-IRQ-setup-on-resum.patch \
     file://0033-clk-cix-audss-fix-str.patch \
+    file://0034-firmware-arm_scmi-drop-the-mboxes-reference-in-mailbo.patch \
 "
 
 # ---------------------------------------------------------------------------
@@ -581,6 +597,14 @@ r284_patch_check() {
         bbfatal "r284 patch check: 0004 missing (ACPI pdev not renamed sky1-pcie-cix)"
 }
 do_patch[postfuncs] += "r284_patch_check"
+
+# Fail the build if 0034 (scmi mboxes reference drop) is absent.
+r299_refcount_patch_check() {
+    grep -q 'fwnode_handle_put(fwnode_args.fwnode)' \
+        ${S}/drivers/firmware/arm_scmi/transports/mailbox.c || \
+        bbfatal "r299 patch check: 0034 missing (mailbox_chan_available still leaks the mboxes reference)"
+}
+do_patch[postfuncs] += "r299_refcount_patch_check"
 
 # Fail the build if 0005 (ACPI fixed-regulator support) is absent.
 r285_patch_check() {
@@ -661,9 +685,9 @@ r285_patch_check() {
     for i in 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011 0013 0014 0015 0016 0017 0018 0019 0020 0021 0022 0023 0024 0025 0026 0027 0028 0029 0030 0031 0032 0033; do
         grep -q "^$i-" "$applied" || bbfatal "r290 patch check: $i not in $applied"
     done
-    bbnote "r290 patch check: $n patches applied (rc7 port incl. r5 aux + 0001-0011 + r289 CIX q3 set + r290 0022-0028 + r292 0029-0033)"
+    bbnote "r290 patch check: $n patches applied (rc7 port incl. r5 aux + 0001-0011 + r289 CIX q3 set + r290 0022-0028 + r292 0029-0033 + r299 0034)"
 }
-R290_EXPECTED_PATCHES = "33"
+R290_EXPECTED_PATCHES = "34"
 do_patch[postfuncs] += "r285_patch_check"
 
 DEPENDS += "pahole-native elfutils-native"
